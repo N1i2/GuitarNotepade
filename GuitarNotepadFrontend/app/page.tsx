@@ -1,9 +1,5 @@
-import { ModeToggle } from "@/components/toggle";
+import { redirect } from 'next/navigation'
 
-export default function Home() {
-  return (
-    <div className="flex bg-destructive dark:bg-chart-2">
-        <ModeToggle></ModeToggle>
-    </div>
-  );
+export default function HomePage() {
+  redirect('/login')
 }

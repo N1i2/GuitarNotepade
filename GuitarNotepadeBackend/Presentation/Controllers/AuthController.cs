@@ -20,7 +20,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<ActionResult<AuthResponseDto>> Register(RegisterUserDto dto)
+    public async Task<ActionResult<AuthResponseDto>> Register(RegisterUserCommand dto)
     {
         try
         {
