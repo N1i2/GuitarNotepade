@@ -16,7 +16,7 @@ public class BaseRepository<T> : IBaseRepository<T> where T : BaseEntityWithId
         _dbSet = context.Set<T>();
     }
 
-    public virtual async Task<List<T>> GetAll(CancellationToken cancellationToken = default)
+    public virtual async Task<List<T>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await _dbSet.ToListAsync(cancellationToken);
     }
@@ -53,6 +53,17 @@ public class BaseRepository<T> : IBaseRepository<T> where T : BaseEntityWithId
         }
 
         _dbSet.Remove(entity);
+        return entity;
+    }
+
+    public async Task<T?> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var entity = await GetByIdAsync(id, cancellationToken);
+        if (entity == null)
+        {
+            return null;
+        }
+
         return entity;
     }
 }

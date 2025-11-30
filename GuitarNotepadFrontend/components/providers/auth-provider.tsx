@@ -1,8 +1,8 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { useRouter, usePathname, redirect } from 'next/navigation'
-import { User, AuthResponse } from '@/types/auth'
+import { useRouter, usePathname } from 'next/navigation'
+import { User, AuthResponse, UserProfileResponse } from '@/types/auth'
 import { AuthService } from '@/lib/api/auth-service'
 import { useToast } from '@/hooks/use-toast'
 import { ApiError } from '@/lib/api/client'
@@ -18,6 +18,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+const PROTECTED_ROUTES = ['/home', '/profile', '/songs', '/chords']
+const PUBLIC_ROUTES = ['/login', '/register', '/']
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -25,25 +28,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const toast = useToast()
 
+  // 👇 Функция для преобразования UserProfileResponse в User
+  const transformUserProfile = (profile: UserProfileResponse): User => ({
+    id: profile.id,
+    email: profile.email,
+    nikName: profile.nikName,
+    role: profile.role,
+    avatarUrl: profile.avatarUrl || undefined,
+    bio: profile.bio,
+    createAt: profile.createAt
+  })
+
+  // 👇 ПРОВЕРКА АУТЕНТИФИКАЦИИ ПРИ ЗАГРУЗКЕ И ПРИ СМЕНЕ СТРАНИЦ
   useEffect(() => {
     const checkAuth = async () => {
+      // 👇 Не проверяем аутентификацию на публичных страницах после начальной загрузки
+      if (!isLoading && PUBLIC_ROUTES.includes(pathname) && user) {
+        return
+      }
+
       setIsLoading(true)
       try {
-        const token = AuthService.getToken()
-        
-        if (token) {        
-          if (pathname === '/login' || pathname === '/register' || pathname === '/') {
-            router.push('/home')
-          }
-        } else {
-          if (pathname === '/home') {
-            router.push('/login')
-          }
+        const userProfile = await AuthService.validateToken()
+        const currentUser = userProfile ? transformUserProfile(userProfile) : null
+        setUser(currentUser)
+
+        // 👇 ЛОГИКА РЕДИРЕКТОВ
+        if (currentUser && PUBLIC_ROUTES.includes(pathname)) {
+          router.push('/home')
+        } else if (!currentUser && PROTECTED_ROUTES.some(route => pathname.startsWith(route))) {
+          toast.error("Access denied", {
+            description: "Please log in to access this page"
+          })
+          router.push('/login')
         }
       } catch (error) {
         console.error('Auth check failed:', error)
-        AuthService.logout()
-        if (pathname === '/home') {
+        setUser(null)
+        if (PROTECTED_ROUTES.some(route => pathname.startsWith(route))) {
           router.push('/login')
         }
       } finally {
@@ -52,18 +74,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     checkAuth()
-  }, [pathname, router])
+  }, [pathname]) // 👈 Проверяем только при изменении пути
 
-const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string) => {
     setIsLoading(true)
     try {
       const response: AuthResponse = await AuthService.login({ email, password })
-      const userData: User = {
-        id: response.userId,
-        email: response.email,
-        nikName: response.nikName,
-        role: response.role
+      
+      const userProfile = await AuthService.validateToken(true) // 👈 force check
+      if (!userProfile) {
+        throw new Error('Failed to validate token after login')
       }
+      
+      const userData = transformUserProfile(userProfile)
       setUser(userData)
       
       toast.success("Successfully signed in", {
@@ -85,13 +108,19 @@ const login = async (email: string, password: string) => {
       const response: AuthResponse = await AuthService.register({ 
         email, nikName, password, confirmPassword 
       })
-      const userData: User = {
-        id: response.userId,
-        email: response.email,
-        nikName: response.nikName,
-        role: response.role
+      
+      const userProfile = await AuthService.validateToken(true) // 👈 force check
+      if (!userProfile) {
+        throw new Error('Failed to validate token after registration')
       }
+      
+      const userData = transformUserProfile(userProfile)
       setUser(userData)
+      
+      toast.success("Account created successfully! 🎸", {
+        description: `Welcome to GuitarNotepad, ${userData.nikName}!`,
+        duration: 4000
+      })
       
       router.push('/home')
     } catch (error) {
@@ -104,17 +133,16 @@ const login = async (email: string, password: string) => {
   const logout = () => {
     try {
       AuthService.logout()
-      router.push("/register");
       setUser(null)
       toast.success("Signed out successfully", {
         description: "Come back soon! 🎸"
       })
-      router.push('/register')
+      router.push('/login')
     } catch (error) {
       showErrorToast(error, toast)
     }
   }
-  
+
   return (
     <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
       {children}

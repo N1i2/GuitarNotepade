@@ -40,7 +40,7 @@ export default function RootLayout({
             <main className="min-h-screen">
             {children}
             </main>
-            <ToastProvider /> {/* 👈 Добавляем здесь */}
+            <ToastProvider /> 
           </AuthProvider>
         </ThemeProvider>
       </body>

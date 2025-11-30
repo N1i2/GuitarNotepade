@@ -11,6 +11,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 Env.Load();
 
+var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET")
+                ?? throw new ArgumentNullException("JWT_SECRET is not set in .env");
+var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "GuitarNotepad";
+var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "GuitarNotepadUsers";
+
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<CustomExceptionFilter>();
@@ -28,10 +33,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"]!))
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
         };
     });
 
@@ -85,12 +89,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseCors("AllowAll");
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.MapGet("/", async context =>

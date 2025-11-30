@@ -8,7 +8,8 @@ public class MappingProfile: Profile
 {
     public MappingProfile()
     {
-        CreateMap<RegisterUserCommand, RegisterUserCommand>();
+        CreateMap<RegisterUserDto, RegisterUserCommand>();
         CreateMap<LoginUserDto, LoginUserCommand>();
+        CreateMap<UpdateUserProfileDto, UpdateUserProfileCommand>();
     }
 }

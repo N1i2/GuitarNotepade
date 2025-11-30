@@ -58,7 +58,7 @@ public class User : BaseEntityWithId
 
         return newUser;
     }
-    public void UpdateProfile(string? nikName = null, string? bio = null)
+    public void UpdateProfile(string? nikName= null, string? bio = null)
     {
         if (nikName != null)
         {
@@ -70,6 +70,7 @@ public class User : BaseEntityWithId
             Bio = bio;
         }
     }
+    public void ChangePassword(string newPasswordHash) => PasswordHash = newPasswordHash;
     public void Block() => IsBlocked = true;
     public void Unblock() => IsBlocked = false;
     public void UpdateUrl(string? url) => AvatarUrl = url;
