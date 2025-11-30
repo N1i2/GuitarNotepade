@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter, usePathname, redirect } from 'next/navigation'
 import { User, AuthResponse } from '@/types/auth'
 import { AuthService } from '@/lib/api/auth-service'
 import { useToast } from '@/hooks/use-toast'
@@ -25,30 +25,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const toast = useToast()
 
-  // 👇 Временное решение - просто проверяем наличие токена
   useEffect(() => {
     const checkAuth = async () => {
       setIsLoading(true)
       try {
         const token = AuthService.getToken()
         
-        if (token) {
-          // 👇 Если есть токен, считаем пользователя авторизованным
-          // В реальном приложении здесь должен быть запрос к /auth/me
-          const tempUser: User = {
-            id: 'temp-id', // Временное значение
-            email: 'user@example.com',
-            nikName: 'User',
-            role: 'user'
-          }
-          setUser(tempUser)
-          
-          // 👇 Если на публичной странице - редирект на home
+        if (token) {        
           if (pathname === '/login' || pathname === '/register' || pathname === '/') {
             router.push('/home')
           }
         } else {
-          // 👇 Если нет токена и на защищенной странице - редирект на логин
           if (pathname === '/home') {
             router.push('/login')
           }
@@ -79,14 +66,13 @@ const login = async (email: string, password: string) => {
       }
       setUser(userData)
       
-      toast.success(`Welcome back, ${userData.nikName}! 🎸`, {
-        description: "Successfully signed in",
+      toast.success("Successfully signed in", {
+        description: `Welcome back, ${userData.nikName}! 🎸`,
         duration: 3000
       })
       
       router.push('/home')
     } catch (error) {
-      // 👇 ПРОПАГИРУЕМ ОШИБКУ ДАЛЬШЕ ДЛЯ ДЕТАЛЬНОЙ ОБРАБОТКИ В ФОРМЕ
       throw error
     } finally {
       setIsLoading(false)
@@ -107,14 +93,8 @@ const login = async (email: string, password: string) => {
       }
       setUser(userData)
       
-      toast.success("Account created successfully! 🎸", {
-        description: `Welcome to GuitarNotepad, ${userData.nikName}!`,
-        duration: 4000
-      })
-      
       router.push('/home')
     } catch (error) {
-      // 👇 ПРОПАГИРУЕМ ОШИБКУ ДАЛЬШЕ ДЛЯ ДЕТАЛЬНОЙ ОБРАБОТКИ В ФОРМЕ
       throw error
     } finally {
       setIsLoading(false)
@@ -124,13 +104,13 @@ const login = async (email: string, password: string) => {
   const logout = () => {
     try {
       AuthService.logout()
+      router.push("/register");
       setUser(null)
       toast.success("Signed out successfully", {
         description: "Come back soon! 🎸"
       })
-      router.push('/')
+      router.push('/register')
     } catch (error) {
-      // 👇 ОБРАБОТКА ОШИБОК ПРИ ЛОГАУТЕ
       showErrorToast(error, toast)
     }
   }

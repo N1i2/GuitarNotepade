@@ -86,7 +86,7 @@ export function RegisterForm() {
       await register(formData.email, formData.nikName, formData.password, formData.confirmPassword)
       toast.dismiss(loadingToastId)
       toast.success("Account created successfully! 🎸", {
-        description: "Welcome to GuitarNotepad!",
+        description: `Welcome to GuitarNotepad, ${formData.nikName}!`,
         duration: 3000
       })
     } catch (err: unknown) {

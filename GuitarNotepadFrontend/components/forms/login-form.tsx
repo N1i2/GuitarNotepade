@@ -9,14 +9,14 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { ApiError } from "@/lib/api/client"
-import { showErrorToast } from "@/lib/utils/error-parser" // 👈 Новый импорт
+import { showErrorToast } from "@/lib/utils/error-parser" 
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const { login } = useAuth()
-  const router = useRouter()
+  // const router = useRouter()
   const toast = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,14 +33,8 @@ export function LoginForm() {
     try {
       await login(email, password)
       toast.dismiss(loadingToastId)
-      toast.success("Welcome back! 🎸", {
-        description: "Successfully signed in",
-        duration: 3000
-      })
     } catch (err: unknown) {
       toast.dismiss(loadingToastId)
-      
-      // 👇 УЛУЧШЕННАЯ ОБРАБОТКА ОШИБОК
       showErrorToast(err, toast)
     } finally {
       setIsLoading(false)

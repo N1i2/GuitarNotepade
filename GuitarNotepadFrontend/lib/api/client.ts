@@ -54,7 +54,7 @@ class ApiClient {
       if (response.status === 401) {
         AuthService.logout();
         if (typeof window !== "undefined") {
-          window.location.href = "/login";
+          window.location.href = '/login';
         }
         throw new Error("Authentication failed");
       }

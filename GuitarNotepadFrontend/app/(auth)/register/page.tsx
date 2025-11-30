@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 
 export default function RegisterPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
+    <div className="min-h-screen flex items-center justify-center from-background to-muted p-4">
       
       <div className="w-full max-w-md space-y-8">
         <RegisterForm />
@@ -12,7 +12,7 @@ export default function RegisterPage() {
         <div className="text-center">
           <p className="text-muted-foreground">
             Already have an account?{" "}
-            <Link href="/login" className="text-primary hover:underline">
+            <Link href='/login' className="text-primary hover:underline">
               Sign in
             </Link>
           </p>
