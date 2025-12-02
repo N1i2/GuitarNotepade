@@ -28,7 +28,6 @@ export interface RegisterRequest {
   confirmPassword: string
 }
 
-// 👇 ДОБАВЛЯЕМ ТИП ДЛЯ ОТВЕТА ОТ /api/authme
 export interface UserProfileResponse {
   id: string
   email: string

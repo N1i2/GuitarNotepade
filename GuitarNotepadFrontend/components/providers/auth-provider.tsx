@@ -18,7 +18,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const PROTECTED_ROUTES = ['/home', '/profile', '/songs', '/chords']
+const PROTECTED_ROUTES = ['/home']
 const PUBLIC_ROUTES = ['/login', '/register', '/']
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {

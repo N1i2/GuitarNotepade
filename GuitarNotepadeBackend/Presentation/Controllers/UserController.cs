@@ -5,6 +5,7 @@ using AutoMapper;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Presentation.Controllers;
 
@@ -22,14 +23,20 @@ public class UserController : ControllerBase
         _mapper = mapper;
     }
 
-    [HttpGet("profile/{userId:guid}")]
-    public async Task<ActionResult<UserProfileDto>> GetProfile(Guid userId)
+    [HttpGet("profile")]
+    public async Task<ActionResult<UserProfileDto>> GetProfile()
     {
         try
         {
-            var query = new GetUserProfileQuery(userId); 
+            var userId = GetCurrentUserId();
+            var query = new GetCurrentUserQuery(userId);
             var result = await _mediator.Send(query);
+
             return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { error = ex.Message });
         }
         catch (Exception ex)
         {
@@ -70,5 +77,19 @@ public class UserController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
+    }
+
+    private Guid GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)
+                         ?? User.FindFirst("sub")
+                         ?? User.FindFirst("userId");
+
+        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+        {
+            throw new UnauthorizedAccessException("Invalid user ID in token");
+        }
+
+        return userId;
     }
 }

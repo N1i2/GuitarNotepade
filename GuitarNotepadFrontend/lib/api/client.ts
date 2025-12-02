@@ -21,19 +21,17 @@ export class ApiError extends Error {
 }
 
 class ApiClient {
-  private baseURL: string = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7000/api'
+  private baseURL: string = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:yourport/api'
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseURL}${endpoint}`
     
     const token = AuthService.getToken()
     
-    // 👇 ИСПРАВЛЯЕМ ТИПИЗАЦИЮ HEADERS
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     }
 
-    // 👇 КОПИРУЕМ СУЩЕСТВУЮЩИЕ ЗАГОЛОВКИ
     if (options.headers) {
       if (options.headers instanceof Headers) {
         options.headers.forEach((value, key) => {
@@ -50,7 +48,6 @@ class ApiClient {
       }
     }
 
-    // 👇 ДОБАВЛЯЕМ AUTHORIZATION
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
     }
@@ -63,7 +60,6 @@ class ApiClient {
     try {
       const response = await fetch(url, config)
       
-      // Обработка 401 ошибки (UNAUTHORIZED)
       if (response.status === 401) {
         AuthService.logout()
         throw new ApiError('Authentication failed', 401)

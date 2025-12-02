@@ -8,19 +8,15 @@ import { useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 
 export default function HomePage() {
-  const { user, logout, isLoading } = useAuth() // 👈 Получаем isLoading из useAuth
+  const { user, logout, isLoading } = useAuth() 
   const router = useRouter()
-  const toast = useToast()
 
-  // 👇 Дополнительная защита на уровне компонента
   useEffect(() => {
     if (!isLoading && !user) {
-      // Если загрузка завершена и пользователя нет - редирект
       router.push('/login')
     }
   }, [user, isLoading, router])
 
-  // 👇 Показываем загрузку ДО любых условий
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -32,7 +28,6 @@ export default function HomePage() {
     )
   }
 
-  // 👇 Проверяем пользователя ПОСЛЕ проверки загрузки
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -46,15 +41,8 @@ export default function HomePage() {
     )
   }
 
-  const handleDemoToast = () => {
-    toast.success("Demo notification!", {
-      description: "This is a sample success message",
-      duration: 3000
-    })
-  }
-
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl py-8">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
       <div className="space-y-8">
         <div className="flex justify-between items-center">
           <div>
@@ -65,21 +53,6 @@ export default function HomePage() {
             Logout
           </Button>
         </div>
-
-        {/* Демо секция */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Welcome, {user.nikName}! 🎸</CardTitle>
-            <CardDescription>Your personal guitar space</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={handleDemoToast} variant="outline" size="sm">
-                Test Toast
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <Card>
