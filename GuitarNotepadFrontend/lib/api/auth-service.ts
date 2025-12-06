@@ -65,7 +65,7 @@ export class AuthService {
         return userCache.user
       }
 
-      const user = await apiClient.get<UserProfileResponse>('/authme')
+      const user = await apiClient.get<UserProfileResponse>('/user/profile')
       
       userCache = {
         user,

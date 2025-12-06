@@ -1,4 +1,4 @@
 ﻿public record UpdateUserProfileDto(
-    Guid UserId,
     string? NikName,
+    string? AvatarBase64,
     string? Bio);

@@ -5,6 +5,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Infrastructure.Data;
 using Infrastructure.Services;
+using Infrastructure.Repositories;
+using Domain.Interfaces.Repositories;
 
 namespace Infrastructure;
 
@@ -22,12 +24,38 @@ public static class DependencyInjection
                         maxRetryCount: 3,
                         maxRetryDelay: TimeSpan.FromSeconds(5),
                         errorCodesToAdd: null);
-                    b.CommandTimeout(30); 
+                    b.CommandTimeout(30);
                 });
-        }, ServiceLifetime.Scoped); 
+        }, ServiceLifetime.Scoped);
+
+        services.AddScoped<IUserRepository, UserRepository>();
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+
         services.AddScoped<IAuthService, AuthService>();
+
+        services.AddHttpClient<IWebDavService, WebDavService>((serviceProvider, client) =>
+        {
+            var baseUrl = Environment.GetEnvironmentVariable("YANDEX_DISK_BASE_URL") ?? "https://webdav.yandex.ru";
+            client.BaseAddress = new Uri(baseUrl);
+            client.Timeout = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("User-Agent", "GuitarNotepad");
+
+            var username = Environment.GetEnvironmentVariable("YANDEX_DISK_USERNAME");
+            var password = Environment.GetEnvironmentVariable("YANDEX_DISK_PASSWORD");
+
+            if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
+            {
+                var authToken = Convert.ToBase64String(
+                    System.Text.Encoding.ASCII.GetBytes($"{username}:{password}"));
+                client.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authToken);
+            }
+
+            client.DefaultRequestHeaders.Add("Depth", "0");
+        });
+
+        services.AddMemoryCache();
 
         return services;
     }

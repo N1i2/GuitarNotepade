@@ -11,7 +11,7 @@ namespace Presentation.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize] 
+[Authorize]
 public class UserController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -49,8 +49,17 @@ public class UserController : ControllerBase
     {
         try
         {
-            var command = _mapper.Map<UpdateUserProfileCommand>(dto);
+            var userId = GetCurrentUserId();
+
+            var dtoWithUserId = new UpdateUserProfileWithIdDto(
+                UserId: userId,
+                NikName: dto.NikName,
+                AvatarBase64: dto.AvatarBase64,
+                Bio: dto.Bio);
+
+            var command = _mapper.Map<UpdateUserProfileCommand>(dtoWithUserId);
             var result = await _mediator.Send(command);
+
             return Ok(result);
         }
         catch (Exception ex)
@@ -64,8 +73,10 @@ public class UserController : ControllerBase
     {
         try
         {
+            var userId = GetCurrentUserId();
+
             var command = new ChangePasswordCommand(
-                dto.UserId, 
+                userId,
                 dto.CurrentPassword,
                 dto.NewPassword,
                 dto.ConfirmNewPassword);

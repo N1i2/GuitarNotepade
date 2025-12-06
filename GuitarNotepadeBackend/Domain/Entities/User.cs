@@ -58,12 +58,16 @@ public class User : BaseEntityWithId
 
         return newUser;
     }
-    public void UpdateProfile(string? nikName= null, string? bio = null)
+    public void UpdateProfile(string? nikName= null, string? avatarUrl = null, string? bio = null)
     {
         if (nikName != null)
         {
             NikNameRule.IsValid(nikName);
             NikName = nikName;
+        }
+        if (avatarUrl != null)
+        {
+            AvatarUrl = avatarUrl;
         }
         if (bio != null)
         {

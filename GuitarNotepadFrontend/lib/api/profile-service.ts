@@ -7,4 +7,8 @@ export class ProfileService {
         console.log(response);
         return response;
     }
+    static async updateProfile(data: Partial<User>): Promise<User> {
+        const response = await apiClient.put<User>("/User/profile", data);
+        return response;
+    }
 }
