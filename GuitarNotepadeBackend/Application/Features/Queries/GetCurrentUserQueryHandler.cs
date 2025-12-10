@@ -60,6 +60,7 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, U
             user.Role,
             avatarBase64, 
             user.Bio,
-            user.CreateAt);
+            user.CreateAt,
+            user.IsBlocked);
     }
 }

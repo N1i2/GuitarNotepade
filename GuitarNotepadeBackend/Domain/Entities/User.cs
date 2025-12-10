@@ -77,5 +77,7 @@ public class User : BaseEntityWithId
     public void ChangePassword(string newPasswordHash) => PasswordHash = newPasswordHash;
     public void Block() => IsBlocked = true;
     public void Unblock() => IsBlocked = false;
+    public void MakeAdminRole() => Role = "Admin";
+    public void RemoveAdminRole() => Role = "User";
     public void UpdateUrl(string? url) => AvatarUrl = url;
 }

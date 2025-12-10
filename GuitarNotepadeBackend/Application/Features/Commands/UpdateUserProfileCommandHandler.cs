@@ -132,7 +132,8 @@ public class UpdateUserProfileCommandHandler : IRequestHandler<UpdateUserProfile
             user.Role,
             avatarBase64,
             user.Bio,
-            user.CreateAt);
+            user.CreateAt,
+            user.IsBlocked);
     }
 
     private string CleanBase64String(string base64)

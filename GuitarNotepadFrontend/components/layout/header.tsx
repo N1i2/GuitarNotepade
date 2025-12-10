@@ -5,96 +5,135 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { usePathname } from "next/navigation";
+import { Shield, Home, User, LogOut } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function Header() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const pathname = usePathname();
 
-  const isLoginPage = pathname === "/login";
-  const isRegisterPage = pathname === "/register";
-  const isProfile = pathname === "/home/profile";
-  const isAuthPage = isLoginPage || isRegisterPage;
+  const isAdmin = user?.role === "Admin";
 
-  const getAuthButtonConfig = () => {
-    if (isLoginPage) {
-      return {
-        text: "Register",
-        href: "/register",
-      };
-    }
-    if (isRegisterPage) {
-      return {
-        text: "Login",
-        href: "/login",
-      };
-    }
-    return null;
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map(word => word[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
   };
 
-  const getProfileButtonConfig = () =>{
-    if(isProfile){
-      return {
-        text: "Home",
-        href: "/home"
-      }
-    }
-    return {
-      text: "Profile",
-      href: "/home/profile"
-    }
-  }
-
-  const authButtonConfig = getAuthButtonConfig();
-  const profileButtonConfig = getProfileButtonConfig();
-
   return (
-    <header className="border-b bg-background/95 backdrop-blur">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-20 flex h-25 max-w-screen-2xl items-center justify-between">
+    <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-20 flex h-16 max-w-screen-2xl items-center justify-between">
         <div className="flex items-center gap-6">
-          <span className="text-xl font-bold">Your Guitar Notepad</span>
+          <Link href={user ? "/home" : "/"} className="flex items-center gap-2">
+            <span className="text-xl font-bold bg-gradient-to-r from-foreground via-foreground/80 to-teal-500 dark:to-teal-400 bg-clip-text text-transparent">
+              GuitarNotepad
+            </span>
+            <span className="text-2xl">🎸</span>
+          </Link>
 
           {user && (
-            <nav className="hidden md:flex items-center gap-6 text-sm">
-              <Link
-                href="/home"
-                className="transition-colors hover:text-foreground/80 text-foreground/60"
+            <nav className="hidden md:flex items-center gap-1 text-sm">
+              <Button
+                asChild
+                variant={pathname === "/home" ? "default" : "ghost"}
+                size="sm"
+                className="gap-2"
               >
-                Home
-              </Link>
+                <Link href="/home">
+                  <Home className="h-4 w-4" />
+                  Home
+                </Link>
+              </Button>
+              
+              {isAdmin && (
+                <Button
+                  asChild
+                  variant={pathname === "/home/user-management" ? "default" : "ghost"}
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Link href="/home/user-management">
+                    <Shield className="h-4 w-4" />
+                    User Management
+                  </Link>
+                </Button>
+              )}
             </nav>
           )}
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          
           {user ? (
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-muted-foreground hidden sm:block">
-                Hello{user.role == "Admin" ? " admin" : ""}, {user.nikName}
-              </span>
-              <ThemeToggle />
-              <Button
-                asChild
-                variant={isProfile ? "default" : "outline"}
-                size="sm"
-              >
-                <Link href={profileButtonConfig.href}>{profileButtonConfig.text}</Link>
-              </Button>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage 
+                      src={user.avatarUrl ? `data:image/jpeg;base64,${user.avatarUrl}` : undefined} 
+                      alt={user.nikName}
+                    />
+                    <AvatarFallback>{getInitials(user.nikName)}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user.nikName}</p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user.email}
+                    </p>
+                    <div className="flex items-center gap-1">
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${user.role === 'Admin' ? 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300' : 'bg-muted'}`}>
+                        {user.role}
+                      </span>
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/home/profile" className="cursor-pointer">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} className="cursor-pointer text-red-600">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Logout</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
-            <div className="flex items-center gap-3">
-              <ThemeToggle />
-              {isAuthPage && authButtonConfig ? (
+            <div className="flex items-center gap-2">
+              {pathname === "/login" || pathname === "/register" ? (
                 <Button asChild variant="outline" size="sm">
-                  <Link href={authButtonConfig.href}>
-                    {authButtonConfig.text}
+                  <Link href={pathname === "/login" ? "/register" : "/login"}>
+                    {pathname === "/login" ? "Sign Up" : "Sign In"}
                   </Link>
                 </Button>
               ) : (
-                <div className="flex items-center gap-2">
+                <>
                   <Button asChild variant="ghost" size="sm">
                     <Link href="/login">Sign In</Link>
                   </Button>
-                </div>
+                  <Button asChild size="sm">
+                    <Link href="/register">Get Started</Link>
+                  </Button>
+                </>
               )}
             </div>
           )}

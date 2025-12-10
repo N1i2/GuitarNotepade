@@ -1,14 +1,49 @@
-import { User } from "@/types/profile";
+import { FiltersForUsers, PaginatedUsers, User, updateUserInfo as UpdateUserInfo } from "@/types/profile";
+import { UserProfileResponse } from "@/types/auth";
 import { apiClient } from "./client";
 
 export class ProfileService {
-    static async getFullInfo(id?: String): Promise<User>{
-        const response = await apiClient.get<User>("/User/profile");
-        console.log(response);
-        return response;
+  private static readonly DEFAULT_PAGE_SIZE = 10;
+
+  static async getFullInfo(id?: string): Promise<User> {
+    const response = await apiClient.get<User>("/User/profile");
+    console.log(response);
+    return response;
+  }
+
+  static async updateProfile(data: Partial<UpdateUserInfo>): Promise<UserProfileResponse> {
+    const response = await apiClient.put<UpdateUserInfo, UserProfileResponse>("/User/profile", data);
+    if (data.currentPassword) {
+      await apiClient.put<UpdateUserInfo, UserProfileResponse>("/User/change-password", data);
     }
-    static async updateProfile(data: Partial<User>): Promise<User> {
-        const response = await apiClient.put<User>("/User/profile", data);
-        return response;
-    }
+    return response;
+  }
+
+  static async getAllUsers(data: FiltersForUsers): Promise<PaginatedUsers> {
+    const params = new URLSearchParams();
+    
+    if (data.emailFilter) params.append("emailFilter", data.emailFilter);
+    if (data.nikNameFilter) params.append("nikNameFilter", data.nikNameFilter);
+    if (data.isBlocked !== undefined && data.isBlocked !== null) 
+      params.append("isBlocked", data.isBlocked.toString());
+    if (data.role) params.append("role", data.role);
+    
+    params.append("page", (data.page || 1).toString());
+    params.append("pageSize", (data.pageSize || this.DEFAULT_PAGE_SIZE).toString());
+    params.append("sortBy", data.sortBy || "createdAt");
+    params.append("sortOrder", data.sortOrder || "desc");
+
+    const response = await apiClient.get<PaginatedUsers>(
+      `/UserManagement/users?${params.toString()}`
+    );
+    return response;
+  }
+
+  static async toggleBlockStatus(email: string): Promise<void> {
+    await apiClient.put("/UserManagement/toggle-block-status", {email});
+  }
+
+  static async toggleUserRole(email: string): Promise<void> {
+    await apiClient.put("/UserManagement/toggle-user-role", {email});
+  }
 }

@@ -103,8 +103,8 @@ class ApiClient {
     })
   }
 
-  async put<T>(endpoint: string, data?: any): Promise<T> {
-    return this.request<T>(endpoint, {
+  async put<T1, T2>(endpoint: string, data?: T1): Promise<T2> {
+    return this.request<T2>(endpoint, {
       method: 'PUT',
       body: JSON.stringify(data),
     })

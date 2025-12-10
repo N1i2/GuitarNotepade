@@ -4,12 +4,12 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { AuthService } from '@/lib/api/auth-service'
 import { UserProfileResponse } from '@/types/auth'
 
-// Обновляем тип контекста
 interface AuthContextType {
   user: UserProfileResponse | null
   setUser: (user: UserProfileResponse | null) => void
   isLoading: boolean
   login: (email: string, password: string) => Promise<void>
+  register: (email: string, nikName: string, password: string, confirmPassword: string) => Promise<void>
   logout: () => void
   refreshUser: () => Promise<void>
 }
@@ -24,7 +24,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<UserProfileResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Инициализация при загрузке
   useEffect(() => {
     const initializeAuth = async () => {
       try {
@@ -43,7 +42,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     initializeAuth()
   }, [])
 
-  // Функция логина
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true)
@@ -58,13 +56,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
-  // Функция логаута
+  const register = async (email: string, nikName: string, password: string, confirmPassword: string) => {
+    try {
+      setIsLoading(true)
+      const response = await AuthService.register({ email, nikName, password, confirmPassword })
+      const userData = await AuthService.validateToken(true)
+      setUser(userData)
+    } catch (error) {
+      console.error('Register error:', error)
+      throw error
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const logout = () => {
     AuthService.logout()
     setUser(null)
   }
 
-  // Функция обновления пользователя
   const refreshUser = async () => {
     try {
       const userData = await AuthService.validateToken(true)
@@ -81,7 +91,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         user, 
         setUser, 
         isLoading, 
-        login, 
+        login,
+        register, 
         logout, 
         refreshUser 
       }}
@@ -91,7 +102,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   )
 }
 
-// Хук useAuth
 export const useAuth = () => {
   const context = useContext(AuthContext)
   if (context === undefined) {

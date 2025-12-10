@@ -16,7 +16,7 @@ export function LoginForm() {
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const { login } = useAuth()
-  // const router = useRouter()
+  const router = useRouter()
   const toast = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,6 +33,8 @@ export function LoginForm() {
     try {
       await login(email, password)
       toast.dismiss(loadingToastId)
+      toast.success("Successfully logged in!")
+      router.push("/home")
     } catch (err: unknown) {
       toast.dismiss(loadingToastId)
       showErrorToast(err, toast)

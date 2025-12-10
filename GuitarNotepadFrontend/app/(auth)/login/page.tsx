@@ -7,7 +7,6 @@ export default function LoginPage() {
       
       <div className="w-full max-w-md space-y-8">
         <LoginForm />
-        
         <div className="text-center">
           <p className="text-muted-foreground">
             Don&apos;t have an account?{" "}

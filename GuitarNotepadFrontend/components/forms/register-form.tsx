@@ -11,7 +11,7 @@ import { validatePassword, validatePasswordMatch } from "@/lib/utils/password-va
 import { PasswordStrength } from "./password-strength"
 import { useToast } from "@/hooks/use-toast"
 import { ApiError } from "@/lib/api/client"
-import { parseBackendError, showErrorToast } from "@/lib/utils/error-parser" // 👈 Новый импорт
+import { parseBackendError, showErrorToast } from "@/lib/utils/error-parser" 
 
 export function RegisterForm() {
   const [formData, setFormData] = useState({
@@ -33,7 +33,6 @@ export function RegisterForm() {
       [name]: value
     }))
 
-    // Очищаем ошибки при вводе
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: [] }))
     }
@@ -42,27 +41,23 @@ export function RegisterForm() {
   const validateForm = (): boolean => {
     const newErrors: { [key: string]: string[] } = {}
 
-    // Валидация email
     if (!formData.email) {
       newErrors.email = ['Email is required']
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = ['Email is invalid']
     }
 
-    // Валидация никнейма
     if (!formData.nikName) {
       newErrors.nikName = ['Nickname is required']
     } else if (formData.nikName.length < 3) {
       newErrors.nikName = ['Nickname must be at least 3 characters long']
     }
 
-    // Валидация пароля
     const passwordValidation = validatePassword(formData.password)
     if (!passwordValidation.isValid) {
       newErrors.password = passwordValidation.errors
     }
 
-    // Валидация подтверждения пароля
     if (!validatePasswordMatch(formData.password, formData.confirmPassword)) {
       newErrors.confirmPassword = ['Passwords do not match']
     }
@@ -89,19 +84,17 @@ export function RegisterForm() {
         description: `Welcome to GuitarNotepad, ${formData.nikName}!`,
         duration: 3000
       })
+      router.push("/home")
     } catch (err: unknown) {
       toast.dismiss(loadingToastId)
       
-      // 👇 УЛУЧШЕННАЯ ОБРАБОТКА ОШИБОК
       if (err instanceof ApiError || err instanceof Error) {
         const { fieldErrors, generalError } = parseBackendError(err)
         
-        // Устанавливаем ошибки полей
         if (Object.keys(fieldErrors).length > 0) {
           setErrors(fieldErrors)
         }
         
-        // Показываем общее уведомление
         showErrorToast(err, toast)
       } else {
         toast.error("Registration failed", {

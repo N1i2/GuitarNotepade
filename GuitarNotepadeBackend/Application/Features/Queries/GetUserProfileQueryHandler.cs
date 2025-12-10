@@ -28,6 +28,7 @@ public class GetUserProfileQueryHandler : IRequestHandler<GetUserProfileQuery, U
             user.Role,
             user.AvatarUrl,
             user.Bio,
-            user.CreateAt);
+            user.CreateAt,
+            user.IsBlocked);
     }
 }

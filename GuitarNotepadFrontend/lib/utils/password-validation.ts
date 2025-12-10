@@ -6,32 +6,26 @@ export interface PasswordValidationResult {
 export const validatePassword = (password: string): PasswordValidationResult => {
   const errors: string[] = []
 
-  // Минимальная длина 8 символов
   if (password.length < 8) {
     errors.push('Password must be at least 8 characters long')
   }
 
-  // Хотя бы одна заглавная буква
   if (!/(?=.*[A-Z])/.test(password)) {
     errors.push('Password must contain at least one uppercase letter')
   }
 
-  // Хотя бы одна строчная буква
   if (!/(?=.*[a-z])/.test(password)) {
     errors.push('Password must contain at least one lowercase letter')
   }
 
-  // Хотя бы одна цифра
   if (!/(?=.*\d)/.test(password)) {
     errors.push('Password must contain at least one number')
   }
 
-  // Хотя бы один специальный символ
   if (!/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/.test(password)) {
     errors.push('Password must contain at least one special character (!@#$%^&* etc.)')
   }
 
-  // Проверка на распространенные слабые пароли
   const weakPasswords = [
     'password', '12345678', 'qwerty', 'admin', 'welcome',
     'password1', '123456789', 'abc123', 'password123'
@@ -51,7 +45,6 @@ export const validatePasswordMatch = (password: string, confirmPassword: string)
   return password === confirmPassword
 }
 
-// Функция для показа силы пароля
 export const getPasswordStrength = (password: string): {
   strength: 'very-weak' | 'weak' | 'medium' | 'strong' | 'very-strong'
   score: number

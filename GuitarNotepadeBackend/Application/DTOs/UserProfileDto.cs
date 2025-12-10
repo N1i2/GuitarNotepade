@@ -5,4 +5,5 @@
     string Role,
     string? AvatarUrl,
     string? Bio,
-    DateTime CreateAt);
+    DateTime CreateAt,
+    bool IsBlocked);

@@ -10,6 +10,7 @@ public class BaseRepository<T> : IBaseRepository<T> where T : BaseEntityWithId
     protected readonly AppDbContext _context;
     protected readonly DbSet<T> _dbSet;
 
+
     public BaseRepository(AppDbContext context)
     {
         _context = context;
@@ -65,5 +66,10 @@ public class BaseRepository<T> : IBaseRepository<T> where T : BaseEntityWithId
         }
 
         return entity;
+    }
+
+    public IQueryable<T> GetQueryable()
+    {
+        return _dbSet.AsQueryable();
     }
 }

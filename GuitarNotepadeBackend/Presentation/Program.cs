@@ -42,7 +42,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("User", policy =>
+        policy.RequireAuthenticatedUser());
+
+    options.AddPolicy("Admin", policy =>
+        policy.RequireAuthenticatedUser()
+              .RequireRole("Admin"));
+});
 
 builder.Services.AddSwaggerGen(c =>
 {
