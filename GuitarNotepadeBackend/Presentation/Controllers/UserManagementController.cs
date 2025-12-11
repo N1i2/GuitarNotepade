@@ -1,5 +1,4 @@
-﻿using Application.DTOs;
-using Application.Features.Commands;
+﻿using Application.Features.Commands;
 using Application.Features.Queries;
 using Domain.Entities;
 using MediatR;
@@ -7,6 +6,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Domain.Common;
+using Application.DTOs.Users;
+using Application.Features.Queries.Users;
+using Application.Features.Commands.Users;
 
 namespace Presentation.Controllers;
 
@@ -54,24 +56,53 @@ public class UserManagementController : ControllerBase
         }
     }
 
-    [HttpPut("toggle-block-status")]
-    public async Task<ActionResult> BlockUserByEmail([FromBody] BlockByEmailDto dto)
+    [HttpPut("block-user")]
+    public async Task<ActionResult<BlockUserResponseDto>> BlockUser([FromBody] BlockUserDto dto)
     {
         try
         {
             var currentAdminId = GetCurrentUserId();
 
             var command = new ToggleBlockStatusCommand(
-                Email: dto.Email,
-                currentAdminId);
+                email: dto.Email,
+                reason: dto.Reason,
+                blockedUntil: dto.BlockedUntil.ToUniversalTime(),
+                adminId: currentAdminId);
 
             var result = await _mediator.Send(command);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
 
-            return Ok(new
-            {
-                message = $"User with email '{dto.Email}' has been blocked",
-                userId = result
-            });
+    [HttpPut("unblock-user")]
+    public async Task<ActionResult<BlockUserResponseDto>> UnblockUser([FromBody] BlockByEmailDto dto)
+    {
+        try
+        {
+            var currentAdminId = GetCurrentUserId();
+
+            var command = new ToggleBlockStatusCommand(
+                email: dto.Email,
+                adminId: currentAdminId);
+
+            var result = await _mediator.Send(command);
+            return Ok(result);
         }
         catch (KeyNotFoundException ex)
         {

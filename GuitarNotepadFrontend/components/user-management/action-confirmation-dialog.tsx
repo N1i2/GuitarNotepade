@@ -1,3 +1,5 @@
+"use client";
+
 import { User } from "@/types/profile";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,13 +10,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { AlertTriangle, Loader2, Shield, UserX, UserCheck } from "lucide-react";
+import { AlertTriangle, Loader2, Shield } from "lucide-react";
 
 interface ActionConfirmationDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => Promise<void>;
-  actionType?: "block" | "role";
+  actionType?: "role";
   user?: User;
   isLoading: boolean;
 }
@@ -27,30 +29,19 @@ export function ActionConfirmationDialog({
   user,
   isLoading,
 }: ActionConfirmationDialogProps) {
-  if (!user || !actionType) return null;
+  if (!user) return null; 
+  if (actionType && actionType !== "role") return null; 
 
   const getDialogConfig = () => {
-    if (actionType === "block") {
-      return {
-        title: user.isBlocked ? "Unblock User" : "Block User",
-        description: user.isBlocked
-          ? `Are you sure you want to unblock ${user.email}? They will be able to access their account again.`
-          : `Are you sure you want to block ${user.email}? They will not be able to access their account.`,
-        icon: user.isBlocked ? UserCheck : UserX,
-        confirmText: user.isBlocked ? "Unblock" : "Block",
-        confirmVariant: user.isBlocked ? "default" : "destructive",
-      };
-    } else {
-      return {
-        title: user.role === "Admin" ? "Remove Admin Rights" : "Give Admin Rights",
-        description: user.role === "Admin"
-          ? `Are you sure you want to remove administrator rights from ${user.email}? They will lose access to admin features.`
-          : `Are you sure you want to make ${user.email} an administrator? They will gain access to admin features.`,
-        icon: Shield,
-        confirmText: user.role === "Admin" ? "Remove Admin" : "Make Admin",
-        confirmVariant: "default",
-      };
-    }
+    return {
+      title: user.role === "Admin" ? "Remove Admin Rights" : "Give Admin Rights",
+      description: user.role === "Admin"
+        ? `Are you sure you want to remove administrator rights from ${user.email}? They will lose access to admin features.`
+        : `Are you sure you want to make ${user.email} an administrator? They will gain access to admin features.`,
+      icon: Shield,
+      confirmText: user.role === "Admin" ? "Remove Admin" : "Make Admin",
+      confirmVariant: "default" as const,
+    };
   };
 
   const config = getDialogConfig();
@@ -88,7 +79,7 @@ export function ActionConfirmationDialog({
           </Button>
           <Button
             type="button"
-            variant={config.confirmVariant as any}
+            variant={config.confirmVariant}
             onClick={onConfirm}
             disabled={isLoading}
             className="w-full sm:w-auto"

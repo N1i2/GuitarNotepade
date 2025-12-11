@@ -1,5 +1,5 @@
 ﻿using Application.Exceptions.Register;
-using Application.Features.Commands;
+using Application.Features.Commands.Users;
 using Domain.Entities;
 using Domain.Interfaces;
 using Domain.Interfaces.Services;
@@ -17,9 +17,10 @@ static public class LoginValidation
             throw new EmailException($"User with this email ({request.Email}) is not exist");
         }
 
-        if (user.IsBlocked)
+        var (isBlocked, blockMessage) = user.GetBlockStatus();
+        if (isBlocked)
         {
-            throw new EmailException($"User with this email ({request.Email}) is blocked");
+            throw new EmailException(blockMessage?? "We dont know why you have blocked");
         }
 
         var isValidPassword = await authService.ValidatePasswordAsync(request.Password, user.PasswordHash);

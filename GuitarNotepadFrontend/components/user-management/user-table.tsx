@@ -2,19 +2,42 @@
 
 import { User } from "@/types/profile";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Loader2, Shield, ShieldOff, UserX, UserCheck, AlertCircle } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Loader2,
+  Shield,
+  ShieldOff,
+  AlertCircle,
+  AlertTriangle,
+} from "lucide-react";
 import { useState } from "react";
+import { ManageBlockDialog } from "./manage-block-dialog";
 import { ActionConfirmationDialog } from "./action-confirmation-dialog";
 
 interface UserTableProps {
   users: User[];
   currentUserId?: string;
   isActionLoading: string | null;
-  onToggleBlock: (user: User) => Promise<void>;
+  onToggleBlock: (
+    user: User,
+    reason?: string,
+    blockedUntil?: Date
+  ) => Promise<void>;
   onToggleRole: (user: User) => Promise<void>;
   isCurrentUser: (user: User) => boolean;
 }
@@ -32,10 +55,13 @@ export function UserTable({
     user: User;
   } | null>(null);
 
+  const [manageBlockDialogOpen, setManageBlockDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
   const getInitials = (name: string) => {
     return name
       .split(" ")
-      .map(word => word[0])
+      .map((word) => word[0])
       .join("")
       .toUpperCase()
       .slice(0, 2);
@@ -55,9 +81,26 @@ export function UserTable({
     }
   };
 
+  const handleManageBlockClick = (user: User) => {
+    setSelectedUser(user);
+    setManageBlockDialogOpen(true);
+  };
+
+  const handleBlock = async (reason: string, blockedUntil: Date) => {
+    if (!selectedUser) return;
+    await onToggleBlock(selectedUser, reason, blockedUntil);
+    setManageBlockDialogOpen(false);
+  };
+
+  const handleUnblock = async () => {
+    if (!selectedUser) return;
+    await onToggleBlock(selectedUser); 
+    setManageBlockDialogOpen(false);
+  };
+
   const getBlockActionText = (user: User) => {
     if (isCurrentUser(user)) return "Cannot block yourself";
-    return user.isBlocked ? "Unblock user" : "Block user";
+    return user.isBlocked ? "Manage Block" : "Block User";
   };
 
   const getRoleActionText = (user: User) => {
@@ -83,24 +126,30 @@ export function UserTable({
             const isSelf = isCurrentUser(user);
             const isBlockActionLoading = isActionLoading === user.id;
             const isLastRow = index === users.length - 1;
-            
+
             return (
-              <TableRow 
-                key={user.id} 
+              <TableRow
+                key={user.id}
                 className={`
                   border-b 
-                  ${isLastRow ? '' : 'hover:bg-muted/50'} 
+                  ${isLastRow ? "" : "hover:bg-muted/50"} 
                   transition-colors
                 `}
               >
                 <TableCell className="border-l pl-6 py-3">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage 
-                        src={user.avatarUrl ? `data:image/jpeg;base64,${user.avatarUrl}` : undefined} 
+                      <AvatarImage
+                        src={
+                          user.avatarUrl
+                            ? `data:image/jpeg;base64,${user.avatarUrl}`
+                            : undefined
+                        }
                         alt={user.nikName}
                       />
-                      <AvatarFallback>{getInitials(user.nikName)}</AvatarFallback>
+                      <AvatarFallback>
+                        {getInitials(user.nikName)}
+                      </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
                       <div className="font-medium truncate">{user.nikName}</div>
@@ -112,15 +161,21 @@ export function UserTable({
                     </div>
                   </div>
                 </TableCell>
-                
+
                 <TableCell className="py-3">
-                  <div className="font-mono text-sm truncate max-w-[200px]" title={user.email}>
+                  <div
+                    className="font-mono text-sm truncate max-w-[200px]"
+                    title={user.email}
+                  >
                     {user.email}
                   </div>
                 </TableCell>
-                
+
                 <TableCell className="py-3">
-                  <Badge variant={user.role === "Admin" ? "default" : "secondary"} className="min-w-[70px] justify-center">
+                  <Badge
+                    variant={user.role === "Admin" ? "default" : "secondary"}
+                    className="min-w-[70px] justify-center"
+                  >
                     {user.role === "Admin" ? (
                       <Shield className="h-3 w-3 mr-1" />
                     ) : (
@@ -129,44 +184,54 @@ export function UserTable({
                     {user.role}
                   </Badge>
                 </TableCell>
-                
+
                 <TableCell className="py-3">
-                  <Badge variant={user.isBlocked ? "destructive" : "outline"} className="min-w-[70px] justify-center">
-                    {user.isBlocked ? "Blocked" : "Active"}
-                  </Badge>
+                  <div className="flex flex-col gap-1">
+                    <Badge
+                      variant={user.isBlocked ? "destructive" : "outline"}
+                      className="min-w-[70px] justify-center"
+                    >
+                      {user.isBlocked ? "Blocked" : "Active"}
+                    </Badge>
+                    {user.isBlocked && user.blockedUntil && (
+                      <div className="text-xs text-muted-foreground">
+                        Until:{" "}
+                        {new Date(user.blockedUntil).toLocaleDateString()}
+                      </div>
+                    )}
+                  </div>
                 </TableCell>
-                
+
                 <TableCell className="py-3">
                   <div className="text-sm text-muted-foreground whitespace-nowrap">
-                    {new Date(user.createAt).toLocaleDateString('en-US', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric'
+                    {new Date(user.createAt).toLocaleDateString("en-US", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
                     })}
                   </div>
                 </TableCell>
-                
+
                 <TableCell className="text-right border-r pr-6 py-3">
                   <div className="flex justify-end gap-2">
-                    {/* Block/Unblock Button */}
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
                             variant={user.isBlocked ? "default" : "destructive"}
                             size="sm"
-                            onClick={() => setPendingAction({ type: "block", user })}
+                            onClick={() => handleManageBlockClick(user)}
                             disabled={isSelf || isBlockActionLoading}
-                            className="w-28"
+                            className="w-32"
                           >
                             {isBlockActionLoading ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : user.isBlocked ? (
-                              <UserCheck className="h-4 w-4 mr-1" />
+                              <AlertTriangle className="h-4 w-4 mr-1" />
                             ) : (
-                              <UserX className="h-4 w-4 mr-1" />
+                              <AlertTriangle className="h-4 w-4 mr-1" />
                             )}
-                            {user.isBlocked ? "Unblock" : "Block"}
+                            {user.isBlocked ? "Manage Block" : "Block"}
                           </Button>
                         </TooltipTrigger>
                         {isSelf && (
@@ -180,18 +245,21 @@ export function UserTable({
                       </Tooltip>
                     </TooltipProvider>
 
-                    {/* Role Toggle Button */}
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setPendingAction({ type: "role", user })}
+                            onClick={() =>
+                              setPendingAction({ type: "role", user })
+                            }
                             disabled={isSelf || isBlockActionLoading}
                             className="w-32"
                           >
-                            {user.role === "Admin" ? "Remove Admin" : "Make Admin"}
+                            {user.role === "Admin"
+                              ? "Remove Admin"
+                              : "Make Admin"}
                           </Button>
                         </TooltipTrigger>
                         {isSelf && (
@@ -212,12 +280,25 @@ export function UserTable({
         </TableBody>
       </Table>
 
-      {/* Confirmation Dialog */}
+      {selectedUser && (
+        <ManageBlockDialog
+          isOpen={manageBlockDialogOpen}
+          onClose={() => {
+            setManageBlockDialogOpen(false);
+            setSelectedUser(null);
+          }}
+          onBlock={handleBlock}
+          onUnblock={handleUnblock}
+          user={selectedUser}
+          isLoading={isActionLoading === selectedUser?.id}
+        />
+      )}
+
       <ActionConfirmationDialog
-        isOpen={pendingAction !== null}
+        isOpen={!!pendingAction && pendingAction.type === "role"}
         onClose={() => setPendingAction(null)}
         onConfirm={handleConfirmAction}
-        actionType={pendingAction?.type}
+        actionType="role"
         user={pendingAction?.user}
         isLoading={isActionLoading === pendingAction?.user?.id}
       />

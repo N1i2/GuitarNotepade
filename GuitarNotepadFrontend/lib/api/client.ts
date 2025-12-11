@@ -21,7 +21,7 @@ export class ApiError extends Error {
 }
 
 class ApiClient {
-  private baseURL: string = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:yourport/api'
+  private baseURL: string = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseURL}${endpoint}`
@@ -31,7 +31,6 @@ class ApiClient {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     }
-
     if (options.headers) {
       if (options.headers instanceof Headers) {
         options.headers.forEach((value, key) => {
@@ -65,6 +64,10 @@ class ApiClient {
         throw new ApiError('Authentication failed', 401)
       }
       
+      if (response.status === 204) {
+        return null as T
+      }
+      
       if (!response.ok) {
         let errorData: ApiErrorResponse
         try {
@@ -85,6 +88,11 @@ class ApiClient {
         )
       }
       
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        return null as T
+      }
+      
       return await response.json()
     } catch (error) {
       console.error('API request failed:', error)
@@ -96,8 +104,8 @@ class ApiClient {
     return this.request<T>(endpoint, { method: 'GET' })
   }
 
-  async post<T>(endpoint: string, data?: any): Promise<T> {
-    return this.request<T>(endpoint, {
+  async post<T1, T2>(endpoint: string, data?: T1): Promise<T2> {
+    return this.request<T2>(endpoint, {
       method: 'POST',
       body: JSON.stringify(data),
     })
@@ -108,6 +116,10 @@ class ApiClient {
       method: 'PUT',
       body: JSON.stringify(data),
     })
+  }
+
+  async delete<T>(endpoint: string): Promise<T> {
+    return this.request<T>(endpoint, { method: 'DELETE' })
   }
 }
 

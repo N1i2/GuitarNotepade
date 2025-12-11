@@ -1,8 +1,8 @@
 ﻿using AutoMapper;
-using Application.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Application.Features.Commands;
+using Application.DTOs.Users;
+using Application.Features.Commands.Users;
 
 namespace Presentation.Controllers;
 

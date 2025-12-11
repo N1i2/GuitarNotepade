@@ -1,10 +1,10 @@
-﻿using Application.DTOs;
-using Application.Features.Commands;
-using Domain.Entities;
+﻿using Domain.Entities;
 using Domain.Interfaces.Services;
 using Domain.Interfaces;
 using MediatR;
 using System.ComponentModel.DataAnnotations;
+using Application.DTOs.Users;
+using Application.Features.Commands.Users;
 
 public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, AuthResponseDto>
 {

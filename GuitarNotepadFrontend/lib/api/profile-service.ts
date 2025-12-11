@@ -1,5 +1,4 @@
-import { FiltersForUsers, PaginatedUsers, User, updateUserInfo as UpdateUserInfo } from "@/types/profile";
-import { UserProfileResponse } from "@/types/auth";
+import { FiltersForUsers, PaginatedUsers, User, updateUserInfo as UpdateUserInfo, UserProfileResponse, BlockUserRequest, BlockUserResponse } from "@/types/profile";
 import { apiClient } from "./client";
 
 export class ProfileService {
@@ -39,11 +38,16 @@ export class ProfileService {
     return response;
   }
 
-  static async toggleBlockStatus(email: string): Promise<void> {
-    await apiClient.put("/UserManagement/toggle-block-status", {email});
+  static async blockUser(data: BlockUserRequest): Promise<void>{
+    await apiClient.put("/UserManagement/block-user", data);
+  }
+
+  static async unblockUser(email: string): Promise<void>{
+    await apiClient.put("/UserManagement/unblock-user", {email});
   }
 
   static async toggleUserRole(email: string): Promise<void> {
     await apiClient.put("/UserManagement/toggle-user-role", {email});
   }
 }
+

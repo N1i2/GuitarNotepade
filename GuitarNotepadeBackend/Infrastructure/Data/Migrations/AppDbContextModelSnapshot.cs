@@ -101,21 +101,38 @@ namespace Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("DiagramImageUri")
-                        .HasColumnType("text");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("FingerPosition")
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Fingering")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(17)
+                        .HasColumnType("character varying(17)");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("Fingering");
+
+                    b.HasIndex("Name");
+
+                    b.HasIndex("Name", "Fingering")
                         .IsUnique();
 
                     b.ToTable("Chords");
@@ -496,6 +513,13 @@ namespace Infrastructure.Data.Migrations
                     b.Property<string>("Bio")
                         .HasColumnType("text");
 
+                    b.Property<string>("BlockReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("BlockedUntil")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime>("CreateAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -503,9 +527,6 @@ namespace Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
-
-                    b.Property<bool>("IsBlocked")
-                        .HasColumnType("boolean");
 
                     b.Property<string>("NikName")
                         .IsRequired()
@@ -522,6 +543,8 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("character varying(20)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BlockedUntil");
 
                     b.HasIndex("Email")
                         .IsUnique();
@@ -595,6 +618,17 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Song");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Chord", b =>
+                {
+                    b.HasOne("Domain.Entities.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
                 });
 
             modelBuilder.Entity("Domain.Entities.Song", b =>

@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { AuthService } from '@/lib/api/auth-service'
-import { UserProfileResponse } from '@/types/auth'
+import { UserProfileResponse } from '@/types/profile'
+import { useRouter } from 'next/navigation'
 
 interface AuthContextType {
   user: UserProfileResponse | null
@@ -21,6 +22,7 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
+  const router = useRouter() 
   const [user, setUser] = useState<UserProfileResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -73,6 +75,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const logout = () => {
     AuthService.logout()
     setUser(null)
+    router.push('/login')
   }
 
   const refreshUser = async () => {

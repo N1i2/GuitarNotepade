@@ -15,12 +15,12 @@ export default function UserManagementPage() {
           </div>
           <div className="hidden md:block">
             <Card className="border-primary/20">
-              <CardContent className="p-3"> {/* Уменьшили padding */}
+              <CardContent className="p-3"> 
                 <div className="flex items-center gap-2">
                   <Shield className="h-4 w-4 text-primary" />
                   <span className="text-sm font-medium">Admin Panel</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1"> {/* Добавили подпись */}
+                <p className="text-xs text-muted-foreground mt-1"> 
                   You have full administrative privileges
                 </p>
               </CardContent>

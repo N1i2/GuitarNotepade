@@ -53,25 +53,30 @@ export function UserManagementTable() {
     setFilters((prev) => ({ ...prev, page }));
   };
 
-  const handleToggleBlock = async (user: User) => {
-    if (!currentUser || user.id === currentUser.id) return;
-
-    setIsActionLoading(user.id);
-    try {
-      await ProfileService.toggleBlockStatus(user.email);
-
-    toast.success(`User ${user.email} has been ${user.isBlocked ? "unblocked" : "blocked"}`);
-
-      await loadUsers();
-    } catch (error: any) {
-      console.error("Failed to toggle block status:", error);
-
-      toast.error(error.message || "Failed to change block status", "destructive");
-
-    } finally {
-      setIsActionLoading(null);
+const handleToggleBlock = async (user: User, reason?: string, blockedUntil?: Date) => {
+  if (!currentUser || user.id === currentUser.id) return;
+  
+  setIsActionLoading(user.id);
+  try {
+    if (reason && blockedUntil) {
+      await ProfileService.blockUser({
+        email: user.email,
+        reason,
+        blockedUntil: blockedUntil.toISOString()
+      });
+      toast.success(`User ${user.email} has been blocked`);
+    } else {
+      await ProfileService.unblockUser(user.email);
+      toast.success(`User ${user.email} has been unblocked`);
     }
-  };
+    
+    await loadUsers();
+  } catch (error: any) {
+    toast.error(error.message || "Failed to manage block");
+  } finally {
+    setIsActionLoading(null);
+  }
+};
 
   const handleToggleRole = async (user: User) => {
     if (!currentUser || user.id === currentUser.id) return;

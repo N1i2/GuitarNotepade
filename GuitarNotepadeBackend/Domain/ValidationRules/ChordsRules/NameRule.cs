@@ -1,20 +1,18 @@
-﻿using Domain.Exceptions.ChordsExceptions;
-
+﻿
 namespace Domain.ValidationRules.ChordsRules;
 
 public static class NameRule
 {
-    private const int maxNameLength = 50;
-
     public static void IsValid(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
-            throw new NameException("Chords name cannot be empty.");
+            throw new ArgumentException("Chord name cannot be empty");
         }
-        if(name.Length > maxNameLength)
+
+        if (name.Length > 20)
         {
-            throw new NameException($"Chords name is too big, max length = {maxNameLength}.");
+            throw new ArgumentException("Chord name cannot exceed 20 characters");
         }
     }
 }

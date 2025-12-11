@@ -13,9 +13,9 @@ public class UnitOfWork : IUnitOfWork
         _context = context;
 
         Users = new UserRepository(context);
+        Chords = new ChordRepository(context);
         //Songs = new SongRepository(context);
         //Albums = new AlbumRepository(context);
-        //Chords = new ChordRepository(context);
         //StrummingPatterns = new StrummingPatternRepository(context);
         //SongLines = new SongLineRepository(context);
         //SongChords = new SongChordRepository(context);
@@ -32,9 +32,9 @@ public class UnitOfWork : IUnitOfWork
     }
 
     public IUserRepository Users { get; }
+    public IChordRepository Chords { get; }
     //public ISongRepository Songs { get; }
     //public IAlbumRepository Albums { get; }
-    //public IChordRepository Chords { get; }
     //public IStrummingPatternRepository StrummingPatterns { get; }
     //public ISongLineRepository SongLines { get; }
     //public ISongChordRepository SongChords { get; }

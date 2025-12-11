@@ -1,5 +1,5 @@
 ﻿using Application.DTOs;
-using Application.Features.Commands;
+using Application.Features.Commands.Users;
 using FluentValidation;
 
 public class RegisterUserDtoValidator : AbstractValidator<RegisterUserCommand>

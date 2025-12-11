@@ -1,5 +1,5 @@
 ﻿using Application.Exceptions.Register;
-using Application.Features.Commands;
+using Application.Features.Commands.Users;
 using Domain.Interfaces;
 
 namespace Application.Validations;

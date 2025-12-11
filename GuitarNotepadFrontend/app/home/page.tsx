@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/components/providers/auth-provider";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,7 +10,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ArrowRight, Music } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useEffect } from "react";
 
 export default function HomePage() {
@@ -85,11 +88,25 @@ export default function HomePage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Chords Library</CardTitle>
-              <CardDescription>Browse chord diagrams</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <Music className="h-5 w-5" />
+                Chords Library
+              </CardTitle>
+              <CardDescription>
+                Browse and create guitar chord diagrams
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">Coming soon...</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                Access a comprehensive library of guitar chords with multiple
+                fingerings
+              </p>
+              <Button asChild className="w-full">
+                <Link href="/home/chords">
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  Go to Chords
+                </Link>
+              </Button>
             </CardContent>
           </Card>
 

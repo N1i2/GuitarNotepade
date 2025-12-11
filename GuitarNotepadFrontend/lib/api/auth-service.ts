@@ -1,4 +1,4 @@
-import { AuthResponse, LoginRequest, RegisterRequest, UserProfileResponse } from '@/types/auth'
+import { AuthResponse, LoginRequest, RegisterRequest, UserProfileResponse } from '@/types/profile'
 import { apiClient } from './client'
 
 const setCookie = (name: string, value: string, days: number) => {
@@ -26,14 +26,14 @@ const CACHE_DURATION = 5 * 60 * 1000
 
 export class AuthService {
   static async login(credentials: LoginRequest): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>('/auth/login', credentials)
+    const response = await apiClient.post<LoginRequest, AuthResponse>('/auth/login', credentials)
     setCookie('auth_token', response.token, 7)
     userCache = { user: null, timestamp: 0 }
     return response
   }
 
   static async register(userData: RegisterRequest): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>('/auth/register', userData)
+    const response = await apiClient.post<RegisterRequest, AuthResponse>('/auth/register', userData)
     setCookie('auth_token', response.token, 7)
     userCache = { user: null, timestamp: 0 }
     return response

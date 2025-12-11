@@ -5,9 +5,9 @@ namespace Domain.Interfaces;
 public interface IUnitOfWork : IDisposable
 {
     IUserRepository Users { get; }
+    IChordRepository Chords { get; }
     //ISongRepository Songs { get; }
     //IAlbumRepository Albums { get; }
-    //IChordRepository Chords { get; }
     //IStrummingPatternRepository StrummingPatterns { get; }
     //ISongLineRepository SongLines { get; }
     //ISongChordRepository SongChords { get; }

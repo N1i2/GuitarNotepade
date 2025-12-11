@@ -55,6 +55,7 @@ public class AppDbContext : DbContext
             entity.HasKey(u => u.Id);
             entity.HasIndex(u => u.Email).IsUnique();
             entity.HasIndex(u => u.NikName).IsUnique();
+            entity.HasIndex(u => u.BlockedUntil); 
 
             entity.Property(u => u.Email)
                 .IsRequired()
@@ -71,8 +72,51 @@ public class AppDbContext : DbContext
                 .IsRequired(false);
             entity.Property(u => u.Bio)
                 .IsRequired(false);
+            entity.Property(u => u.BlockedUntil)
+                .IsRequired(false);
+            entity.Property(u => u.BlockReason)
+                .IsRequired(false)
+                .HasMaxLength(500); 
             entity.Property(u => u.CreateAt)
                 .IsRequired();
+        });
+    }
+
+    private static void ConfigureChord(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Chord>(entity =>
+        {
+            entity.HasKey(c => c.Id);
+            entity.HasIndex(c => c.Name);
+            entity.HasIndex(c => c.Fingering);
+            entity.HasIndex(c => new { c.Name, c.Fingering }).IsUnique();
+
+            entity.Property(c => c.Name)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.Property(c => c.Fingering)
+                .IsRequired()
+                .HasMaxLength(17);
+
+            entity.Property(c => c.Description)
+                .IsRequired(false)
+                .HasMaxLength(500);
+
+            entity.Property(c => c.CreatedByUserId)
+                .IsRequired();
+
+            entity.Property(c => c.CreatedAt)
+                .IsRequired();
+
+            entity.Property(c => c.UpdatedAt)
+                .IsRequired(false);
+
+            entity.HasOne(c => c.CreatedBy)
+                  .WithMany()
+                  .HasForeignKey(c => c.CreatedByUserId)
+                  .IsRequired()
+                  .OnDelete(DeleteBehavior.Restrict);
         });
     }
 
@@ -137,23 +181,6 @@ public class AppDbContext : DbContext
                   .HasForeignKey(a => a.OwnerId)
                   .IsRequired()
                   .OnDelete(DeleteBehavior.Cascade);
-        });
-    }
-
-    private static void ConfigureChord(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<Chord>(entity =>
-        {
-            entity.HasKey(c => c.Id);
-            entity.HasIndex(c => c.Name).IsUnique();
-
-            entity.Property(c => c.Name)
-                .IsRequired()
-                .HasMaxLength(20);
-            entity.Property(c => c.DiagramImageUri)
-                .IsRequired(false);
-            entity.Property(c => c.FingerPosition)
-                .IsRequired();
         });
     }
 

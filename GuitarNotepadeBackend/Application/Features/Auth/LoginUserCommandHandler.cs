@@ -1,9 +1,9 @@
-﻿using Application.DTOs;
-using Application.Features.Commands;
-using Domain.Interfaces.Services;
+﻿using Domain.Interfaces.Services;
 using Domain.Interfaces;
 using MediatR;
 using Application.Validations;
+using Application.DTOs.Users;
+using Application.Features.Commands.Users;
 
 namespace Application.Features.Auth;
 

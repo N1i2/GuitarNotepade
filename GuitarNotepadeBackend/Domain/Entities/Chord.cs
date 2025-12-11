@@ -1,54 +1,64 @@
 ﻿using Domain.Entities.Base;
 using Domain.ValidationRules.ChordsRules;
-using System.Xml.Linq;
 
 namespace Domain.Entities;
 
 public class Chord : BaseEntityWithId
 {
     public string Name { get; private set; }
-    public string? DiagramImageUri { get; private set; }
-    public string FingerPosition { get; private set; }
+    public string Fingering { get; private set; }  
+    public string? Description { get; private set; }
+    public Guid CreatedByUserId { get; private set; }
+    public DateTime CreatedAt { get; private set; }
+    public DateTime? UpdatedAt { get; private set; }
 
+    public virtual User CreatedBy { get; private set; } = null!;
     public virtual ICollection<SongChord> SongChords { get; private set; } = new List<SongChord>();
 
     private Chord()
     {
         Name = string.Empty;
-        DiagramImageUri = null;
-        FingerPosition = string.Empty;
+        Fingering = string.Empty;
     }
 
-    public static Chord Create(string name, string fingerPosition, string? diagralmageUri = null)
+    public static Chord Create(string name, string fingering, Guid createdByUserId, string? description = null)
     {
         NameRule.IsValid(name);
-        FingerPositionRule.IsValid(fingerPosition);
+        FingeringRule.IsValid(fingering);
 
-        var newChords = new Chord();
-
-        newChords.Name = name;
-        newChords.FingerPosition = fingerPosition;
-
-        if (diagralmageUri != null)
+        var chord = new Chord
         {
-            newChords.DiagramImageUri = diagralmageUri;
-        }
+            Name = name,
+            Fingering = fingering,
+            Description = description,
+            CreatedByUserId = createdByUserId,
+            CreatedAt = DateTime.UtcNow
+        };
 
-        return newChords;
+        return chord;
     }
-    public void Update(string? name = null, string? fingerPosition = null)
+
+    public void Update(string? name = null, string? fingering = null, string? description = null)
     {
         if (name != null)
         {
             NameRule.IsValid(name);
             Name = name;
         }
-        if (fingerPosition != null)
-        {
-            FingerPositionRule.IsValid(fingerPosition);
 
-            FingerPosition = fingerPosition;
+        if (fingering != null)
+        {
+            FingeringRule.IsValid(fingering);
+            Fingering = fingering;
         }
+
+        if (description != null)
+        {
+            Description = description;
+        }
+
+        UpdatedAt = DateTime.UtcNow;
     }
-    public void UpdateUrl(string? url) => DiagramImageUri = url;
+
+    public bool IsCreatedBy(Guid userId) => CreatedByUserId == userId;
 }

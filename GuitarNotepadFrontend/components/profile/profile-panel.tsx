@@ -267,7 +267,6 @@ export function ProfilePanel() {
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Информационное сообщение */}
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
@@ -275,7 +274,6 @@ export function ProfilePanel() {
           </AlertDescription>
         </Alert>
 
-        {/* Avatar в карточке */}
         <div className="border rounded-lg p-4 space-y-4">
           <div className="flex items-center justify-between">
             <div>
@@ -374,7 +372,6 @@ export function ProfilePanel() {
         </div>
 
         <div className="space-y-6">
-          {/* Nickname */}
           <div className="space-y-2">
             <Label className="mb-1.5" htmlFor="nikName">
               Nickname
@@ -394,7 +391,6 @@ export function ProfilePanel() {
             )}
           </div>
 
-          {/* Bio */}
           <div className="space-y-2">
             <Label className="mb-1.5" htmlFor="bio">
               Bio
@@ -409,7 +405,6 @@ export function ProfilePanel() {
           </div>
         </div>
 
-        {/* Passwords */}
         <div className="space-y-4 border-t pt-6">
           <div className="flex items-center gap-2">
             <h3 className="text-lg font-medium">Change Password</h3>
@@ -493,7 +488,6 @@ export function ProfilePanel() {
           </div>
         </div>
 
-        {/* Save Button */}
         <div className="flex justify-end">
           <Button
             onClick={handleSave}

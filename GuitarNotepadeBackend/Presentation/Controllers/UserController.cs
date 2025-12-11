@@ -1,11 +1,13 @@
 ﻿using Application.DTOs;
-using Application.Features.Commands;
+using Application.Features.Commands.Users;
 using Application.Features.Queries;
 using AutoMapper;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Application.Features.Queries.Users;
+using Application.DTOs.Users;
 
 namespace Presentation.Controllers;
 

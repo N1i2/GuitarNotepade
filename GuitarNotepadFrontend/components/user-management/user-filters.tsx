@@ -52,9 +52,7 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
             <h3 className="font-semibold">Filters & Sorting</h3>
           </div>
 
-          {/* Сортировка сверху */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Sort By */}
             <div className="space-y-2">
               <Label htmlFor="sortBy">Sort by</Label>
               <Select
@@ -72,7 +70,6 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
               </Select>
             </div>
 
-            {/* Sort Order */}
             <div className="space-y-2">
               <Label htmlFor="sortOrder">Order</Label>
               <Select
@@ -89,7 +86,6 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
               </Select>
             </div>
 
-            {/* Email Filter */}
             <div className="space-y-2">
               <Label htmlFor="emailFilter">Email</Label>
               <div className="relative">
@@ -104,7 +100,6 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
               </div>
             </div>
 
-            {/* NikName Filter */}
             <div className="space-y-2">
               <Label htmlFor="nikNameFilter">Nickname</Label>
               <div className="relative">
@@ -120,9 +115,7 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
             </div>
           </div>
 
-          {/* Фильтры с возможностью переключения */}
           <div className="flex flex-wrap gap-4 pt-0">
-            {/* Blocked Filter */}
             <div className="flex items-center space-x-2">
               <Switch
                 id="blocked-filter"
@@ -140,7 +133,6 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
                 {getBlockedText()}
               </Label>
               
-              {/* Переключатель для blocked */}
               {isBlockedValue !== undefined && (
                 <Switch
                   checked={isBlockedValue}
@@ -150,7 +142,6 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
               )}
             </div>
 
-            {/* Role Filter */}
             <div className="flex items-center space-x-2">
               <Switch
                 id="role-filter"
@@ -168,7 +159,6 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
                 {getRoleText()}
               </Label>
               
-              {/* Переключатель для role */}
               {roleValue !== undefined && (
                 <Select
                   value={roleValue}

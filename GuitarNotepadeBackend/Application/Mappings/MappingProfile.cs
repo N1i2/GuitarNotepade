@@ -1,5 +1,5 @@
-﻿using Application.DTOs;
-using Application.Features.Commands;
+﻿using Application.DTOs.Users;
+using Application.Features.Commands.Users;
 using AutoMapper;
 
 namespace Application.Mappings;
