@@ -1,3 +1,4 @@
+import { ToastInterface } from '@/hooks/use-toast'
 import { ApiError } from '@/lib/api/client'
 
 export const parseBackendError = (error: ApiError | Error): { 
@@ -44,7 +45,7 @@ const extractErrorMessage = (fullMessage: string, prefix: string): string => {
   return fullMessage.slice(startIndex, endIndex).trim()
 }
 
-export const showErrorToast = (error: unknown, toast: any) => {
+export const showErrorToast = (error: unknown, toast: ToastInterface) => {
   if (error instanceof ApiError) {
     const { fieldErrors, generalError } = parseBackendError(error)
     

@@ -1,138 +1,150 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/components/providers/auth-provider"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { validatePassword, validatePasswordMatch } from "@/lib/utils/password-validation"
-import { PasswordStrength } from "./password-strength"
-import { useToast } from "@/hooks/use-toast"
-import { ApiError } from "@/lib/api/client"
-import { parseBackendError, showErrorToast } from "@/lib/utils/error-parser" 
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/providers/auth-provider";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  validatePassword,
+  validatePasswordMatch,
+} from "@/lib/utils/password-validation";
+import { PasswordStrength } from "./password-strength";
+import { useToast } from "@/hooks/use-toast";
+import { ApiError } from "@/lib/api/client";
+import { parseBackendError, showErrorToast } from "@/lib/utils/error-parser";
+
+const registerSchema = z
+  .object({
+    email: z.string().email("Enter a valid email").min(1, "Email is required"),
+    nikName: z
+      .string()
+      .min(3, "Nickname must be at least 3 characters long")
+      .max(50, "Nickname is too long"),
+    password: z.string().min(1, "Password is required"),
+    confirmPassword: z.string().min(1, "Confirm password is required"),
+  })
+  .superRefine((data, ctx) => {
+    const passwordValidation = validatePassword(data.password);
+    if (!passwordValidation.isValid) {
+      passwordValidation.errors.forEach((error) => {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: error,
+          path: ["password"],
+        });
+      });
+    }
+
+    if (!validatePasswordMatch(data.password, data.confirmPassword)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Passwords do not match",
+        path: ["confirmPassword"],
+      });
+    }
+  });
+
+type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export function RegisterForm() {
-  const [formData, setFormData] = useState({
-    email: "",
-    nikName: "",
-    password: "",
-    confirmPassword: ""
-  })
-  const [errors, setErrors] = useState<{ [key: string]: string[] }>({})
-  const [isLoading, setIsLoading] = useState(false)
-  const { register } = useAuth()
-  const router = useRouter()
-  const toast = useToast()
+  const { register: registerAuth } = useAuth();
+  const router = useRouter();
+  const toast = useToast();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    setError,
+    watch,
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    mode: "onBlur",
+    defaultValues: {
+      email: "",
+      nikName: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
 
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: [] }))
-    }
-  }
+  const password = watch("password");
 
-  const validateForm = (): boolean => {
-    const newErrors: { [key: string]: string[] } = {}
+  const onSubmit = async (values: RegisterFormValues) => {
+    const loadingToastId = toast.loading("Creating your account...");
 
-    if (!formData.email) {
-      newErrors.email = ['Email is required']
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = ['Email is invalid']
-    }
-
-    if (!formData.nikName) {
-      newErrors.nikName = ['Nickname is required']
-    } else if (formData.nikName.length < 3) {
-      newErrors.nikName = ['Nickname must be at least 3 characters long']
-    }
-
-    const passwordValidation = validatePassword(formData.password)
-    if (!passwordValidation.isValid) {
-      newErrors.password = passwordValidation.errors
-    }
-
-    if (!validatePasswordMatch(formData.password, formData.confirmPassword)) {
-      newErrors.confirmPassword = ['Passwords do not match']
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!validateForm()) {
-      toast.error("Please fix the errors in the form")
-      return
-    }
-
-    setIsLoading(true)
-    const loadingToastId = toast.loading("Creating your account...")
-    
     try {
-      await register(formData.email, formData.nikName, formData.password, formData.confirmPassword)
-      toast.dismiss(loadingToastId)
+      await registerAuth(
+        values.email,
+        values.nikName,
+        values.password,
+        values.confirmPassword
+      );
+      toast.dismiss(loadingToastId);
       toast.success("Account created successfully! 🎸", {
-        description: `Welcome to GuitarNotepad, ${formData.nikName}!`,
-        duration: 3000
-      })
-      router.push("/home")
+        description: `Welcome to GuitarNotepad, ${values.nikName}!`,
+        duration: 3000,
+      });
+      router.push("/home");
     } catch (err: unknown) {
-      toast.dismiss(loadingToastId)
-      
+      toast.dismiss(loadingToastId);
+
       if (err instanceof ApiError || err instanceof Error) {
-        const { fieldErrors, generalError } = parseBackendError(err)
-        
+        const { fieldErrors, generalError } = parseBackendError(err);
+
         if (Object.keys(fieldErrors).length > 0) {
-          setErrors(fieldErrors)
+          Object.entries(fieldErrors).forEach(([field, messages]) => {
+            setError(field as keyof RegisterFormValues, {
+              type: "manual",
+              message: messages.join(", "),
+            });
+          });
         }
-        
-        showErrorToast(err, toast)
+
+        showErrorToast(err, toast);
       } else {
         toast.error("Registration failed", {
-          description: "Please try again later"
-        })
+          description: "Please try again later",
+        });
       }
-    } finally {
-      setIsLoading(false)
     }
-  }
-  
+  };
+
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle className="text-2xl">Register</CardTitle>
-        <CardDescription>
-          Create your GuitarNotepad account
-        </CardDescription>
+        <CardDescription>Create your GuitarNotepad account</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
-              name="email"
               type="email"
               placeholder="m@example.com"
-              value={formData.email}
-              onChange={handleChange}
-              required
+              {...register("email")}
+              aria-invalid={!!errors.email}
+              aria-describedby={
+                errors.email ? "register-email-error" : undefined
+              }
             />
             {errors.email && (
-              <div className="text-sm text-red-500">
-                {errors.email.map((error, index) => (
-                  <div key={index}>• {error}</div>
-                ))}
-              </div>
+              <span id="register-email-error" className="text-sm text-red-500">
+                {errors.email.message}
+              </span>
             )}
           </div>
 
@@ -140,19 +152,21 @@ export function RegisterForm() {
             <Label htmlFor="nikName">Nickname</Label>
             <Input
               id="nikName"
-              name="nikName"
               type="text"
               placeholder="guitar_hero"
-              value={formData.nikName}
-              onChange={handleChange}
-              required
+              {...register("nikName")}
+              aria-invalid={!!errors.nikName}
+              aria-describedby={
+                errors.nikName ? "register-nikname-error" : undefined
+              }
             />
             {errors.nikName && (
-              <div className="text-sm text-red-500">
-                {errors.nikName.map((error, index) => (
-                  <div key={index}>• {error}</div>
-                ))}
-              </div>
+              <span
+                id="register-nikname-error"
+                className="text-sm text-red-500"
+              >
+                {errors.nikName.message}
+              </span>
             )}
           </div>
 
@@ -160,20 +174,22 @@ export function RegisterForm() {
             <Label htmlFor="password">Password</Label>
             <Input
               id="password"
-              name="password"
               type="password"
               placeholder="Enter a strong password"
-              value={formData.password}
-              onChange={handleChange}
-              required
+              {...register("password")}
+              aria-invalid={!!errors.password}
+              aria-describedby={
+                errors.password ? "register-password-error" : undefined
+              }
             />
-            <PasswordStrength password={formData.password} />
+            <PasswordStrength password={password} />
             {errors.password && (
-              <div className="text-sm text-red-500">
-                {errors.password.map((error, index) => (
-                  <div key={index}>• {error}</div>
-                ))}
-              </div>
+              <span
+                id="register-password-error"
+                className="text-sm text-red-500"
+              >
+                {errors.password.message}
+              </span>
             )}
           </div>
 
@@ -181,35 +197,36 @@ export function RegisterForm() {
             <Label htmlFor="confirmPassword">Confirm Password</Label>
             <Input
               id="confirmPassword"
-              name="confirmPassword"
               type="password"
               placeholder="Confirm your password"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
+              {...register("confirmPassword")}
+              aria-invalid={!!errors.confirmPassword}
+              aria-describedby={
+                errors.confirmPassword
+                  ? "register-confirm-password-error"
+                  : undefined
+              }
             />
             {errors.confirmPassword && (
-              <div className="text-sm text-red-500">
-                {errors.confirmPassword.map((error, index) => (
-                  <div key={index}>• {error}</div>
-                ))}
-              </div>
+              <span
+                id="register-confirm-password-error"
+                className="text-sm text-red-500"
+              >
+                {errors.confirmPassword.message}
+              </span>
             )}
           </div>
 
-          {errors.submit && (
-            <div className="text-sm text-red-500">
-              {errors.submit.map((error, index) => (
-                <div key={index}>• {error}</div>
-              ))}
-            </div>
-          )}
-
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Creating account..." : "Create Account"}
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isSubmitting}
+            aria-busy={isSubmitting}
+          >
+            {isSubmitting ? "Creating account..." : "Create Account"}
           </Button>
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }

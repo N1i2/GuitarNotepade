@@ -9,6 +9,7 @@ import {
 
 export class ChordsService {
   private static readonly DEFAULT_PAGE_SIZE = 20;
+  private static readonly DEFAULT_PATH = 'chords';
 
   static async getDistinctChordNames(
     page = 1,
@@ -21,7 +22,7 @@ export class ChordsService {
     params.append("sortOrder", "asc");
 
     return await apiClient.get<PaginatedChords>(
-      `/chords/distinct?${params.toString()}`
+      `/${this.DEFAULT_PATH}/distinct?${params.toString()}`
     );
   }
 
@@ -37,11 +38,11 @@ export class ChordsService {
     params.append("sortBy", "createdAt");
     params.append("sortOrder", "desc");
 
-    return await apiClient.get<PaginatedChords>(`/chords?${params.toString()}`);
+    return await apiClient.get<PaginatedChords>(`/${this.DEFAULT_PATH}?${params.toString()}`);
   }
 
   static async getChordById(id: string): Promise<Chord> {
-    return await apiClient.get<Chord>(`/chords/${id}`);
+    return await apiClient.get<Chord>(`/${this.DEFAULT_PATH}/${id}`);
   }
 
   static async searchChordsByName(
@@ -54,7 +55,7 @@ export class ChordsService {
     params.append("pageSize", this.DEFAULT_PAGE_SIZE.toString());
 
     return await apiClient.get<PaginatedChords>(
-      `/chords/search?${params.toString()}`
+      `/${this.DEFAULT_PATH}/search?${params.toString()}`
     );
   }
 
@@ -64,7 +65,7 @@ export class ChordsService {
     params.append("page", page.toString());
     params.append("pageSize", this.DEFAULT_PAGE_SIZE.toString());
 
-    return await apiClient.get<PaginatedChords>(`/chords?${params.toString()}`);
+    return await apiClient.get<PaginatedChords>(`/${this.DEFAULT_PATH}?${params.toString()}`);
   }
 
   static async getAllChords(filters?: ChordFilters): Promise<PaginatedChords> {
@@ -80,15 +81,15 @@ export class ChordsService {
     params.append("sortBy", filters?.sortBy || "name");
     params.append("sortOrder", filters?.sortOrder || "asc");
 
-    return await apiClient.get<PaginatedChords>(`/chords?${params.toString()}`);
+    return await apiClient.get<PaginatedChords>(`/${this.DEFAULT_PATH}?${params.toString()}`);
   }
 
   static async createChord(data: CreateChordDto): Promise<Chord> {
-    return await apiClient.post<CreateChordDto, Chord>("/chords", data);
+    return await apiClient.post<CreateChordDto, Chord>(`/${this.DEFAULT_PATH}`, data); 
   }
 
   static async updateChord(id: string, data: UpdateChordDto): Promise<Chord> {
-    return await apiClient.put<UpdateChordDto, Chord>(`/chords/${id}`, data);
+    return await apiClient.put<UpdateChordDto, Chord>(`/${this.DEFAULT_PATH}/${id}`, data);
   }
   static async getChordsByExactName(
     name: string,
@@ -100,11 +101,11 @@ export class ChordsService {
     params.append("pageSize", pageSize.toString());
 
     return await apiClient.get<PaginatedChords>(
-      `/chords/exact/${encodeURIComponent(name)}?${params.toString()}`
+      `/${this.DEFAULT_PATH}/exact/${encodeURIComponent(name)}?${params.toString()}`
     );
   }
   static async deleteChord(id: string): Promise<void> {
-    await apiClient.delete<void>(`/chords/${id}`);
+    await apiClient.delete<void>(`/${this.DEFAULT_PATH}/${id}`);
   }
 
   static async getAdjacentVariation(

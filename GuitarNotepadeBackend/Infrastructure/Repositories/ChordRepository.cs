@@ -15,20 +15,6 @@ public class ChordRepository : BaseRepository<Chord>, IChordRepository
             .AnyAsync(c => c.Name == name && c.Fingering == fingering, cancellationToken);
     }
 
-    public async Task<Chord?> GetByNameAndFingeringAsync(string name, string fingering, CancellationToken cancellationToken = default)
-    {
-        return await _dbSet
-            .FirstOrDefaultAsync(c => c.Name == name && c.Fingering == fingering, cancellationToken);
-    }
-
-    public async Task<List<Chord>> SearchByNameAsync(string name, CancellationToken cancellationToken = default)
-    {
-        return await _dbSet
-            .Where(c => c.Name.Contains(name))
-            .OrderBy(c => c.Name)
-            .ToListAsync(cancellationToken);
-    }
-
     public async Task<List<Chord>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return await _dbSet

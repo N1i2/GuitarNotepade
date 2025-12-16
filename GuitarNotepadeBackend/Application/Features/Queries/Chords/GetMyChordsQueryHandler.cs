@@ -1,12 +1,13 @@
 ﻿using Application.DTOs;
 using Application.DTOs.Chords;
+using Application.DTOs.Generic;
 using Domain.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.Queries.Chords;
 
-public class GetMyChordsQueryHandler : IRequestHandler<GetMyChordsQuery, PaginatedChordsDto>
+public class GetMyChordsQueryHandler : IRequestHandler<GetMyChordsQuery, PaginatedDto<ChordDto>>
 {
     private readonly IUnitOfWork _unitOfWork;
 
@@ -15,7 +16,7 @@ public class GetMyChordsQueryHandler : IRequestHandler<GetMyChordsQuery, Paginat
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<PaginatedChordsDto> Handle(GetMyChordsQuery request, CancellationToken cancellationToken)
+    public async Task<PaginatedDto<ChordDto>> Handle(GetMyChordsQuery request, CancellationToken cancellationToken)
     {
         var query = _unitOfWork.Chords.GetQueryable()
             .Include(c => c.CreatedBy)
@@ -41,7 +42,7 @@ public class GetMyChordsQueryHandler : IRequestHandler<GetMyChordsQuery, Paginat
             UpdatedAt = chord.UpdatedAt
         }).ToList();
 
-        return PaginatedChordsDto.Create(
+        return PaginatedDto<ChordDto>.Create(
             chordDtos,
             totalCount,
             request.Page,

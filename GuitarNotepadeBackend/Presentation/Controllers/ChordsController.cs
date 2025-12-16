@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Application.Features.Queries.Chords;
 using Application.Features.Commands.Chords;
-using Application.Features.Chords.Queries;
+using Application.DTOs.Generic;
 
 namespace Presentation.Controllers;
 
@@ -25,7 +25,7 @@ public class ChordsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<PaginatedChordsDto>> GetAllChords(
+    public async Task<ActionResult<PaginatedDto<ChordDto>>> GetAllChords(
         [FromQuery] string? name = null,
         [FromQuery] bool? myChordsOnly = false,
         [FromQuery] int page = 1,
@@ -41,7 +41,7 @@ public class ChordsController : ControllerBase
             {
                 Name = name,
                 MyChordsOnly = myChordsOnly,
-                UserId = myChordsOnly.HasValue && myChordsOnly.Value ? userId : null, 
+                UserId = myChordsOnly.HasValue && myChordsOnly.Value ? userId : null,
                 Page = page,
                 PageSize = pageSize,
                 SortBy = sortBy,
@@ -80,7 +80,7 @@ public class ChordsController : ControllerBase
     }
 
     [HttpGet("exact/{name}")]
-    public async Task<ActionResult<PaginatedChordsDto>> GetChordsByExactName(
+    public async Task<ActionResult<PaginatedDto<ChordDto>>> GetChordsByExactName(
     string name,
     [FromQuery] int page = 1,
     [FromQuery] int pageSize = 20)
@@ -103,9 +103,8 @@ public class ChordsController : ControllerBase
         }
     }
 
-
     [HttpGet("search")]
-    public async Task<ActionResult<PaginatedChordsDto>> SearchChordsByName(
+    public async Task<ActionResult<PaginatedDto<ChordDto>>> SearchChordsByName(
         [FromQuery] string name,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
@@ -129,7 +128,7 @@ public class ChordsController : ControllerBase
     }
 
     [HttpGet("my-chords")]
-    public async Task<ActionResult<PaginatedChordsDto>> GetMyChords(
+    public async Task<ActionResult<PaginatedDto<ChordDto>>> GetMyChords(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
@@ -148,9 +147,9 @@ public class ChordsController : ControllerBase
     }
 
     [HttpGet("distinct")]
-    public async Task<ActionResult<PaginatedChordsDto>> GetDistinctChordNames(
+    public async Task<ActionResult<PaginatedDto<ChordDto>>> GetDistinctChordNames(
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 48,
+        [FromQuery] int pageSize = 20,
         [FromQuery] string sortBy = "name",
         [FromQuery] string sortOrder = "asc")
     {
@@ -158,7 +157,7 @@ public class ChordsController : ControllerBase
 
         try
         {
-            return Ok(new PaginatedChordsDto()); 
+            return Ok(new PaginatedDto<ChordDto>());
         }
         catch (Exception ex)
         {

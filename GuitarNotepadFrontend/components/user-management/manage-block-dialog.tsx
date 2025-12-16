@@ -304,7 +304,7 @@ export function ManageBlockDialog({
                   />
                   <select
                     value={durationUnit}
-                    onChange={(e) => setDurationUnit(e.target.value as any)}
+                    onChange={(e) => setDurationUnit(e.target.value as "minutes" | "hours" | "days" | "months" | "years")}
                     className="px-3 py-2 rounded-md border border-input bg-background text-sm"
                   >
                     <option value="minutes">Minutes</option>

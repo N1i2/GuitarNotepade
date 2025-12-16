@@ -120,6 +120,61 @@ public class AppDbContext : DbContext
         });
     }
 
+    private static void ConfigureStrummingPattern(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<StrummingPattern>(entity =>
+        {
+            entity.HasKey(sp => sp.Id);
+            entity.HasIndex(sp => sp.Name);
+            entity.HasIndex(sp => sp.CreatedByUserId);
+            entity.HasIndex(sp => sp.IsFingerStyle);
+
+            entity.HasIndex(sp => new { sp.Name, sp.CreatedByUserId }).IsUnique();
+
+            entity.Property(sp => sp.Name)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(sp => sp.Pattern)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            entity.Property(sp => sp.Description)
+                .IsRequired(false)
+                .HasMaxLength(1000);
+
+            entity.Property(sp => sp.IsFingerStyle)
+                .IsRequired();
+
+            entity.Property(sp => sp.CreatedByUserId)
+                .IsRequired();
+
+            entity.Property(sp => sp.CreatedAt)
+                .IsRequired();
+
+            entity.Property(sp => sp.UpdatedAt)
+                .IsRequired(false);
+
+            entity.HasMany(sp => sp.SongLines)
+                  .WithOne(sl => sl.StrummingPattern)
+                  .HasForeignKey(sl => sl.StrummingPatternId)
+                  .IsRequired(false)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(sp => sp.SongStrummingPatterns)
+                  .WithOne(ssp => ssp.StrummingPattern)
+                  .HasForeignKey(ssp => ssp.StrummingPatternId)
+                  .IsRequired()
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(sp => sp.CreatedBy)
+                  .WithMany()
+                  .HasForeignKey(sp => sp.CreatedByUserId)
+                  .IsRequired()
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
     private static void ConfigureSong(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Song>(entity =>
@@ -181,27 +236,6 @@ public class AppDbContext : DbContext
                   .HasForeignKey(a => a.OwnerId)
                   .IsRequired()
                   .OnDelete(DeleteBehavior.Cascade);
-        });
-    }
-
-    private static void ConfigureStrummingPattern(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<StrummingPattern>(entity =>
-        {
-            entity.HasKey(sp => sp.Id);
-            entity.HasIndex(sp => sp.Name);
-            entity.HasIndex(sp => sp.PatternType);
-
-            entity.Property(sp => sp.Name)
-                .IsRequired()
-                .HasMaxLength(100);
-            entity.Property(sp => sp.Pattern)
-                .IsRequired();
-            entity.Property(sp => sp.DiagramImageUrl)
-                .IsRequired(false);
-            entity.Property(sp => sp.PatternType)
-                .IsRequired()
-                .HasMaxLength(20);
         });
     }
 

@@ -57,7 +57,7 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
               <Label htmlFor="sortBy">Sort by</Label>
               <Select
                 value={filters.sortBy || "createdAt"}
-                onValueChange={(value) => onFilterChange({ sortBy: value as any })}
+                onValueChange={(value: 'email' | 'nikName' | 'createdAt') => onFilterChange({ sortBy: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select sort field" />
@@ -74,7 +74,7 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
               <Label htmlFor="sortOrder">Order</Label>
               <Select
                 value={filters.sortOrder || "desc"}
-                onValueChange={(value) => onFilterChange({ sortOrder: value as any })}
+                onValueChange={(value: 'asc' | 'desc') => onFilterChange({ sortOrder: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select order" />

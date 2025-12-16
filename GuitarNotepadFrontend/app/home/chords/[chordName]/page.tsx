@@ -20,7 +20,7 @@ import {
   Calendar,
   ArrowLeft
 } from "lucide-react";
-import { ChordDiagram } from "@/components/chords/chord-diagram";
+import { SVGChordDiagram } from "@/components/chords/svg-chord-diagram";
 import { DeleteChordDialog } from "@/components/chords/delete-chord-dialog";
 import { EditChordDialog } from "@/components/chords/edit-chord-dialog";
 
@@ -39,7 +39,7 @@ export default function ChordVariationsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
- const loadVariations = async () => {
+  const loadVariations = async () => {
     setIsLoading(true);
     try {
       const data = await ChordsService.getChordsByExactName(chordName, 1, 100);
@@ -51,9 +51,9 @@ export default function ChordVariationsPage() {
       } else {
         toast.warning(`No variations found for chord "${chordName}"`);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to load chord variations:", error);
-      toast.error("Failed to load chord variations.");
+      toast.error(error instanceof Error ? error.message : "Failed to load chord variations.");
     } finally {
       setIsLoading(false);
     }
@@ -102,7 +102,6 @@ export default function ChordVariationsPage() {
   };
 
   const handleDeleteSuccess = () => {
-    
     if (variations) {
       const updatedItems = variations.items.filter(item => item.id !== currentVariation?.id);
       setVariations({ ...variations, items: updatedItems, totalCount: variations.totalCount - 1 });
@@ -229,7 +228,6 @@ export default function ChordVariationsPage() {
               </div>
               
               <div className="flex items-center gap-2">
-
                 {canEdit && (
                   <Button
                     variant="outline"
@@ -251,7 +249,6 @@ export default function ChordVariationsPage() {
                     Delete
                   </Button>
                 )}
-
 
                 <Button
                   variant="outline"
@@ -280,9 +277,11 @@ export default function ChordVariationsPage() {
                 <div className="border rounded-lg p-6 bg-gradient-to-b from-background to-muted/20">
                   <h3 className="text-lg font-semibold mb-4">Chord Diagram</h3>
                   <div className="flex justify-center">
-                    <ChordDiagram
+                    <SVGChordDiagram
                       fingering={currentVariation.fingering}
-                      size="lg"
+                      name={currentVariation.name}
+                      width={360}
+                      height={480}
                     />
                   </div>
                 </div>
@@ -336,7 +335,7 @@ export default function ChordVariationsPage() {
                               <div className={`text-lg font-bold p-2 rounded ${
                                 fretValue === '0' ? 'bg-teal-100 dark:bg-teal-900/30' :
                                 fretValue === 'X' || fretValue === 'x' ? 'bg-gray-100 dark:bg-gray-800' :
-                                'bg-primary/10'
+                                'bg-blue-100 dark:bg-blue-900/30'
                               }`}>
                                 {fretValue}
                               </div>
@@ -373,7 +372,7 @@ export default function ChordVariationsPage() {
                       </div>
 
                       <div className="mt-4 p-3 bg-muted/30 rounded text-sm">
-                        <div className="font-medium mb-1">Example for "002210":</div>
+                        <div className="font-medium mb-1">Fingering breakdown:</div>
                         <div className="font-mono space-y-1">
                           <div>6th string (E): {currentFingeringValues[0] || '0'} → {currentFingeringValues[0] === '0' ? 'Open' : `Fret ${currentFingeringValues[0]}`}</div>
                           <div>5th string (A): {currentFingeringValues[1] || '0'} → {currentFingeringValues[1] === '0' ? 'Open' : `Fret ${currentFingeringValues[1]}`}</div>

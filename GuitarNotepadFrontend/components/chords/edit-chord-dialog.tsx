@@ -18,6 +18,24 @@ import { AlertTriangle, Loader2, Save, Music } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ChordsService } from "@/lib/api/chords-service";
 import { ChordDiagram } from "./chord-diagram";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
+const editChordSchema = z.object({
+  name: z.string()
+    .min(1, "Chord name is required")
+    .max(20, "Chord name cannot exceed 20 characters"),
+  fingering: z.string()
+    .min(1, "Fingering is required")
+    .regex(/^[0-9XTx]{6}$/, "Fingering must be exactly 6 characters containing only digits 0-9, X (mute), or T (thumb)"),
+  description: z.string()
+    .max(500, "Description cannot exceed 500 characters")
+    .optional()
+    .or(z.literal(''))
+});
+
+type EditChordFormValues = z.infer<typeof editChordSchema>;
 
 interface EditChordDialogProps {
   isOpen: boolean;
@@ -34,85 +52,80 @@ export function EditChordDialog({
 }: EditChordDialogProps) {
   const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [form, setForm] = useState<UpdateChordDto>({
-    name: chord.name,
-    fingering: chord.fingering,
-    description: chord.description || "",
+
+  const {
+    register,
+    formState: { errors, isDirty, isValid },
+    reset,
+    watch,
+    getValues,
+    trigger,
+    setValue
+  } = useForm<EditChordFormValues>({
+    resolver: zodResolver(editChordSchema),
+    mode: "onBlur",
+    defaultValues: {
+      name: chord.name,
+      fingering: chord.fingering,
+      description: chord.description || "",
+    }
   });
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  const fingering = watch("fingering");
 
   useEffect(() => {
     if (isOpen) {
-      setForm({
+      reset({
         name: chord.name,
         fingering: chord.fingering,
         description: chord.description || "",
       });
-      setErrors({});
     }
-  }, [isOpen, chord]);
+  }, [isOpen, chord, reset]);
 
-  const validateForm = (): boolean => {
-    const newErrors: { [key: string]: string } = {};
-
-    if (!form.name?.trim()) {
-      newErrors.name = "Chord name is required";
-    } else if (form.name.length > 20) {
-      newErrors.name = "Chord name cannot exceed 20 characters";
-    }
-
-    if (!form.fingering?.trim()) {
-      newErrors.fingering = "Fingering is required";
-    } else if (form.fingering.length !== 6) {
-      newErrors.fingering = "Fingering must be exactly 6 characters";
-    } else if (!/^[0-9XTx]+$/.test(form.fingering)) {
-      newErrors.fingering = "Fingering can only contain digits 0-9, X (mute), or T (thumb)";
-    }
-
-    if (form.description && form.description.length > 500) {
-      newErrors.description = "Description cannot exceed 500 characters";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleInputChange = (field: keyof UpdateChordDto, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
-    }
+  const handleFingeringChange = (index: number, value: string) => {
+    const currentFingering = watch("fingering") || "";
+    const newFingering = currentFingering.split("");
+    newFingering[index] = value;
+    setValue("fingering", newFingering.join(""), { shouldDirty: true, shouldValidate: true });
   };
 
   const handleSubmit = async () => {
-    if (!validateForm()) {
+    const isValid = await trigger();
+    if (!isValid) {
       toast.error("Please fix the errors in the form");
       return;
     }
 
     setIsLoading(true);
     try {
-      const updatedChord = await ChordsService.updateChord(chord.id, form);
+      const values = getValues();
+      const updateData: UpdateChordDto = values;
+      
+      const updatedChord = await ChordsService.updateChord(chord.id, updateData);
       onSuccess(updatedChord);
       onClose();
-    } catch (error: any) {
+      toast.success("Chord updated successfully");
+    } catch (error: unknown) {
       console.error("Failed to update chord:", error);
       
-      if (error.status === 409) {
-        setErrors({ fingering: "Chord with this fingering already exists" });
-        toast.error("Chord with this fingering already exists");
-      } else {
+      const isApiError = error && typeof error === 'object' && 'status' in error;
+      
+      if (isApiError) {
+        const apiError = error as { status: number; message?: string };
+        if (apiError.status === 409) {
+          toast.error("Chord with this fingering already exists");
+        } else {
+          toast.error(apiError.message || "Failed to update chord");
+        }
+      } else if (error instanceof Error) {
         toast.error(error.message || "Failed to update chord");
+      } else {
+        toast.error("Failed to update chord");
       }
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleFingeringChange = (index: number, value: string) => {
-    const newFingering = form.fingering!.split("");
-    newFingering[index] = value;
-    handleInputChange("fingering", newFingering.join(""));
   };
 
   return (
@@ -135,8 +148,8 @@ export function EditChordDialog({
             <h3 className="text-sm font-medium mb-3">Preview</h3>
             <div className="flex flex-col items-center">
               <ChordDiagram 
-                fingering={form.fingering || "000000"} 
-                name={form.name || "Chord"}
+                fingering={fingering || "000000"} 
+                name={watch("name") || "Chord"}
                 size="md"
               />
             </div>
@@ -147,14 +160,12 @@ export function EditChordDialog({
               <Label htmlFor="name">Chord Name *</Label>
               <Input
                 id="name"
-                value={form.name || ""}
-                onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="e.g., Am, C, G7"
-                className={errors.name ? "border-destructive" : ""}
+                {...register('name')}
+                aria-invalid={!!errors.name}
+                aria-describedby={errors.name ? 'edit-chord-name-error' : undefined}
               />
-              {errors.name && (
-                <p className="text-sm text-destructive">{errors.name}</p>
-              )}
+              {errors.name && <span id="edit-chord-name-error" className="text-sm text-red-500">{errors.name.message}</span>}
               <p className="text-xs text-muted-foreground">
                 Format: A-G, optional #/b, optional extensions (m, 7, maj, etc.)
               </p>
@@ -166,7 +177,7 @@ export function EditChordDialog({
                 <div className="flex items-center gap-2">
                   <div className="text-sm text-muted-foreground">From 6th string to 1st:</div>
                   <div className="font-mono text-lg font-bold bg-muted px-3 py-1 rounded">
-                    {form.fingering}
+                    {fingering}
                   </div>
                 </div>
                 
@@ -177,24 +188,22 @@ export function EditChordDialog({
                         String {6 - stringIndex}
                       </div>
                       <Input
-                        value={form.fingering?.[stringIndex] || "0"}
+                        value={fingering?.[stringIndex] || "0"}
                         onChange={(e) => handleFingeringChange(stringIndex, e.target.value)}
                         maxLength={1}
                         className="text-center font-mono h-10"
                         placeholder="0"
                       />
                       <div className="text-xs text-center text-muted-foreground">
-                        {form.fingering?.[stringIndex] === "0" ? "Open" :
-                         form.fingering?.[stringIndex] === "X" || form.fingering?.[stringIndex] === "x" ? "Mute" :
-                         `Fret ${form.fingering?.[stringIndex]}`}
+                        {fingering?.[stringIndex] === "0" ? "Open" :
+                         fingering?.[stringIndex] === "X" || fingering?.[stringIndex] === "x" ? "Mute" :
+                         `Fret ${fingering?.[stringIndex]}`}
                       </div>
                     </div>
                   ))}
                 </div>
                 
-                {errors.fingering && (
-                  <p className="text-sm text-destructive">{errors.fingering}</p>
-                )}
+                {errors.fingering && <span className="text-sm text-red-500">{errors.fingering.message}</span>}
                 
                 <div className="text-xs text-muted-foreground space-y-1">
                   <p>• Enter 0 for open string</p>
@@ -209,17 +218,16 @@ export function EditChordDialog({
               <Label htmlFor="description">Description (Optional)</Label>
               <Textarea
                 id="description"
-                value={form.description || ""}
-                onChange={(e) => handleInputChange("description", e.target.value)}
                 placeholder="Add notes about this chord variation..."
                 className="min-h-[100px]"
+                {...register('description')}
+                aria-invalid={!!errors.description}
+                aria-describedby={errors.description ? 'edit-chord-description-error' : undefined}
               />
               <div className="flex justify-between">
-                {errors.description && (
-                  <p className="text-sm text-destructive">{errors.description}</p>
-                )}
+                {errors.description && <span id="edit-chord-description-error" className="text-sm text-red-500">{errors.description.message}</span>}
                 <p className="text-xs text-muted-foreground ml-auto">
-                  {form.description?.length || 0}/500 characters
+                  {(watch("description")?.length || 0)}/500 characters
                 </p>
               </div>
             </div>
@@ -237,37 +245,37 @@ export function EditChordDialog({
               </div>
             </div>
           </div>
-        </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row gap-3 sm:gap-2 pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            disabled={isLoading}
-            className="w-full sm:w-auto"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isLoading}
-            className="w-full sm:w-auto"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Save Changes
-              </>
-            )}
-          </Button>
-        </DialogFooter>
+          <DialogFooter className="flex flex-col sm:flex-row gap-3 sm:gap-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isLoading}
+              className="w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isLoading || !isDirty || !isValid}
+              className="w-full sm:w-auto"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Changes
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

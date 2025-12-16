@@ -1,10 +1,11 @@
 ﻿using Application.DTOs;
 using Application.DTOs.Chords;
+using Application.DTOs.Generic;
 using MediatR;
 
 namespace Application.Features.Queries.Chords;
 
-public class GetMyChordsQuery : IRequest<PaginatedChordsDto>
+public class GetMyChordsQuery : IRequest<PaginatedDto<ChordDto>>
 {
     public Guid UserId { get; }
     public int Page { get; }

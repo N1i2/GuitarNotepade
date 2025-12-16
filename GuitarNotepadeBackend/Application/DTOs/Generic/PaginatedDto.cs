@@ -1,21 +1,23 @@
-﻿namespace Application.DTOs.Chords;
+﻿using Application.DTOs.Chords;
 
-public class PaginatedChordsDto
+namespace Application.DTOs.Generic;
+
+public class PaginatedDto<T>
 {
-    public List<ChordDto> Items { get; set; } = new();
+    public List<T> Items { get; set; } = new();
     public int TotalCount { get; set; }
     public int TotalPages { get; set; }
     public int CurrentPage { get; set; }
     public bool HasPreviousPage { get; set; }
     public bool HasNextPage { get; set; }
 
-    public static PaginatedChordsDto Create(
-        List<ChordDto> items,
+    public static PaginatedDto<T> Create(
+        List<T> items,
         int totalCount,
         int page,
         int pageSize)
     {
-        return new PaginatedChordsDto
+        return new PaginatedDto<T>
         {
             Items = items,
             TotalCount = totalCount,

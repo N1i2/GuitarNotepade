@@ -5,7 +5,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { usePathname } from "next/navigation";
-import { Shield, Home, User, LogOut, Music } from "lucide-react";
+import { Shield, Home, User, LogOut, ListMusic, Hand } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,8 +63,20 @@ export function Header() {
                 className="gap-2"
               >
                 <Link href="/home/chords">
-                  <Music className="h-4 w-4" />
+                  <Hand className="h-4 w-4" />
                   Chords
+                </Link>
+              </Button>
+
+              <Button
+                asChild
+                variant={pathname === "/home/patterns" ? "default" : "ghost"}
+                size="sm"
+                className="gap-2"
+              >
+                <Link href="/home/patterns">
+                  <ListMusic className="h-4 w-4" />
+                  Strumming Patterns
                 </Link>
               </Button>
               

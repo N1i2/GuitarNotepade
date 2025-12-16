@@ -1,12 +1,12 @@
-﻿
-using Application.DTOs.Chords;
+﻿using Application.DTOs.Chords;
+using Application.DTOs.Generic;
 using Domain.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Application.Features.Chords.Queries;
+namespace Application.Features.Queries.Chords;
 
-public class GetChordsByExactNameQueryHandler : IRequestHandler<GetChordsByExactNameQuery, PaginatedChordsDto>
+public class GetChordsByExactNameQueryHandler : IRequestHandler<GetChordsByExactNameQuery, PaginatedDto<ChordDto>>
 {
     private readonly IUnitOfWork _unitOfWork;
 
@@ -15,11 +15,11 @@ public class GetChordsByExactNameQueryHandler : IRequestHandler<GetChordsByExact
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<PaginatedChordsDto> Handle(GetChordsByExactNameQuery request, CancellationToken cancellationToken)
+    public async Task<PaginatedDto<ChordDto>> Handle(GetChordsByExactNameQuery request, CancellationToken cancellationToken)
     {
         var query = _unitOfWork.Chords.GetQueryable()
             .Include(c => c.CreatedBy)
-            .Where(c => c.Name == request.Name) 
+            .Where(c => c.Name == request.Name)
             .OrderByDescending(c => c.CreatedAt);
 
         var totalCount = await query.CountAsync(cancellationToken);
@@ -41,7 +41,7 @@ public class GetChordsByExactNameQueryHandler : IRequestHandler<GetChordsByExact
             UpdatedAt = chord.UpdatedAt
         }).ToList();
 
-        return PaginatedChordsDto.Create(
+        return PaginatedDto<ChordDto>.Create(
             chordDtos,
             totalCount,
             request.Page,

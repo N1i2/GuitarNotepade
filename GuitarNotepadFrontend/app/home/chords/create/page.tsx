@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
 import { ChordsService } from "@/lib/api/chords-service";
-import { CreateChordDto } from "@/types/chords";
 import {
   Card,
   CardContent,
@@ -17,102 +15,123 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Save, Music } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import { FretboardEditor } from "@/components/chords/fretboard-editor";
-import { ChordDiagram } from "@/components/chords/chord-diagram";
 import { SVGChordDiagram } from "@/components/chords/svg-chord-diagram";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
+const createChordSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Chord name is required")
+    .max(20, "Chord name cannot exceed 20 characters"),
+  fingering: z
+    .string()
+    .min(1, "Fingering is required")
+    .regex(
+      /^[0-9XTx\-]{6,17}$/,
+      "Fingering must be 6 values separated by hyphens"
+    )
+    .refine(
+      (value) => {
+        const parts = value.split("-");
+        if (parts.length !== 6) return false;
+        return parts.every((part) => /^[0-9]{1,2}$|^X$/i.test(part));
+      },
+      { message: "Each value must be a number (0-12) or X" }
+    )
+    .refine(
+      (value) => {
+        const parts = value.split("-");
+        return parts.every((part) => {
+          if (/^X$/i.test(part)) return true;
+          const num = parseInt(part, 10);
+          return num <= 12;
+        });
+      },
+      { message: "Fret number cannot exceed 12" }
+    ),
+  description: z
+    .string()
+    .max(500, "Description cannot exceed 500 characters")
+    .optional()
+    .or(z.literal("")),
+});
+
+type CreateChordFormValues = z.infer<typeof createChordSchema>;
 
 export default function CreateChordPage() {
   const router = useRouter();
-  const { user } = useAuth();
   const toast = useToast();
 
-  const [form, setForm] = useState<CreateChordDto>({
-    name: "",
-    fingering: "0-0-0-0-0-0",
-    description: "",
-  });
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const validateForm = (): boolean => {
-    const newErrors: { [key: string]: string } = {};
+  const {
+    register,
+    formState: { errors, isValid },
+    watch,
+    setValue,
+    getValues,
+    trigger,
+  } = useForm<CreateChordFormValues>({
+    resolver: zodResolver(createChordSchema),
+    mode: "onBlur",
+    defaultValues: {
+      name: "",
+      fingering: "0-0-0-0-0-0",
+      description: "",
+    },
+  });
 
-    if (!form.name.trim()) {
-      newErrors.name = "Chord name is required";
-    } else if (form.name.length > 20) {
-      newErrors.name = "Chord name cannot exceed 20 characters";
-    }
+  const currentValues = watch();
 
-    if (!form.fingering.trim()) {
-      newErrors.fingering = "Fingering is required";
-    } else {
-      const parts = form.fingering.split("-");
-      if (parts.length !== 6) {
-        newErrors.fingering = "Fingering must be 6 values separated by hyphens";
-      } else {
-        for (const part of parts) {
-          if (!/^[0-9]{1,2}$|^X$/i.test(part)) {
-            newErrors.fingering = "Each value must be a number (0-12) or X";
-            break;
-          }
-          if (part !== "X" && part !== "x") {
-            const num = parseInt(part, 10);
-            if (num > 12) {
-              newErrors.fingering = "Fret number cannot exceed 12";
-              break;
-            }
-          }
-        }
-      }
-    }
-
-    if (form.description && form.description.length > 500) {
-      newErrors.description = "Description cannot exceed 500 characters";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const handleFingeringChange = (newFingering: string) => {
+    setValue("fingering", newFingering, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
   };
 
-  const handleSubmit = async () => {
-    if (!validateForm()) {
+  const onSubmit = async () => {
+    const isValid = await trigger();
+    if (!isValid) {
       toast.error("Please fix the errors in the form");
       return;
     }
 
+    const values = getValues();
     setIsLoading(true);
     try {
       const createdChord = await ChordsService.createChord({
-        ...form,
-        fingering: form.fingering.toUpperCase(),
+        ...values,
+        fingering: values.fingering.toUpperCase(),
       });
 
       toast.success(`Chord ${createdChord.name} created successfully!`);
       router.push(`/home/chords/${encodeURIComponent(createdChord.name)}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to create chord:", error);
 
-      if (error.status === 409) {
-        toast.error("Chord with this fingering already exists");
-      } else {
+      const isApiError =
+        error && typeof error === "object" && "status" in error;
+
+      if (isApiError) {
+        const apiError = error as { status: number; message?: string };
+        if (apiError.status === 409) {
+          toast.error("Chord with this fingering already exists");
+        } else {
+          toast.error(apiError.message || "Failed to create chord");
+        }
+      } else if (error instanceof Error) {
         toast.error(error.message || "Failed to create chord");
+      } else {
+        toast.error("Failed to create chord");
       }
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleFingeringChange = (newFingering: string) => {
-    setForm({ ...form, fingering: newFingering });
-    if (errors.fingering) {
-      setErrors({ ...errors, fingering: "" });
-    }
-  };
-
-  const handleQuickInput = (fingering: string) => {
-    setForm({ ...form, fingering });
-    setErrors({});
   };
 
   return (
@@ -148,102 +167,122 @@ export default function CreateChordPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Chord Name *</Label>
-                  <Input
-                    id="name"
-                    value={form.name}
-                    onChange={(e) => {
-                      setForm({ ...form, name: e.target.value });
-                      if (errors.name) setErrors({ ...errors, name: "" });
-                    }}
-                    placeholder="e.g., Am, C, G7, Dm7"
-                    className={errors.name ? "border-destructive" : ""}
-                  />
-                  {errors.name && (
-                    <p className="text-sm text-destructive">{errors.name}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Fingering Pattern * (12 frets maximum)</Label>
-                  <FretboardEditor
-                    fingering={form.fingering}
-                    onFingeringChange={handleFingeringChange}
-                  />
-                  {errors.fingering && (
-                    <p className="text-sm text-destructive">
-                      {errors.fingering}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Quick Text Input</Label>
-                  <div className="flex gap-2">
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Chord Name *</Label>
                     <Input
-                      value={form.fingering}
-                      onChange={(e) => {
-                        const value = e.target.value.toUpperCase();
-
-                        if (/^[0-9X\-]*$/.test(value) && value.length <= 17) {
-                          handleFingeringChange(value);
-                        }
-                      }}
-                      placeholder="Format: 0-0-2-2-1-0"
-                      className="font-mono text-center text-lg h-12"
+                      id="name"
+                      placeholder="e.g., Am, C, G7, Dm7"
+                      {...register("name")}
+                      aria-invalid={!!errors.name}
+                      aria-describedby={
+                        errors.name ? "create-chord-name-error" : undefined
+                      }
                     />
+                    {errors.name && (
+                      <span
+                        id="create-chord-name-error"
+                        className="text-sm text-red-500"
+                      >
+                        {errors.name.message}
+                      </span>
+                    )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Format: 6 values separated by hyphens. Example: Am is{" "}
-                    <span className="font-mono">0-0-2-2-1-0</span>
-                  </p>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description (Optional)</Label>
-                  <Textarea
-                    id="description"
-                    value={form.description}
-                    onChange={(e) =>
-                      setForm({ ...form, description: e.target.value })
-                    }
-                    placeholder="Add notes about this chord variation..."
-                    className="min-h-[100px]"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {form.description?.length || 0}/500 characters
-                  </p>
+                  <div className="space-y-2">
+                    <Label>Fingering Pattern * (12 frets maximum)</Label>
+                    <FretboardEditor
+                      fingering={currentValues.fingering}
+                      onFingeringChange={handleFingeringChange}
+                    />
+                    {errors.fingering && (
+                      <span className="text-sm text-red-500">
+                        {errors.fingering.message}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Quick Text Input</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={currentValues.fingering}
+                        onChange={(e) => {
+                          const value = e.target.value.toUpperCase();
+                          if (/^[0-9X\-]*$/.test(value) && value.length <= 17) {
+                            handleFingeringChange(value);
+                          }
+                        }}
+                        placeholder="Format: 0-0-2-2-1-0"
+                        className="font-mono text-center text-lg h-12"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Format: 6 values separated by hyphens. Example: Am is{" "}
+                      <span className="font-mono">0-0-2-2-1-0</span>
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description (Optional)</Label>
+                    <Textarea
+                      id="description"
+                      placeholder="Add notes about this chord variation..."
+                      className="min-h-[100px]"
+                      {...register("description")}
+                      aria-invalid={!!errors.description}
+                      aria-describedby={
+                        errors.description
+                          ? "create-chord-description-error"
+                          : undefined
+                      }
+                    />
+                    <div className="flex justify-between">
+                      {errors.description && (
+                        <span
+                          id="create-chord-description-error"
+                          className="text-sm text-red-500"
+                        >
+                          {errors.description.message}
+                        </span>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        {currentValues.description?.length || 0}/500 characters
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => router.push("/home/chords")}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={onSubmit}
+                      disabled={isLoading || !isValid}
+                      className="flex-1"
+                    >
+                      {isLoading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Create Chord
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-
-            <div className="flex gap-4">
-              <Button
-                variant="outline"
-                onClick={() => router.push("/home/chords")}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={isLoading}
-                className="flex-1"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Create Chord
-                  </>
-                )}
-              </Button>
-            </div>
           </div>
 
           <div className="space-y-6">
@@ -255,63 +294,11 @@ export default function CreateChordPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col items-center p-4">
-                  {form.name && (
-                    <div className="mb-6 text-center">
-                      <div className="text-4xl font-bold">{form.name}</div>
-                      <div className="text-lg text-muted-foreground font-mono mt-2">
-                        {form.fingering}
-                      </div>
-                    </div>
-                  )}
-
+                <div className="flex flex-col items-center">
                   <SVGChordDiagram
-                    fingering={form.fingering}
-                    name={form.name}
+                    fingering={currentValues.fingering}
+                    name={currentValues.name}
                   />
-
-                  <div className="mt-8 w-full max-w-md">
-                    <div className="grid grid-cols-6 gap-2 mb-4">
-                      {[1, 2, 3, 4, 5, 6].map((stringNum) => {
-                        const value =
-                          form.fingering.split("-")[stringNum - 1] || "0";
-                        return (
-                          <div
-                            key={stringNum}
-                            className="text-center p-2 bg-muted rounded"
-                          >
-                            <div className="text-xs text-muted-foreground">
-                              String {stringNum}
-                            </div>
-                            <div
-                              className={`font-bold ${
-                                value === "X"
-                                  ? "text-red-500"
-                                  : value === "0"
-                                  ? "text-green-500"
-                                  : "text-blue-500"
-                              }`}
-                            >
-                              {value === "0"
-                                ? "Open"
-                                : value === "X"
-                                ? "Mute"
-                                : `Fret ${value}`}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {form.description && (
-                      <div className="p-4 border rounded-lg">
-                        <div className="text-sm font-medium mb-2">Notes:</div>
-                        <p className="text-muted-foreground text-sm">
-                          {form.description}
-                        </p>
-                      </div>
-                    )}
-                  </div>
                 </div>
               </CardContent>
             </Card>

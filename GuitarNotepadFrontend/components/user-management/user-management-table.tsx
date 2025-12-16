@@ -71,8 +71,12 @@ const handleToggleBlock = async (user: User, reason?: string, blockedUntil?: Dat
     }
     
     await loadUsers();
-  } catch (error: any) {
-    toast.error(error.message || "Failed to manage block");
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      toast.error(error.message);
+    } else {
+      toast.error("Failed to manage block");
+    }
   } finally {
     setIsActionLoading(null);
   }
@@ -88,9 +92,13 @@ const handleToggleBlock = async (user: User, reason?: string, blockedUntil?: Dat
       toast.success(`User ${user.email} role has been changed`);
 
       await loadUsers();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to toggle role:", error);
-      toast.error(error.message || "Failed to change user role", "destructive");
+      if (error instanceof Error) {
+        toast.error(error.message, "destructive");
+      } else {
+        toast.error("Failed to change user role", "destructive");
+      }
     } finally {
       setIsActionLoading(null);
     }

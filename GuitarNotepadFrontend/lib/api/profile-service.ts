@@ -3,10 +3,10 @@ import { apiClient } from "./client";
 
 export class ProfileService {
   private static readonly DEFAULT_PAGE_SIZE = 10;
+  private static readonly DEFAULT_PATH = 'UserManagement';
 
   static async getFullInfo(id?: string): Promise<User> {
     const response = await apiClient.get<User>("/User/profile");
-    console.log(response);
     return response;
   }
 
@@ -33,21 +33,21 @@ export class ProfileService {
     params.append("sortOrder", data.sortOrder || "desc");
 
     const response = await apiClient.get<PaginatedUsers>(
-      `/UserManagement/users?${params.toString()}`
+      `/${this.DEFAULT_PATH}/users?${params.toString()}`
     );
     return response;
   }
 
   static async blockUser(data: BlockUserRequest): Promise<void>{
-    await apiClient.put("/UserManagement/block-user", data);
+    await apiClient.put(`/${this.DEFAULT_PATH}/block-user`, data);
   }
 
   static async unblockUser(email: string): Promise<void>{
-    await apiClient.put("/UserManagement/unblock-user", {email});
+    await apiClient.put(`/${this.DEFAULT_PATH}/unblock-user`, {email});
   }
 
   static async toggleUserRole(email: string): Promise<void> {
-    await apiClient.put("/UserManagement/toggle-user-role", {email});
+    await apiClient.put(`/${this.DEFAULT_PATH}/toggle-user-role`, {email});
   }
 }
 

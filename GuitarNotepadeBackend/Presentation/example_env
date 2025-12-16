@@ -1,0 +1,23 @@
+﻿# Database
+DB_HOST=your db host
+DB_PORT=your db post
+DB_NAME=your db name
+DB_USER=your user name
+DB_PASSWORD=your db password
+DB_POOLING=true
+DB_MIN_POOL_SIZE=5
+DB_MAX_POOL_SIZE=20
+DB_COMMAND_TIMEOUT=30
+
+# JWT
+JWT_SECRET=your secret key
+JWT_ISSUER=your user
+JWT_AUDIENCE=and this
+JWT_EXPIRE_HOURS=24
+
+# Yandex Disk WebDAV
+YANDEX_DISK_USERNAME=your user name
+YANDEX_DISK_PASSWORD=your special password
+YANDEX_DISK_BASE_URL=https://webdav.yandex.ru
+YANDEX_DISK_AVATARS_FOLDER=some folder in the disk
+YANDEX_DISK_PUBLIC_BASE_URL=https://yadi.sk/i/

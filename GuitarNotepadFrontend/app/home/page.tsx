@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowRight, Music } from "lucide-react";
+import { ArrowRight, FileMusic, Hand, ListMusic, Music } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect } from "react";
@@ -34,8 +34,8 @@ export default function HomePage() {
             <Skeleton className="h-4 w-64" />
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3].map((i) => (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
               <Card key={i}>
                 <CardHeader>
                   <Skeleton className="h-6 w-32" />
@@ -75,21 +75,11 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle>My Songs</CardTitle>
-              <CardDescription>Manage your guitar tabs</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">Coming soon...</p>
-            </CardContent>
-          </Card>
-
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Music className="h-5 w-5" />
+                <Hand className="h-5 w-5" />
                 Chords Library
               </CardTitle>
               <CardDescription>
@@ -112,8 +102,46 @@ export default function HomePage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Strumming Patterns</CardTitle>
-              <CardDescription>Learn rhythm patterns</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <ListMusic className="h-5 w-5" />
+                Strumming Patterns Library
+              </CardTitle>
+              <CardDescription>
+                Browse and create patterns diagrams
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Access a comprehensive library of strumming pattern like finger
+                style and other
+              </p>
+              <Button asChild className="w-full">
+                <Link href="/home/patterns">
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  Go to Patterns
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Music className="h-5 w-5" />
+                <CardTitle>My Songs</CardTitle>
+              </CardTitle>
+              <CardDescription>Manage your guitar tabs</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">Coming soon...</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileMusic className="h-5 w-5"/>
+                <CardTitle>My Albom</CardTitle>
+              </CardTitle>
+              <CardDescription>Manage your guitar tabs</CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">Coming soon...</p>

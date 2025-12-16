@@ -40,9 +40,9 @@ export function DeleteChordDialog({
       toast.success(`Chord ${chord.name} deleted successfully`);
       onSuccess();
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to delete chord:", error);
-      toast.error(error.message || "Failed to delete chord");
+      toast.error(error instanceof Error ? error.message : "Failed to delete chord");
     } finally {
       setIsLoading(false);
     }

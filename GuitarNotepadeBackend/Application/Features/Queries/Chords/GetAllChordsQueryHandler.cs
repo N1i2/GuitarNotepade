@@ -1,13 +1,15 @@
 ﻿using Application.DTOs;
 using Application.DTOs.Chords;
+using Application.DTOs.Generic;
 using Domain.Common;
+using Domain.Entities;
 using Domain.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.Queries.Chords;
 
-public class GetAllChordsQueryHandler : IRequestHandler<GetAllChordsQuery, PaginatedChordsDto>
+public class GetAllChordsQueryHandler : IRequestHandler<GetAllChordsQuery, PaginatedDto<ChordDto>>
 {
     private readonly IUnitOfWork _unitOfWork;
 
@@ -16,7 +18,7 @@ public class GetAllChordsQueryHandler : IRequestHandler<GetAllChordsQuery, Pagin
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<PaginatedChordsDto> Handle(GetAllChordsQuery request, CancellationToken cancellationToken)
+    public async Task<PaginatedDto<ChordDto>> Handle(GetAllChordsQuery request, CancellationToken cancellationToken)
     {
         var baseQuery = _unitOfWork.Chords.GetQueryable()
             .Include(c => c.CreatedBy);
@@ -54,7 +56,7 @@ public class GetAllChordsQueryHandler : IRequestHandler<GetAllChordsQuery, Pagin
             UpdatedAt = chord.UpdatedAt
         }).ToList();
 
-        return PaginatedChordsDto.Create(
+        return PaginatedDto<ChordDto>.Create(
             chordDtos,
             totalCount,
             request.Filters.Page,
@@ -79,7 +81,7 @@ public class GetAllChordsQueryHandler : IRequestHandler<GetAllChordsQuery, Pagin
                 : query.OrderByDescending(c => c.CreatedAt),
 
             "updatedat" => isAscending
-                ? query.OrderBy(c => c.UpdatedAt ?? c.CreatedAt) 
+                ? query.OrderBy(c => c.UpdatedAt ?? c.CreatedAt)
                 : query.OrderByDescending(c => c.UpdatedAt ?? c.CreatedAt),
 
             _ => query.OrderBy(c => c.Name)

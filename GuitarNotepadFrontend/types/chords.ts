@@ -1,7 +1,7 @@
 export interface Chord {
   id: string;
   name: string;
-  fingering: string; 
+  fingering: string;
   description?: string;
   createdByUserId: string;
   createdByNikName?: string;
@@ -26,8 +26,8 @@ export interface ChordFilters {
   myChordsOnly?: boolean;
   page?: number;
   pageSize?: number;
-  sortBy?: 'name' | 'createdAt' | 'updatedAt';
-  sortOrder?: 'asc' | 'desc';
+  sortBy?: "name" | "createdAt" | "updatedAt";
+  sortOrder?: "asc" | "desc";
 }
 
 export interface PaginatedChords {

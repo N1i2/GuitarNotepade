@@ -5,17 +5,17 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
 import { ChordsService } from "@/lib/api/chords-service";
-import { PaginatedChords, Chord } from "@/types/chords";
+import { Chord } from "@/types/chords";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Plus, Music, Grid3x3, Hash, Edit, User, Eye, EyeOff } from "lucide-react";
-import { ChordGrid } from "@/components/chords/chord-grid";
 import { Pagination } from "@/components/user-management/pagination";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { ChordGrid } from "@/components/chords/chord-grid";
 
 interface UniqueChordItem {
   name: string;
@@ -25,6 +25,19 @@ interface UniqueChordItem {
   createdAt: Date;
   canEdit: boolean; 
   userVariations: Chord[]; 
+}
+
+interface ChordGridItem {
+  id: string;
+  name: string;
+  fingering: string;
+  description: string;
+  createdAt: string;
+  createdByUserId: string;
+  createdByNikName: string;
+  variationsCount: number;
+  canEdit: boolean;
+  userVariationsCount: number;
 }
 
 export default function ChordsPage() {
@@ -39,7 +52,7 @@ export default function ChordsPage() {
   const [uniqueChordsCount, setUniqueChordsCount] = useState(0);
   const [isLoadingAll, setIsLoadingAll] = useState(true);
   const [showOnlyMyChords, setShowOnlyMyChords] = useState(false);
-  const pageSize = 48;
+  const pageSize = 16;
 
   const uniqueChords = useMemo(() => {
     const chordMap = new Map<string, UniqueChordItem>();
@@ -121,7 +134,7 @@ export default function ChordsPage() {
           sortBy: "name",
           sortOrder: "asc"
         });
-        
+
         allChordsData = [...allChordsData, ...data.items];
         
         if (data.items.length < loadPageSize || data.currentPage === data.totalPages) {
@@ -133,7 +146,7 @@ export default function ChordsPage() {
       
       setAllChords(allChordsData);
       setUniqueChordsCount(new Set(allChordsData.map(chord => chord.name)).size);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to load chords:", error);
       toast.error("Failed to load chords. Please try again.");
     } finally {
@@ -177,7 +190,7 @@ export default function ChordsPage() {
     }
   };
 
-  const getChordItemsForGrid = () => {
+  const getChordItemsForGrid = (): ChordGridItem[] => {
     return uniqueChords.items.map(item => ({
       id: item.name,
       name: item.name,
@@ -331,7 +344,7 @@ export default function ChordsPage() {
               </div>
             ) : uniqueChords.items.length > 0 ? (
               <>
-                <ChordGrid 
+                <ChordGrid
                   chords={getChordItemsForGrid()} 
                   onChordClick={handleChordClick}
                   onEditClick={handleEditChord}

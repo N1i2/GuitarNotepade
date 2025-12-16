@@ -19,7 +19,7 @@ interface ChordGridProps {
 }
 
 export function ChordGrid({ 
-  chords, 
+  chords: chords, 
   onChordClick, 
   onEditClick,
   showVariationCount = true,
