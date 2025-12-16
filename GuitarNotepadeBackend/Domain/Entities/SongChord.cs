@@ -5,26 +5,29 @@ namespace Domain.Entities;
 
 public class SongChord : BaseEntityWithId
 {
-    public Guid SongLineId { get; private set; }
+    public Guid SongId { get; private set; }
     public Guid ChordId { get; private set; }
-    public int PositionInLine { get; private set; }
-    public string? ChordVariation { get; private set; }
 
-    public virtual SongLine SongLine { get; private set; } = null!;
+    public virtual Song Song { get; private set; } = null!;
     public virtual Chord Chord { get; private set; } = null!;
 
     private SongChord() { }
 
-    public static SongChord Create(Guid songLineId, Guid chordId, int positionInLine, string? chordVariation = null)
+    public static SongChord Create(Guid songId, Guid chordId)
     {
-        var newSongChord = new SongChord();
+        if(songId == Guid.Empty)
+        {
+            throw new ArgumentNullException("Song ID cannot be empty", nameof(songId));
+        }
+        if (chordId == Guid.Empty)
+        {
+            throw new ArgumentNullException("Chord ID cannot be empty", nameof(chordId));
+        }
 
-        newSongChord.SongLineId = songLineId;
-        newSongChord.ChordId = chordId;
-        newSongChord.PositionInLine = positionInLine;
-        newSongChord.ChordVariation = chordVariation;
-
-        return newSongChord;
+        return new SongChord
+        {
+            SongId = songId,
+            ChordId = chordId
+        };
     }
-    public void ChordVariationUpdate(string? chordVariation) => ChordVariation = chordVariation;
 }

@@ -21,10 +21,8 @@ public class User : BaseEntityWithId
     public bool IsBlocked => BlockedUntil.HasValue && BlockedUntil > DateTime.UtcNow;
 
     public virtual ICollection<Song> Songs { get; private set; } = new List<Song>();
-    public virtual ICollection<Album> Albums { get; private set; } = new List<Album>();
-    public virtual ICollection<SongReview> Reviews { get; private set; } = new List<SongReview>();
-    public virtual ICollection<UserFavoriteSong> FavoriteSongs { get; private set; } = new List<UserFavoriteSong>();
-    public virtual ICollection<SongAudioRecording> AudioRecordings { get; private set; } = new List<SongAudioRecording>();
+    public virtual ICollection<Chord> Chords { get; private set; } = new List<Chord>();
+    public virtual ICollection<StrummingPattern> StrummingPatterns { get; private set; } = new List<StrummingPattern>();
 
     private User()
     {

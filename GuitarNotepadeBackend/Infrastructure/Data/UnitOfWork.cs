@@ -15,39 +15,11 @@ public class UnitOfWork : IUnitOfWork
         Users = new UserRepository(context);
         Chords = new ChordRepository(context);
         StrummingPatterns = new StrummingPatternRepository(context);
-        //Songs = new SongRepository(context);
-        //Albums = new AlbumRepository(context);
-        //SongLines = new SongLineRepository(context);
-        //SongChords = new SongChordRepository(context);
-        //UserFavoriteSongs = new UserFavoriteSongRepository(context);
-        //AlbumSongs = new AlbumSongRepository(context);
-        //SongReviews = new SongReviewRepository(context);
-        //SongAudioRecordings = new SongAudioRecordingRepository(context);
-        //SongRelations = new SongRelationRepository(context);
-        //SongGenres = new SongGenreRepository(context);
-        //SongThemes = new SongThemeRepository(context);
-        //SongStrummingPatterns = new SongStrummingPatternRepository(context);
-        //Genres = new GenreRepository(context);
-        //Themes = new ThemeRepository(context);
     }
 
     public IUserRepository Users { get; }
     public IChordRepository Chords { get; }
     public IStrummingPatternRepository StrummingPatterns { get; }
-    //public ISongRepository Songs { get; }
-    //public IAlbumRepository Albums { get; }
-    //public ISongLineRepository SongLines { get; }
-    //public ISongChordRepository SongChords { get; }
-    //public IUserFavoriteSongRepository UserFavoriteSongs { get; }
-    //public IAlbumSongRepository AlbumSongs { get; }
-    //public ISongReviewRepository SongReviews { get; }
-    //public ISongAudioRecordingRepository SongAudioRecordings { get; }
-    //public ISongRelationRepository SongRelations { get; }
-    //public ISongGenreRepository SongGenres { get; }
-    //public ISongThemeRepository SongThemes { get; }
-    //public ISongStrummingPatternRepository SongStrummingPatterns { get; }
-    //public IGenreRepository Genres { get; }
-    //public IThemeRepository Themes { get; }
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

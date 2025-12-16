@@ -16,8 +16,7 @@ public class StrummingPattern : BaseEntityWithId
     public DateTime? UpdatedAt { get; private set; }
 
     public virtual User CreatedBy { get; private set; } = null!;
-    public virtual ICollection<SongLine> SongLines { get; private set; } = new List<SongLine>();
-    public virtual ICollection<SongStrummingPattern> SongStrummingPatterns { get; private set; } = new List<SongStrummingPattern>();
+    public virtual ICollection<SongPattern> SongPatterns { get; private set; } = new List<SongPattern>();
 
     private StrummingPattern()
     {

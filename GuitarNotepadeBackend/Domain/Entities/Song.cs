@@ -5,58 +5,51 @@ namespace Domain.Entities;
 
 public class Song : BaseEntityWithId
 {
-    public Guid OwnerId { get; private set; }
     public string Title { get; private set; }
     public string Lyrics { get; private set; }
-    public string OriginalArtist { get; private set; }
-    public int DifficultyLevel { get; private set; }
-    public bool IsPublic { get; private set; }
+    public string? Artist { get; private set; }
+    public bool  IsPublic { get; private set; }
+    public Guid OwnerId { get; private set; }
+    public Guid? ParentsSongId { get; private set; }
     public DateTime CreatedAt { get; private set; }
-    public DateTime UpdatedAt { get; private set; }
+    public DateTime? UpdatedAt { get; private set; }
 
     public virtual User Owner { get; private set; } = null!;
-    public virtual ICollection<SongLine> SongLines { get; private set; } = new List<SongLine>();
-    public virtual ICollection<SongGenre> SongGenres { get; private set; } = new List<SongGenre>();
-    public virtual ICollection<SongTheme> SongThemes { get; private set; } = new List<SongTheme>();
-    public virtual ICollection<SongReview> Reviews { get; private set; } = new List<SongReview>();
-    public virtual ICollection<UserFavoriteSong> FavoriteByUsers { get; private set; } = new List<UserFavoriteSong>();
-    public virtual ICollection<SongAudioRecording> AudioRecordings { get; private set; } = new List<SongAudioRecording>();
-    public virtual ICollection<AlbumSong> AlbumSongs { get; private set; } = new List<AlbumSong>();
-    public virtual ICollection<SongRelation> OriginalSongs { get; private set; } = new List<SongRelation>();
-    public virtual ICollection<SongRelation> DerivedSongs { get; private set; } = new List<SongRelation>();
-    public virtual ICollection<SongStrummingPattern> SongStrummingPatterns { get; private set; } = new List<SongStrummingPattern>();
+    public virtual Song? ParentSong { get; private set; }  
+    public virtual ICollection<Song> ChildSongs { get; private set; } = new List<Song>();  
+    public virtual ICollection<SongPattern> Patterns { get; private set; } = new List<SongPattern>();
+    public virtual ICollection<SongChord> Chords { get; private set; } = new List<SongChord>();
 
     private Song()
     {
         Title = string.Empty;
         Lyrics = string.Empty;
-        OriginalArtist = string.Empty;
     }
 
-    public static Song Create(string title, string lyrics, int difficultyLevel, string? originalArtist = null, bool isPublic = false)
+    public static Song Create(Guid ownerId, string title, string lyrics, bool isPublic, string? artist = null)
     {
         TitleRule.IsValid(title);
         LyricsRule.IsValid(lyrics);
-        DifficultyLevelRule.IsValid(difficultyLevel);
 
         var newSong = new Song();
 
+        newSong.OwnerId = ownerId;
         newSong.Title = title;
         newSong.Lyrics = lyrics;
-        newSong.DifficultyLevel = difficultyLevel;
         newSong.IsPublic = isPublic;
-        newSong.CreatedAt = newSong.UpdatedAt = DateTime.UtcNow;
+        newSong.CreatedAt = DateTime.UtcNow;
 
-        if (originalArtist != null)
+        if (artist != null)
         {
-            OriginalArtistRule.IsValid(originalArtist);
+            OriginalArtistRule.IsValid(artist);
 
-            newSong.OriginalArtist = originalArtist;
+            newSong.Artist = artist;
         }
 
         return newSong;
     }
-    public void Update(string? title = null, string? lyrics = null, int? difficultyLevel = null, string? originalArtist = null)
+
+    public void Update(string? title = null, string? lyrics = null, string? artist = null)
     {
         if (title != null)
         {
@@ -68,15 +61,10 @@ public class Song : BaseEntityWithId
             LyricsRule.IsValid(lyrics);
             Lyrics = lyrics;
         }
-        if (int.TryParse(difficultyLevel.ToString(), out int difficulty))
+        if(artist != null)
         {
-            DifficultyLevelRule.IsValid(difficulty);
-            DifficultyLevel = difficulty;
-        }
-        if (originalArtist != null)
-        {
-            OriginalArtistRule.IsValid(originalArtist);
-            OriginalArtist = originalArtist;
+            OriginalArtistRule.IsValid(artist);
+            Artist = artist;
         }
 
         UpdatedAt = DateTime.UtcNow;

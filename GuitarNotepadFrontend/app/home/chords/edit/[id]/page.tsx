@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { ChordsService } from "@/lib/api/chords-service";
@@ -75,6 +75,17 @@ export default function EditChordPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Используем useRef для стабильных ссылок на toast и router
+  const toastRef = useRef(toast);
+  const routerRef = useRef(router);
+
+  // Обновляем refs при изменении
+  useEffect(() => {
+    toastRef.current = toast;
+    routerRef.current = router;
+  }, [toast, router]);
 
   const {
     register,
@@ -96,11 +107,21 @@ export default function EditChordPage() {
 
   const currentValues = watch();
 
+  // Главный useEffect для загрузки аккорда
   useEffect(() => {
+    let isMounted = true;
+
     const loadChord = async () => {
+      if (!chordId) return;
+
       setIsLoading(true);
+      setLoadError(null);
+
       try {
         const chord = await ChordsService.getChordById(chordId);
+        
+        if (!isMounted) return;
+
         setOriginalChord(chord);
         reset({
           name: chord.name,
@@ -108,21 +129,35 @@ export default function EditChordPage() {
           description: chord.description || ""
         });
       } catch (error: unknown) {
+        if (!isMounted) return;
+
         console.error("Failed to load chord:", error);
         
         const errorMessage = error instanceof Error 
           ? error.message 
           : "Failed to load chord. It may have been deleted.";
-          
-        toast.error(errorMessage);
-        router.push("/home/chords");
+        
+        setLoadError(errorMessage);
+        toastRef.current.error(errorMessage);
+        
+        // Используем setTimeout для редиректа вне эффекта
+        setTimeout(() => {
+          routerRef.current.push("/home/chords");
+        }, 100);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     loadChord();
-  }, [chordId, toast, router]);
+
+    // Cleanup функция
+    return () => {
+      isMounted = false;
+    };
+  }, [chordId, reset]); // Только chordId и reset как зависимости
 
   const handleFingeringChange = (newFingering: string) => {
     setValue("fingering", newFingering, { shouldDirty: true, shouldValidate: true });
@@ -206,6 +241,29 @@ export default function EditChordPage() {
   };
 
   const canEdit = user?.id === originalChord?.createdByUserId || user?.role === "Admin";
+
+  // Показываем ошибку загрузки
+  if (loadError && !isLoading) {
+    return (
+      <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <h3 className="text-lg font-semibold">Error Loading Chord</h3>
+            <p className="text-muted-foreground mt-2">{loadError}</p>
+            <Button 
+              variant="outline" 
+              className="mt-4"
+              onClick={() => router.push("/home/chords")}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Chords
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   
   if (isLoading) {
     return (
@@ -243,9 +301,27 @@ export default function EditChordPage() {
   }
 
   if (!canEdit) {
-    toast.error("You don't have permission to edit this chord");
-    router.push(`/home/chords/${encodeURIComponent(originalChord.name)}`);
-    return null;
+    return (
+      <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <h3 className="text-lg font-semibold">Permission Denied</h3>
+            <p className="text-muted-foreground mt-2">
+              You don't have permission to edit this chord.
+            </p>
+            <Button 
+              variant="outline" 
+              className="mt-4"
+              onClick={() => router.push(`/home/chords/${encodeURIComponent(originalChord.name)}`)}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Chord
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (

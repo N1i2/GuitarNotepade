@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
@@ -75,6 +75,17 @@ export default function EditPatternPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Используем useRef для стабильных ссылок
+  const toastRef = useRef(toast);
+  const routerRef = useRef(router);
+
+  // Обновляем refs при изменении
+  useEffect(() => {
+    toastRef.current = toast;
+    routerRef.current = router;
+  }, [toast, router]);
 
   const [formData, setFormData] = useState<FormData>({
     name: "",
@@ -226,14 +237,22 @@ export default function EditPatternPage() {
     }
   };
 
+  // Исправленный useEffect с isMounted и useRef
   useEffect(() => {
+    let isMounted = true;
+
     const loadPattern = async () => {
+      if (!patternId) return;
+
       setIsLoading(true);
+      setLoadError(null);
+
       try {
         const pattern = await PatternsService.getPatternById(patternId);
 
-        setOriginalPattern(pattern);
+        if (!isMounted) return;
 
+        setOriginalPattern(pattern);
         setFormData({
           name: pattern.name,
           description: pattern.description || "",
@@ -242,6 +261,8 @@ export default function EditPatternPage() {
           fingerStylePattern: pattern.isFingerStyle ? pattern.pattern : "",
         });
       } catch (error: unknown) {
+        if (!isMounted) return;
+
         console.error("Failed to load pattern:", error);
 
         let errorMessage = "Failed to load pattern";
@@ -255,15 +276,27 @@ export default function EditPatternPage() {
           }
         }
 
-        toast.error(errorMessage);
-        router.push("/home/patterns");
+        setLoadError(errorMessage);
+        toastRef.current.error(errorMessage);
+        
+        // Используем setTimeout для редиректа
+        setTimeout(() => {
+          routerRef.current.push("/home/patterns");
+        }, 100);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     loadPattern();
-  }, [patternId, toast, router]);
+
+    // Cleanup функция
+    return () => {
+      isMounted = false;
+    };
+  }, [patternId]); // Только patternId как зависимость
 
   const updateFormField = (field: FormField, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -417,6 +450,29 @@ export default function EditPatternPage() {
 
   const canEdit = user?.id === originalPattern?.createdByUserId;
 
+  // Показываем ошибку загрузки
+  if (loadError && !isLoading) {
+    return (
+      <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <h3 className="text-lg font-semibold">Error Loading Pattern</h3>
+            <p className="text-muted-foreground mt-2">{loadError}</p>
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={() => router.push("/home/patterns")}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Patterns
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
@@ -453,9 +509,27 @@ export default function EditPatternPage() {
   }
 
   if (!canEdit) {
-    toast.error("You don't have permission to edit this pattern");
-    router.push(`/home/patterns/${encodeURIComponent(originalPattern.name)}`);
-    return null;
+    return (
+      <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <h3 className="text-lg font-semibold">Permission Denied</h3>
+            <p className="text-muted-foreground mt-2">
+              You don't have permission to edit this pattern.
+            </p>
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={() => router.push(`/home/patterns/${encodeURIComponent(originalPattern.name)}`)}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Pattern
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   const activePattern = formData.isFingerStyle
