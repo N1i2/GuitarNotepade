@@ -126,19 +126,29 @@ export default function HomePage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Music className="h-5 w-5" />
-                <CardTitle>My Songs</CardTitle>
+                <ListMusic className="h-5 w-5" />
+                Song Library
               </CardTitle>
-              <CardDescription>Manage your guitar tabs</CardDescription>
+              <CardDescription>
+                Browse and create songs
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">Coming soon...</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                Access a comprehensive library of songs
+              </p>
+              <Button asChild className="w-full">
+                <Link href="/home/song">
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  Go to Songs
+                </Link>
+              </Button>
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileMusic className="h-5 w-5"/>
+                <FileMusic className="h-5 w-5" />
                 <CardTitle>My Albom</CardTitle>
               </CardTitle>
               <CardDescription>Manage your guitar tabs</CardDescription>

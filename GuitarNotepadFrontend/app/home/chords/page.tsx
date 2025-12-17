@@ -10,12 +10,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Plus, Music, Grid3x3, Hash, Edit, User, Eye, EyeOff } from "lucide-react";
-import { Pagination } from "@/components/user-management/pagination";
+import { Search, Plus, Music, Grid3x3, Hash, User, Eye, EyeOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ChordGrid } from "@/components/chords/chord-grid";
+import { Pagination } from "@/components/user-management/pagination";
 
 interface UniqueChordItem {
   name: string;

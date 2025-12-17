@@ -5,7 +5,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { usePathname } from "next/navigation";
-import { Shield, Home, User, LogOut, ListMusic, Hand } from "lucide-react";
+import { Shield, Home, User, LogOut, ListMusic, Hand, FileMusic } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,7 +25,7 @@ export function Header() {
   const getInitials = (name: string) => {
     return name
       .split(" ")
-      .map(word => word[0])
+      .map((word) => word[0])
       .join("")
       .toUpperCase()
       .slice(0, 2);
@@ -79,11 +79,25 @@ export function Header() {
                   Strumming Patterns
                 </Link>
               </Button>
-              
+
+              <Button
+                asChild
+                variant={pathname === "/home/song" ? "default" : "ghost"}
+                size="sm"
+                className="gap-2"
+              >
+                <Link href="/home/song">
+                  <FileMusic className="h-4 w-4" />
+                  Songs
+                </Link>
+              </Button>
+
               {isAdmin && (
                 <Button
                   asChild
-                  variant={pathname === "/home/user-management" ? "default" : "ghost"}
+                  variant={
+                    pathname === "/home/user-management" ? "default" : "ghost"
+                  }
                   size="sm"
                   className="gap-2"
                 >
@@ -99,14 +113,21 @@ export function Header() {
 
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          
+
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                <Button
+                  variant="ghost"
+                  className="relative h-9 w-9 rounded-full"
+                >
                   <Avatar className="h-9 w-9">
-                    <AvatarImage 
-                      src={user.avatarUrl ? `data:image/jpeg;base64,${user.avatarUrl}` : undefined} 
+                    <AvatarImage
+                      src={
+                        user.avatarUrl
+                          ? `data:image/jpeg;base64,${user.avatarUrl}`
+                          : undefined
+                      }
                       alt={user.nikName}
                     />
                     <AvatarFallback>{getInitials(user.nikName)}</AvatarFallback>
@@ -116,12 +137,20 @@ export function Header() {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user.nikName}</p>
+                    <p className="text-sm font-medium leading-none">
+                      {user.nikName}
+                    </p>
                     <p className="text-xs leading-none text-muted-foreground">
                       {user.email}
                     </p>
                     <div className="flex items-center gap-1">
-                      <span className={`text-xs px-1.5 py-0.5 rounded ${user.role === 'Admin' ? 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300' : 'bg-muted'}`}>
+                      <span
+                        className={`text-xs px-1.5 py-0.5 rounded ${
+                          user.role === "Admin"
+                            ? "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300"
+                            : "bg-muted"
+                        }`}
+                      >
                         {user.role}
                       </span>
                     </div>
@@ -135,7 +164,10 @@ export function Header() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout} className="cursor-pointer text-red-600">
+                <DropdownMenuItem
+                  onClick={logout}
+                  className="cursor-pointer text-red-600"
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Logout</span>
                 </DropdownMenuItem>
