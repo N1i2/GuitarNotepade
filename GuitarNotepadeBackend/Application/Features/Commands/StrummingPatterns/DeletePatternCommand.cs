@@ -1,6 +1,6 @@
 ﻿using MediatR;
 
-namespace Application.Features.Commands.Chords;
+namespace Application.Features.Commands.StrummingPatterns;
 
 public class DeletePatternCommand : IRequest<bool>
 {

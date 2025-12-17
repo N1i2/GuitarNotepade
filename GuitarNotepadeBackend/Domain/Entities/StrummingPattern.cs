@@ -56,13 +56,13 @@ public class StrummingPattern : BaseEntityWithId
             PatternRule.IsValid(pattern);
             Pattern = pattern;
         }
-        if(isFingerStyle != null)
+        if (isFingerStyle.HasValue)
         {
-            IsFingerStyle = Convert.ToBoolean(isFingerStyle);
+            IsFingerStyle = isFingerStyle.Value;
         }
-        if (!string.IsNullOrEmpty(description))
+        if (!string.IsNullOrWhiteSpace(description))
         {
-            Description = description;
+            Description = description.Trim();
         }
 
         UpdatedAt = DateTime.UtcNow;

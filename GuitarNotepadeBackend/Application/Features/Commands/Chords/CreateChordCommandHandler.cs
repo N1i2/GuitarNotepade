@@ -32,7 +32,7 @@ public class CreateChordCommandHandler : IRequestHandler<CreateChordCommand, Cho
             request.UserId,
             request.Description);
 
-        await _unitOfWork.Chords.CreateNewAsync(chord, cancellationToken);
+        await _unitOfWork.Chords.CreateAsync(chord, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return MapToDto(chord);

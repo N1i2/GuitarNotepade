@@ -4,7 +4,7 @@ using Domain.Entities;
 using Domain.Interfaces;
 using MediatR;
 
-namespace Application.Features.Commands.Chords;
+namespace Application.Features.Commands.StrummingPatterns;
 
 public class CreatePatternCommandHandler : IRequestHandler<CreatePatternCommand, StrummingPatternsDto>
 {
@@ -29,11 +29,11 @@ public class CreatePatternCommandHandler : IRequestHandler<CreatePatternCommand,
         var sp = StrummingPattern.Create(
             request.Name,
             request.Pattern,
-            request.IsFingerStyle, 
+            request.IsFingerStyle,
             request.UserId,
             request.Description);
 
-        await _unitOfWork.StrummingPatterns.CreateNewAsync(sp, cancellationToken);
+        await _unitOfWork.StrummingPatterns.CreateAsync(sp, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return MapToDto(sp);

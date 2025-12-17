@@ -1,4 +1,4 @@
-﻿namespace Application.DTOs.Chords;
+﻿namespace Application.DTOs.StrummingPatterns;
 
 public class UpdatePatternDto
 {

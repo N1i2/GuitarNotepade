@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251216185844_Createv3")]
-    partial class Createv3
+    [Migration("20251217161256_createV3")]
+    partial class createV3
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -54,18 +54,43 @@ namespace Infrastructure.Data.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
 
                     b.HasIndex("Name");
 
+                    b.ToTable("Chords");
+                });
+
+            modelBuilder.Entity("Domain.Entities.ReviewLike", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsLike")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("ReviewId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReviewId");
+
                     b.HasIndex("UserId");
 
-                    b.ToTable("Chords");
+                    b.HasIndex("ReviewId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("ReviewLikes");
                 });
 
             modelBuilder.Entity("Domain.Entities.Song", b =>
@@ -78,21 +103,28 @@ namespace Infrastructure.Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("CompiledView")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FullText")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<bool>("IsPublic")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("Lyrics")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<Guid>("OwnerId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ParentsSongId")
+                    b.Property<Guid?>("ParentSongId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("StructureJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -104,11 +136,13 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("FullText");
+
                     b.HasIndex("IsPublic");
 
                     b.HasIndex("OwnerId");
 
-                    b.HasIndex("ParentsSongId");
+                    b.HasIndex("ParentSongId");
 
                     b.HasIndex("Title");
 
@@ -117,42 +151,97 @@ namespace Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Domain.Entities.SongChord", b =>
                 {
-                    b.Property<Guid>("SongId")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("ChordId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("Id")
+                    b.Property<Guid>("SongId")
                         .HasColumnType("uuid");
 
-                    b.HasKey("SongId", "ChordId");
+                    b.HasKey("Id");
 
                     b.HasIndex("ChordId");
 
                     b.HasIndex("SongId");
+
+                    b.HasIndex("SongId", "ChordId");
 
                     b.ToTable("SongChords");
                 });
 
             modelBuilder.Entity("Domain.Entities.SongPattern", b =>
                 {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("SongId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("StrummingPatternId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("SongId", "StrummingPatternId");
+                    b.HasKey("Id");
 
                     b.HasIndex("SongId");
 
                     b.HasIndex("StrummingPatternId");
 
+                    b.HasIndex("SongId", "StrummingPatternId");
+
                     b.ToTable("SongPatterns");
+                });
+
+            modelBuilder.Entity("Domain.Entities.SongReview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("BeautifulLevel")
+                        .HasPrecision(3, 2)
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DifficultyLevel")
+                        .HasPrecision(3, 2)
+                        .HasColumnType("integer");
+
+                    b.Property<int>("DislikesCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("LikesCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ReviewText")
+                        .IsRequired()
+                        .HasMaxLength(5000)
+                        .HasColumnType("character varying(5000)");
+
+                    b.Property<Guid>("SongId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SongId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("SongId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("SongReviews");
                 });
 
             modelBuilder.Entity("Domain.Entities.StrummingPattern", b =>
@@ -187,9 +276,6 @@ namespace Infrastructure.Data.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
@@ -197,8 +283,6 @@ namespace Infrastructure.Data.Migrations
                     b.HasIndex("IsFingerStyle");
 
                     b.HasIndex("Name");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("StrummingPatterns");
                 });
@@ -266,16 +350,31 @@ namespace Infrastructure.Data.Migrations
             modelBuilder.Entity("Domain.Entities.Chord", b =>
                 {
                     b.HasOne("Domain.Entities.User", "CreatedBy")
-                        .WithMany()
+                        .WithMany("Chords")
                         .HasForeignKey("CreatedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Domain.Entities.User", null)
-                        .WithMany("Chords")
-                        .HasForeignKey("UserId");
-
                     b.Navigation("CreatedBy");
+                });
+
+            modelBuilder.Entity("Domain.Entities.ReviewLike", b =>
+                {
+                    b.HasOne("Domain.Entities.SongReview", "Review")
+                        .WithMany("Likes")
+                        .HasForeignKey("ReviewId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.User", "User")
+                        .WithMany("ReviewLikes")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Review");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Domain.Entities.Song", b =>
@@ -288,7 +387,7 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasOne("Domain.Entities.Song", "ParentSong")
                         .WithMany("ChildSongs")
-                        .HasForeignKey("ParentsSongId")
+                        .HasForeignKey("ParentSongId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Owner");
@@ -305,7 +404,7 @@ namespace Infrastructure.Data.Migrations
                         .IsRequired();
 
                     b.HasOne("Domain.Entities.Song", "Song")
-                        .WithMany("Chords")
+                        .WithMany("SongChords")
                         .HasForeignKey("SongId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -318,7 +417,7 @@ namespace Infrastructure.Data.Migrations
             modelBuilder.Entity("Domain.Entities.SongPattern", b =>
                 {
                     b.HasOne("Domain.Entities.Song", "Song")
-                        .WithMany("Patterns")
+                        .WithMany("SongPatterns")
                         .HasForeignKey("SongId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -334,17 +433,32 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("StrummingPattern");
                 });
 
-            modelBuilder.Entity("Domain.Entities.StrummingPattern", b =>
+            modelBuilder.Entity("Domain.Entities.SongReview", b =>
                 {
-                    b.HasOne("Domain.Entities.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
+                    b.HasOne("Domain.Entities.Song", "Song")
+                        .WithMany("Reviews")
+                        .HasForeignKey("SongId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.User", "User")
+                        .WithMany("Reviews")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Domain.Entities.User", null)
+                    b.Navigation("Song");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Domain.Entities.StrummingPattern", b =>
+                {
+                    b.HasOne("Domain.Entities.User", "CreatedBy")
                         .WithMany("StrummingPatterns")
-                        .HasForeignKey("UserId");
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("CreatedBy");
                 });
@@ -358,9 +472,16 @@ namespace Infrastructure.Data.Migrations
                 {
                     b.Navigation("ChildSongs");
 
-                    b.Navigation("Chords");
+                    b.Navigation("Reviews");
 
-                    b.Navigation("Patterns");
+                    b.Navigation("SongChords");
+
+                    b.Navigation("SongPatterns");
+                });
+
+            modelBuilder.Entity("Domain.Entities.SongReview", b =>
+                {
+                    b.Navigation("Likes");
                 });
 
             modelBuilder.Entity("Domain.Entities.StrummingPattern", b =>
@@ -371,6 +492,10 @@ namespace Infrastructure.Data.Migrations
             modelBuilder.Entity("Domain.Entities.User", b =>
                 {
                     b.Navigation("Chords");
+
+                    b.Navigation("ReviewLikes");
+
+                    b.Navigation("Reviews");
 
                     b.Navigation("Songs");
 

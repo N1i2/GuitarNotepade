@@ -35,7 +35,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, A
             _authService.HashPassword(request.Password),
             "User");
 
-        await _unitOfWork.Users.CreateNewAsync(user, cancellationToken);
+        await _unitOfWork.Users.CreateAsync(user, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         var token = await _authService.GenerateJwtTokenAsync(user);

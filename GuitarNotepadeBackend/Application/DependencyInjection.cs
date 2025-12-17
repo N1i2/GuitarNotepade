@@ -1,4 +1,5 @@
 ﻿using Application.Mappings;
+using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Application;

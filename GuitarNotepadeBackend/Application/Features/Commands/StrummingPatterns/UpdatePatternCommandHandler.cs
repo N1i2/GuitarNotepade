@@ -3,7 +3,7 @@ using Application.DTOs.StrummingPatterns;
 using Domain.Interfaces;
 using MediatR;
 
-namespace Application.Features.Commands.Chords;
+namespace Application.Features.Commands.StrummingPatterns;
 
 public class UpdatePatternCommandHandler : IRequestHandler<UpdatePatternCommand, StrummingPatternsDto>
 {

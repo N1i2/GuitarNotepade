@@ -4,9 +4,8 @@ using MediatR;
 using Domain.Interfaces;
 using Application.Validations;
 using Application.DTOs.Users;
-using Application.Features.Commands.Users;
 
-namespace Application.Features.Auth;
+namespace Application.Features.Commands.Users;
 
 public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, AuthResponseDto>
 {
@@ -21,7 +20,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, A
 
     public async Task<AuthResponseDto> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
     {
-        await RegistrationValidate.isValid(request, _unitOfWork, cancellationToken);
+        await RegistrationValidate.IsValid(request, _unitOfWork, cancellationToken);
 
         var passwordHash = _authService.HashPassword(request.Password);
         var user = User.Create(
@@ -30,7 +29,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, A
             passwordHash,
             "User");
 
-        await _unitOfWork.Users.CreateNewAsync(user, cancellationToken);
+        await _unitOfWork.Users.CreateAsync(user, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         var token = await _authService.GenerateJwtTokenAsync(user);

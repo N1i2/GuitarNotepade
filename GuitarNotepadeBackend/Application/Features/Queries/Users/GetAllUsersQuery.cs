@@ -1,10 +1,11 @@
-﻿using Application.DTOs.Users;
+﻿using Application.DTOs.Generic;
+using Application.DTOs.Users;
 using Domain.Common;
 using MediatR;
 
 namespace Application.Features.Queries.Users;
 
-public class GetAllUsersQuery : IRequest<PaginatedResultDto<UserProfileDto>>
+public class GetAllUsersQuery : IRequest<PaginatedDto<UserProfileDto>>
 {
     public string? EmailFilter { get; }
     public string? NikNameFilter { get; }

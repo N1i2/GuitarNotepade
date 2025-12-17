@@ -1,12 +1,12 @@
-﻿using Domain.Interfaces.Services;
-using Domain.Interfaces;
+﻿using Domain.Interfaces;
+using Domain.Interfaces.Repositories;
+using Domain.Interfaces.Services;
+using Infrastructure.Data;
+using Infrastructure.Repositories;
+using Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Infrastructure.Data;
-using Infrastructure.Services;
-using Infrastructure.Repositories;
-using Domain.Interfaces.Repositories;
 
 namespace Infrastructure;
 
@@ -28,11 +28,17 @@ public static class DependencyInjection
                 });
         }, ServiceLifetime.Scoped);
 
-        services.AddScoped<IUserRepository, UserRepository>();
-
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IChordRepository, ChordRepository>();
+        services.AddScoped<IStrummingPatternRepository, StrummingPatternRepository>();
+        services.AddScoped<ISongRepository, SongRepository>();
+        services.AddScoped<ISongReviewRepository, SongReviewRepository>();
+        services.AddScoped<IReviewLikeRepository, ReviewLikeRepository>();
+
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IFileStorageService, FileStorageService>();
 
         services.AddHttpClient<IWebDavService, WebDavService>((serviceProvider, client) =>
         {
@@ -40,19 +46,6 @@ public static class DependencyInjection
             client.BaseAddress = new Uri(baseUrl);
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("User-Agent", "GuitarNotepad");
-
-            var username = Environment.GetEnvironmentVariable("YANDEX_DISK_USERNAME");
-            var password = Environment.GetEnvironmentVariable("YANDEX_DISK_PASSWORD");
-
-            if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
-            {
-                var authToken = Convert.ToBase64String(
-                    System.Text.Encoding.ASCII.GetBytes($"{username}:{password}"));
-                client.DefaultRequestHeaders.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authToken);
-            }
-
-            client.DefaultRequestHeaders.Add("Depth", "0");
         });
 
         services.AddMemoryCache();
@@ -64,20 +57,21 @@ public static class DependencyInjection
     {
         try
         {
-            var host = Environment.GetEnvironmentVariable("DB_HOST");
-            var port = Environment.GetEnvironmentVariable("DB_PORT");
-            var database = Environment.GetEnvironmentVariable("DB_NAME");
-            var username = Environment.GetEnvironmentVariable("DB_USER");
-            var password = Environment.GetEnvironmentVariable("DB_PASSWORD");
-            var pooling = Environment.GetEnvironmentVariable("DB_POOLING");
-            var minPoolSize = Environment.GetEnvironmentVariable("DB_MIN_POOL_SIZE");
-            var maxPoolSize = Environment.GetEnvironmentVariable("DB_MAX_POOL_SIZE");
-            var commandTimeout = Environment.GetEnvironmentVariable("DB_COMMAND_TIMEOUT");
+            var host = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost";
+            var port = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
+            var database = Environment.GetEnvironmentVariable("DB_NAME") ?? "guitarnotepad";
+            var username = Environment.GetEnvironmentVariable("DB_USER") ?? "postgres";
+            var password = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "password";
+            var pooling = Environment.GetEnvironmentVariable("DB_POOLING") ?? "true";
+            var minPoolSize = Environment.GetEnvironmentVariable("DB_MIN_POOL_SIZE") ?? "1";
+            var maxPoolSize = Environment.GetEnvironmentVariable("DB_MAX_POOL_SIZE") ?? "20";
+            var commandTimeout = Environment.GetEnvironmentVariable("DB_COMMAND_TIMEOUT") ?? "30";
 
             var connectionString = $"Host={host};Port={port};Database={database};" +
                                   $"Username={username};Password={password};" +
                                   $"Pooling={pooling};Minimum Pool Size={minPoolSize};" +
-                                  $"Maximum Pool Size={maxPoolSize};CommandTimeout={commandTimeout}";
+                                  $"Maximum Pool Size={maxPoolSize};CommandTimeout={commandTimeout};" +
+                                  $"Include Error Detail=true";
 
             return connectionString;
         }

@@ -8,7 +8,7 @@ namespace Application.Validations;
 
 static public class LoginValidation
 {
-    public static async Task<User> isValid(LoginUserCommand request, IUnitOfWork unitOfWork, IAuthService authService, CancellationToken cancellationToken)
+    public static async Task<User> IsValid(LoginUserCommand request, IUnitOfWork unitOfWork, IAuthService authService, CancellationToken cancellationToken)
     {
         var user = await unitOfWork.Users.GetByEmailAsync(request.Email, cancellationToken);
 

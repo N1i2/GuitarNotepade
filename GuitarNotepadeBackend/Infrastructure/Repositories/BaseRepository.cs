@@ -2,6 +2,7 @@
 using Domain.Interfaces.Repositories;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace Infrastructure.Repositories;
 
@@ -10,11 +11,15 @@ public class BaseRepository<T> : IBaseRepository<T> where T : BaseEntityWithId
     protected readonly AppDbContext _context;
     protected readonly DbSet<T> _dbSet;
 
-
     public BaseRepository(AppDbContext context)
     {
         _context = context;
         _dbSet = context.Set<T>();
+    }
+
+    public virtual IQueryable<T> GetQueryable()
+    {
+        return _dbSet.AsQueryable();
     }
 
     public virtual async Task<List<T>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -27,49 +32,35 @@ public class BaseRepository<T> : IBaseRepository<T> where T : BaseEntityWithId
         return await _dbSet.FindAsync(new object[] { id }, cancellationToken);
     }
 
-    public virtual async Task<T?> CreateNewAsync(T newObj, CancellationToken cancellationToken = default)
+    public virtual async Task<T> CreateAsync(T newObj, CancellationToken cancellationToken = default)
     {
         await _dbSet.AddAsync(newObj, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
         return newObj;
     }
 
-    public virtual async Task<T?> UpdateByIdAsync(Guid id, T newObj, CancellationToken cancellationToken = default)
+    public virtual async Task<T?> UpdateAsync(T entity, CancellationToken cancellationToken = default)
     {
-        var existing = await GetByIdAsync(id, cancellationToken);
-        if (existing == null)
-        {
-            return null;
-        }
-
-        _context.Entry(existing).CurrentValues.SetValues(newObj);
-        return existing;
+        _context.Entry(entity).State = EntityState.Modified;
+        await _context.SaveChangesAsync(cancellationToken);
+        return entity;
     }
 
-    public virtual async Task<T?> DeleteByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public virtual async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var entity = await GetByIdAsync(id, cancellationToken);
         if (entity == null)
         {
-            return null;
+            return false;
         }
 
         _dbSet.Remove(entity);
-        return entity;
+        await _context.SaveChangesAsync(cancellationToken);
+        return true;
     }
 
-    public async Task<T?> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
+    public virtual async Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var entity = await GetByIdAsync(id, cancellationToken);
-        if (entity == null)
-        {
-            return null;
-        }
-
-        return entity;
-    }
-
-    public IQueryable<T> GetQueryable()
-    {
-        return _dbSet.AsQueryable();
+        return await _dbSet.AnyAsync(e => e.Id == id, cancellationToken);
     }
 }

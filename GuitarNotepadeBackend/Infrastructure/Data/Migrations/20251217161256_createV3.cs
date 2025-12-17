@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class Createv3 : Migration
+    public partial class createV3 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -41,8 +41,7 @@ namespace Infrastructure.Data.Migrations
                     Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: true)
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -53,11 +52,6 @@ namespace Infrastructure.Data.Migrations
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_Chords_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -66,20 +60,22 @@ namespace Infrastructure.Data.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    Lyrics = table.Column<string>(type: "text", nullable: false),
                     Artist = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     IsPublic = table.Column<bool>(type: "boolean", nullable: false),
                     OwnerId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ParentsSongId = table.Column<Guid>(type: "uuid", nullable: true),
+                    ParentSongId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    FullText = table.Column<string>(type: "text", nullable: false),
+                    StructureJson = table.Column<string>(type: "jsonb", nullable: false),
+                    CompiledView = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Songs", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Songs_Songs_ParentsSongId",
-                        column: x => x.ParentsSongId,
+                        name: "FK_Songs_Songs_ParentSongId",
+                        column: x => x.ParentSongId,
                         principalTable: "Songs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
@@ -102,8 +98,7 @@ namespace Infrastructure.Data.Migrations
                     IsFingerStyle = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: true)
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -114,24 +109,19 @@ namespace Infrastructure.Data.Migrations
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_StrummingPatterns_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
                 name: "SongChords",
                 columns: table => new
                 {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     SongId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ChordId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Id = table.Column<Guid>(type: "uuid", nullable: false)
+                    ChordId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_SongChords", x => new { x.SongId, x.ChordId });
+                    table.PrimaryKey("PK_SongChords", x => x.Id);
                     table.ForeignKey(
                         name: "FK_SongChords_Chords_ChordId",
                         column: x => x.ChordId,
@@ -147,16 +137,48 @@ namespace Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "SongPatterns",
+                name: "SongReviews",
                 columns: table => new
                 {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     SongId = table.Column<Guid>(type: "uuid", nullable: false),
-                    StrummingPatternId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Id = table.Column<Guid>(type: "uuid", nullable: false)
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ReviewText = table.Column<string>(type: "character varying(5000)", maxLength: 5000, nullable: false),
+                    BeautifulLevel = table.Column<int>(type: "integer", precision: 3, scale: 2, nullable: true),
+                    DifficultyLevel = table.Column<int>(type: "integer", precision: 3, scale: 2, nullable: true),
+                    LikesCount = table.Column<int>(type: "integer", nullable: false),
+                    DislikesCount = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_SongPatterns", x => new { x.SongId, x.StrummingPatternId });
+                    table.PrimaryKey("PK_SongReviews", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SongReviews_Songs_SongId",
+                        column: x => x.SongId,
+                        principalTable: "Songs",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_SongReviews_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SongPatterns",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    SongId = table.Column<Guid>(type: "uuid", nullable: false),
+                    StrummingPatternId = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SongPatterns", x => x.Id);
                     table.ForeignKey(
                         name: "FK_SongPatterns_Songs_SongId",
                         column: x => x.SongId,
@@ -171,6 +193,33 @@ namespace Infrastructure.Data.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "ReviewLikes",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ReviewId = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    IsLike = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ReviewLikes", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ReviewLikes_SongReviews_ReviewId",
+                        column: x => x.ReviewId,
+                        principalTable: "SongReviews",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ReviewLikes_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_Chords_CreatedByUserId",
                 table: "Chords",
@@ -182,8 +231,19 @@ namespace Infrastructure.Data.Migrations
                 column: "Name");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Chords_UserId",
-                table: "Chords",
+                name: "IX_ReviewLikes_ReviewId",
+                table: "ReviewLikes",
+                column: "ReviewId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ReviewLikes_ReviewId_UserId",
+                table: "ReviewLikes",
+                columns: new[] { "ReviewId", "UserId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ReviewLikes_UserId",
+                table: "ReviewLikes",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
@@ -197,14 +257,45 @@ namespace Infrastructure.Data.Migrations
                 column: "SongId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_SongChords_SongId_ChordId",
+                table: "SongChords",
+                columns: new[] { "SongId", "ChordId" });
+
+            migrationBuilder.CreateIndex(
                 name: "IX_SongPatterns_SongId",
                 table: "SongPatterns",
                 column: "SongId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_SongPatterns_SongId_StrummingPatternId",
+                table: "SongPatterns",
+                columns: new[] { "SongId", "StrummingPatternId" });
+
+            migrationBuilder.CreateIndex(
                 name: "IX_SongPatterns_StrummingPatternId",
                 table: "SongPatterns",
                 column: "StrummingPatternId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SongReviews_SongId",
+                table: "SongReviews",
+                column: "SongId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SongReviews_SongId_UserId",
+                table: "SongReviews",
+                columns: new[] { "SongId", "UserId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SongReviews_UserId",
+                table: "SongReviews",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Songs_FullText",
+                table: "Songs",
+                column: "FullText");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Songs_IsPublic",
@@ -217,9 +308,9 @@ namespace Infrastructure.Data.Migrations
                 column: "OwnerId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Songs_ParentsSongId",
+                name: "IX_Songs_ParentSongId",
                 table: "Songs",
-                column: "ParentsSongId");
+                column: "ParentSongId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Songs_Title",
@@ -240,11 +331,6 @@ namespace Infrastructure.Data.Migrations
                 name: "IX_StrummingPatterns_Name",
                 table: "StrummingPatterns",
                 column: "Name");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_StrummingPatterns_UserId",
-                table: "StrummingPatterns",
-                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_BlockedUntil",
@@ -273,19 +359,25 @@ namespace Infrastructure.Data.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "ReviewLikes");
+
+            migrationBuilder.DropTable(
                 name: "SongChords");
 
             migrationBuilder.DropTable(
                 name: "SongPatterns");
 
             migrationBuilder.DropTable(
+                name: "SongReviews");
+
+            migrationBuilder.DropTable(
                 name: "Chords");
 
             migrationBuilder.DropTable(
-                name: "Songs");
+                name: "StrummingPatterns");
 
             migrationBuilder.DropTable(
-                name: "StrummingPatterns");
+                name: "Songs");
 
             migrationBuilder.DropTable(
                 name: "Users");

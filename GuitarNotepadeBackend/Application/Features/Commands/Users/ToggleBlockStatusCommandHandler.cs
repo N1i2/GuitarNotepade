@@ -27,7 +27,7 @@ public class ToggleBlockStatusCommandHandler : IRequestHandler<ToggleBlockStatus
             throw new InvalidOperationException("Admin cannot block/unblock themselves");
         }
 
-        user.CheckAndClearExpiredBlock();
+        user.ClearExpiredBlockIfNeeded();
 
         if (request.IsBlockAction)
         {

@@ -1,7 +1,7 @@
-﻿using Application.DTOs.Chords;
-using Application.DTOs.Generic;
+﻿using Application.DTOs.Generic;
 using Application.DTOs.StrummingPatterns;
 using Application.Features.Commands.Chords;
+using Application.Features.Commands.StrummingPatterns;
 using Application.Features.Queries.Chords;
 using Application.Features.Queries.StrummingPatterns;
 using AutoMapper;

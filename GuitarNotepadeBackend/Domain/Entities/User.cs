@@ -16,13 +16,15 @@ public class User : BaseEntityWithId
     public string Bio { get; private set; }
     public DateTime? BlockedUntil { get; private set; }
     public string? BlockReason { get; private set; }
-    public DateTime CreateAt { get; set; }
+    public DateTime CreateAt { get; private set; }
 
     public bool IsBlocked => BlockedUntil.HasValue && BlockedUntil > DateTime.UtcNow;
 
     public virtual ICollection<Song> Songs { get; private set; } = new List<Song>();
     public virtual ICollection<Chord> Chords { get; private set; } = new List<Chord>();
     public virtual ICollection<StrummingPattern> StrummingPatterns { get; private set; } = new List<StrummingPattern>();
+    public virtual ICollection<SongReview> Reviews { get; private set; } = new List<SongReview>();
+    public virtual ICollection<ReviewLike> ReviewLikes { get; private set; } = new List<ReviewLike>();
 
     private User()
     {
@@ -86,6 +88,11 @@ public class User : BaseEntityWithId
 
     public void Block(DateTime blockedUntil, string reason)
     {
+        if (Role == Constants.Roles.Admin)
+        {
+            throw new InvalidOperationException("Cannot block administrators");
+        }
+
         if (string.IsNullOrWhiteSpace(reason))
         {
             throw new ArgumentException("Block reason cannot be empty", nameof(reason));
@@ -96,9 +103,9 @@ public class User : BaseEntityWithId
             throw new ArgumentException("Block until date must be in the future", nameof(blockedUntil));
         }
 
-        if (blockedUntil > DateTime.UtcNow.AddYears(100))
+        if (blockedUntil > DateTime.UtcNow.AddYears(1)) 
         {
-            throw new ArgumentException("Block duration cannot exceed 100 years", nameof(blockedUntil));
+            throw new ArgumentException("Block duration cannot exceed 1 year", nameof(blockedUntil));
         }
 
         BlockedUntil = blockedUntil;
@@ -111,30 +118,31 @@ public class User : BaseEntityWithId
         BlockReason = null;
     }
 
-    public void CheckAndClearExpiredBlock()
+    public void MakeAdminRole() => Role = Constants.Roles.Admin;
+    public void RemoveAdminRole() => Role = Constants.Roles.User;
+    public void UpdateUrl(string? url) => AvatarUrl = url;
+    public int GetLikesGivenCount() => ReviewLikes.Count(rl => rl.IsLike);
+    public int GetDislikesGivenCount() => ReviewLikes.Count(rl => !rl.IsLike);
+    
+    public (bool IsBlocked, string? Message) GetBlockStatus()
+    {
+        if (IsBlocked)
+        {
+            var timeLeft = BlockedUntil!.Value - DateTime.UtcNow;
+            var message = $"Account blocked until {BlockedUntil.Value:yyyy-MM-dd HH:mm} UTC. Reason: {BlockReason}";
+            return (true, message);
+        }
+
+        ClearExpiredBlockIfNeeded();
+
+        return (false, null);
+    }
+
+    public void ClearExpiredBlockIfNeeded()
     {
         if (BlockedUntil.HasValue && BlockedUntil <= DateTime.UtcNow)
         {
             Unblock();
         }
-    }
-
-    public void MakeAdminRole() => Role = Constants.Roles.Admin;
-    public void RemoveAdminRole() => Role = Constants.Roles.User;
-    public void UpdateUrl(string? url) => AvatarUrl = url;
-
-    public (bool IsBlocked, string? Message) GetBlockStatus()
-    {
-        CheckAndClearExpiredBlock();
-
-        if (BlockedUntil.HasValue && BlockedUntil > DateTime.UtcNow)
-        {
-            var timeLeft = BlockedUntil.Value - DateTime.UtcNow;
-            var message = $"Account blocked until {BlockedUntil.Value:yyyy-MM-dd HH:mm} UTC. Reason: {BlockReason}";
-
-            return (true, message);
-        }
-
-        return (false, null);
     }
 }

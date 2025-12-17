@@ -9,6 +9,7 @@ using Domain.Common;
 using Application.DTOs.Users;
 using Application.Features.Queries.Users;
 using Application.Features.Commands.Users;
+using Application.DTOs.Generic;
 
 namespace Presentation.Controllers;
 
@@ -25,7 +26,7 @@ public class UserManagementController : ControllerBase
     }
 
     [HttpGet("users")]
-    public async Task<ActionResult<PaginatedResultDto<UserProfileDto>>> GetAllUsers(
+    public async Task<ActionResult<PaginatedDto<UserProfileDto>>> GetAllUsers(
         [FromQuery] string? emailFilter = null,
         [FromQuery] string? nikNameFilter = null,
         [FromQuery] bool? isBlocked = null,
@@ -91,7 +92,7 @@ public class UserManagementController : ControllerBase
     }
 
     [HttpPut("unblock-user")]
-    public async Task<ActionResult<BlockUserResponseDto>> UnblockUser([FromBody] BlockByEmailDto dto)
+    public async Task<ActionResult<BlockUserResponseDto>> UnblockUser([FromBody] WorkWithUserByEmailDto dto)
     {
         try
         {
@@ -119,7 +120,7 @@ public class UserManagementController : ControllerBase
     }
 
     [HttpPut("toggle-user-role")]
-    public async Task<ActionResult> MakeAdminByEmail([FromBody] ChangeRoleByEmailDto dto)
+    public async Task<ActionResult> MakeAdminByEmail([FromBody] WorkWithUserByEmailDto dto)
     {
         try
         {

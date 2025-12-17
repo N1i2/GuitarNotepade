@@ -47,7 +47,7 @@ public class UserController : ControllerBase
     }
 
     [HttpPut("profile")]
-    public async Task<ActionResult<UserProfileDto>> UpdateProfile([FromBody] UpdateUserProfileDto dto)
+    public async Task<ActionResult<UserProfileDto>> UpdateProfile([FromBody] UpdateUserProfileWithIdDto dto)
     {
         try
         {

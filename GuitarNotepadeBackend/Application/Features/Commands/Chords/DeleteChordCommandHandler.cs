@@ -30,7 +30,7 @@ public class DeleteChordCommandHandler : IRequestHandler<DeleteChordCommand, boo
             throw new UnauthorizedAccessException("You can only delete chords created by you or you must be an admin");
         }
 
-        await _unitOfWork.Chords.DeleteByIdAsync(request.ChordId, cancellationToken);
+        await _unitOfWork.Chords.DeleteAsync(request.ChordId, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return true;

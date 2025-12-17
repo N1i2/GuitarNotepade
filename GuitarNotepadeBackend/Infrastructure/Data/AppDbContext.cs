@@ -1,5 +1,8 @@
 ﻿using Domain.Entities;
+using Domain.Entities.Base;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using System.Text.Json;
 
 namespace Infrastructure.Data;
 
@@ -13,6 +16,8 @@ public class AppDbContext : DbContext
     public DbSet<SongChord> SongChords => Set<SongChord>();
     public DbSet<SongPattern> SongPatterns => Set<SongPattern>();
     public DbSet<Song> Songs => Set<Song>();
+    public DbSet<SongReview> SongReviews => Set<SongReview>();
+    public DbSet<ReviewLike> ReviewLikes => Set<ReviewLike>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -52,6 +57,9 @@ public class AppDbContext : DbContext
             entity.Property(u => u.BlockReason)
                 .HasMaxLength(500);
 
+            entity.Property(u => u.CreateAt)
+                .IsRequired();
+
             entity.HasMany(u => u.Songs)
                 .WithOne(s => s.Owner)
                 .HasForeignKey(s => s.OwnerId)
@@ -65,6 +73,16 @@ public class AppDbContext : DbContext
             entity.HasMany(u => u.StrummingPatterns)
                 .WithOne(sp => sp.CreatedBy)
                 .HasForeignKey(sp => sp.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(u => u.Reviews)
+                .WithOne(r => r.User)
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(u => u.ReviewLikes)
+                .WithOne(rl => rl.User)
+                .HasForeignKey(rl => rl.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -86,8 +104,11 @@ public class AppDbContext : DbContext
             entity.Property(c => c.Description)
                 .HasMaxLength(1000);
 
+            entity.Property(c => c.CreatedAt)
+                .IsRequired();
+
             entity.HasOne(c => c.CreatedBy)
-                .WithMany()
+                .WithMany(u => u.Chords)
                 .HasForeignKey(c => c.CreatedByUserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
@@ -116,8 +137,11 @@ public class AppDbContext : DbContext
             entity.Property(sp => sp.Description)
                 .HasMaxLength(1000);
 
+            entity.Property(sp => sp.CreatedAt)
+                .IsRequired();
+
             entity.HasOne(sp => sp.CreatedBy)
-                .WithMany()
+                .WithMany(u => u.StrummingPatterns)
                 .HasForeignKey(sp => sp.CreatedByUserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
@@ -134,18 +158,29 @@ public class AppDbContext : DbContext
             entity.HasIndex(s => s.Title);
             entity.HasIndex(s => s.OwnerId);
             entity.HasIndex(s => s.IsPublic);
-            entity.HasIndex(s => s.ParentsSongId);
+            entity.HasIndex(s => s.ParentSongId);
+            entity.HasIndex(s => s.FullText);
 
             entity.Property(s => s.Title)
                 .IsRequired()
                 .HasMaxLength(200);
 
-            entity.Property(s => s.Lyrics)
+            entity.Property(s => s.Artist)
+                .HasMaxLength(200);
+
+            entity.Property(s => s.FullText)
                 .IsRequired()
                 .HasColumnType("text");
 
-            entity.Property(s => s.Artist)
-                .HasMaxLength(200);
+            entity.Property(s => s.StructureJson)
+                .IsRequired()
+                .HasColumnType("jsonb");
+
+            entity.Property(s => s.CompiledView)
+                .HasColumnType("text");
+
+            entity.Property(s => s.CreatedAt)
+                .IsRequired();
 
             entity.HasOne(s => s.Owner)
                 .WithMany(u => u.Songs)
@@ -154,15 +189,20 @@ public class AppDbContext : DbContext
 
             entity.HasOne(s => s.ParentSong)
                 .WithMany(s => s.ChildSongs)
-                .HasForeignKey(s => s.ParentsSongId)
+                .HasForeignKey(s => s.ParentSongId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasMany(s => s.Chords)
+            entity.HasMany(s => s.Reviews)
+                .WithOne(r => r.Song)
+                .HasForeignKey(r => r.SongId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(s => s.SongChords)
                 .WithOne(sc => sc.Song)
                 .HasForeignKey(sc => sc.SongId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasMany(s => s.Patterns)
+            entity.HasMany(s => s.SongPatterns)
                 .WithOne(sp => sp.Song)
                 .HasForeignKey(sp => sp.SongId)
                 .OnDelete(DeleteBehavior.Cascade);
@@ -170,13 +210,14 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<SongChord>(entity =>
         {
-            entity.HasKey(sc => new { sc.SongId, sc.ChordId });
+            entity.HasKey(sc => sc.Id);
 
             entity.HasIndex(sc => sc.SongId);
             entity.HasIndex(sc => sc.ChordId);
+            entity.HasIndex(sc => new { sc.SongId, sc.ChordId });
 
             entity.HasOne(sc => sc.Song)
-                .WithMany(s => s.Chords)
+                .WithMany(s => s.SongChords)
                 .HasForeignKey(sc => sc.SongId)
                 .OnDelete(DeleteBehavior.Cascade);
 
@@ -188,13 +229,14 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<SongPattern>(entity =>
         {
-            entity.HasKey(sp => new { sp.SongId, sp.StrummingPatternId });
+            entity.HasKey(sp => sp.Id);
 
             entity.HasIndex(sp => sp.SongId);
             entity.HasIndex(sp => sp.StrummingPatternId);
+            entity.HasIndex(sp => new { sp.SongId, sp.StrummingPatternId });
 
             entity.HasOne(sp => sp.Song)
-                .WithMany(s => s.Patterns)
+                .WithMany(s => s.SongPatterns)
                 .HasForeignKey(sp => sp.SongId)
                 .OnDelete(DeleteBehavior.Cascade);
 
@@ -202,6 +244,65 @@ public class AppDbContext : DbContext
                 .WithMany(sp => sp.SongPatterns)
                 .HasForeignKey(sp => sp.StrummingPatternId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SongReview>(entity =>
+        {
+            entity.HasKey(r => r.Id);
+
+            entity.HasIndex(r => r.SongId);
+            entity.HasIndex(r => r.UserId);
+            entity.HasIndex(r => new { r.SongId, r.UserId }).IsUnique();
+
+            entity.Property(r => r.ReviewText)
+                .IsRequired()
+                .HasMaxLength(5000);
+
+            entity.Property(r => r.BeautifulLevel)
+                .HasPrecision(3, 2);
+
+            entity.Property(r => r.DifficultyLevel)
+                .HasPrecision(3, 2);
+
+            entity.Property(r => r.CreatedAt)
+                .IsRequired();
+
+            entity.HasOne(r => r.Song)
+                .WithMany(s => s.Reviews)
+                .HasForeignKey(r => r.SongId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(r => r.User)
+                .WithMany(u => u.Reviews)
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(r => r.Likes)
+                .WithOne(l => l.Review)
+                .HasForeignKey(l => l.ReviewId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ReviewLike>(entity =>
+        {
+            entity.HasKey(rl => rl.Id);
+
+            entity.HasIndex(rl => rl.ReviewId);
+            entity.HasIndex(rl => rl.UserId);
+            entity.HasIndex(rl => new { rl.ReviewId, rl.UserId }).IsUnique();
+
+            entity.Property(rl => rl.CreatedAt)
+                .IsRequired();
+
+            entity.HasOne(rl => rl.Review)
+                .WithMany(r => r.Likes)
+                .HasForeignKey(rl => rl.ReviewId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(rl => rl.User)
+                .WithMany(u => u.ReviewLikes)
+                .HasForeignKey(rl => rl.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

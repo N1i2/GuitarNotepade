@@ -2,7 +2,7 @@
 using Application.DTOs.StrummingPatterns;
 using MediatR;
 
-namespace Application.Features.Commands.Chords;
+namespace Application.Features.Commands.StrummingPatterns;
 
 public class UpdatePatternCommand : IRequest<StrummingPatternsDto>
 {

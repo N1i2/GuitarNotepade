@@ -3,9 +3,8 @@ using Domain.Interfaces;
 using MediatR;
 using Application.Validations;
 using Application.DTOs.Users;
-using Application.Features.Commands.Users;
 
-namespace Application.Features.Auth;
+namespace Application.Features.Commands.Users;
 
 public class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, AuthResponseDto>
 {
@@ -20,7 +19,7 @@ public class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, AuthRes
 
     public async Task<AuthResponseDto> Handle(LoginUserCommand request, CancellationToken cancellationToken)
     {
-        var user = await LoginValidation.isValid(request, _unitOfWork, _authService, cancellationToken);
+        var user = await LoginValidation.IsValid(request, _unitOfWork, _authService, cancellationToken);
 
         var token = await _authService.GenerateJwtTokenAsync(user);
 

@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.Queries.StrummingPatterns;
 
-public class GetPatternByNameQueryHandle : IRequestHandler<GetPatternByNameQuery, StrummingPatternsDto>
+public class GetPatternByNameQueryHandler : IRequestHandler<GetPatternByNameQuery, StrummingPatternsDto>
 {
     private readonly IUnitOfWork _unitOfWork;
 
-    public GetPatternByNameQueryHandle(IUnitOfWork unitOfWork)
+    public GetPatternByNameQueryHandler(IUnitOfWork unitOfWork)
     {
         _unitOfWork = unitOfWork;
     }

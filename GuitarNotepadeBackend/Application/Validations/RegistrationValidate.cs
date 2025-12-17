@@ -6,7 +6,7 @@ namespace Application.Validations;
 
 static public class RegistrationValidate
 {
-    public static async Task isValid(RegisterUserCommand request, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    public static async Task IsValid(RegisterUserCommand request, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         int minPasswordLength = 6;
 

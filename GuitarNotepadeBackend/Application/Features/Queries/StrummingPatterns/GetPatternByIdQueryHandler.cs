@@ -1,10 +1,9 @@
 ﻿using Application.DTOs.StrummingPatterns;
-using Application.Features.Queries.Chords;
 using Domain.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Application.Features.Queries.sps;
+namespace Application.Features.Queries.StrummingPatterns;
 
 public class GetPatternByIdQueryHandler : IRequestHandler<GetPatternByIdQuery, StrummingPatternsDto>
 {

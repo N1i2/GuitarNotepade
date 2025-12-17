@@ -2,7 +2,7 @@
 using Application.DTOs.StrummingPatterns;
 using MediatR;
 
-namespace Application.Features.Queries.Chords;
+namespace Application.Features.Queries.StrummingPatterns;
 
 public class GetPatternByIdQuery : IRequest<StrummingPatternsDto>
 {

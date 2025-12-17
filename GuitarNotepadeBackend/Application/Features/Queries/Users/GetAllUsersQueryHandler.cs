@@ -1,4 +1,5 @@
-﻿using Application.DTOs.Users;
+﻿using Application.DTOs.Generic;
+using Application.DTOs.Users;
 using Domain.Common;
 using Domain.Entities;
 using Domain.Interfaces;
@@ -9,7 +10,7 @@ using System.Reflection.Metadata;
 
 namespace Application.Features.Queries.Users;
 
-public class GetAllUsersQueryHandler : IRequestHandler<GetAllUsersQuery, PaginatedResultDto<UserProfileDto>>
+public class GetAllUsersQueryHandler : IRequestHandler<GetAllUsersQuery, PaginatedDto<UserProfileDto>>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IWebDavService _webDavService;
@@ -20,7 +21,7 @@ public class GetAllUsersQueryHandler : IRequestHandler<GetAllUsersQuery, Paginat
         _webDavService = webDavService;
     }
 
-    public async Task<PaginatedResultDto<UserProfileDto>> Handle(
+    public async Task<PaginatedDto<UserProfileDto>> Handle(
         GetAllUsersQuery request,
         CancellationToken cancellationToken)
     {
@@ -65,7 +66,7 @@ public class GetAllUsersQueryHandler : IRequestHandler<GetAllUsersQuery, Paginat
 
         foreach (var user in users)
         {
-            user.CheckAndClearExpiredBlock();
+            user.ClearExpiredBlockIfNeeded();
         }
 
         var avatarUrls = await GetAvatarUrlsBatch(users, cancellationToken);
@@ -83,7 +84,7 @@ public class GetAllUsersQueryHandler : IRequestHandler<GetAllUsersQuery, Paginat
             user.BlockReason))
             .ToList();
 
-        return PaginatedResultDto<UserProfileDto>.Create(
+        return PaginatedDto<UserProfileDto>.Create(
             result, totalCount, request.Page, request.PageSize);
     }
 
