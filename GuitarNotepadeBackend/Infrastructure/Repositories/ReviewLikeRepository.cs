@@ -36,14 +36,16 @@ public class ReviewLikeRepository : BaseRepository<ReviewLike>, IReviewLikeRepos
         CancellationToken cancellationToken = default)
     {
         return await _dbSet
-            .CountAsync(rl => rl.ReviewId == reviewId && rl.IsLike, cancellationToken);
+            .Where(rl => rl.ReviewId == reviewId && rl.IsLike)
+            .CountAsync(cancellationToken);
     }
 
     public async Task<int> CountDislikesByReviewIdAsync(Guid reviewId,
         CancellationToken cancellationToken = default)
     {
         return await _dbSet
-            .CountAsync(rl => rl.ReviewId == reviewId && !rl.IsLike, cancellationToken);
+            .Where(rl => rl.ReviewId == reviewId && !rl.IsLike)
+            .CountAsync(cancellationToken);
     }
 
     public async Task<bool> HasUserLikedReviewAsync(Guid userId, Guid reviewId,

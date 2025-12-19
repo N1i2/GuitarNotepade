@@ -5,6 +5,27 @@ public static class Constants
     public const int DefaultPageSize = 10;
     public const int MaxPageSize = 100;
 
+    public static class Limits
+    {
+        public const int MaxSongsPerUser = 1000;
+        public const int MaxReviewsPerUser = 500;
+        public const int MaxPatternsPerUser = 200;
+        public const int MaxChordsPerUser = 300;
+        public const int MaxReviewLength = 5000;
+        public const int MinReviewLength = 50;
+
+        public const int MaxSegmentsPerSong = 255;
+        public const int MaxSegmentPositionsPerSong = 1000;
+        public const int MaxCommentsPerSong = 1000;
+        public const int MaxLabelsPerSegment = 10;
+    }
+
+    public static class Search
+    {
+        public const int MinSearchLength = 2;
+        public const int MaxSearchResults = 100;
+    }
+
     public static class Roles
     {
         public const string Admin = "Admin";
@@ -18,6 +39,9 @@ public static class Constants
         public const string CreatedAt = "createdAt";
         public const string Title = "title";
         public const string UpdatedAt = "updatedAt";
+        public const string AverageBeautiful = "averageBeautiful";
+        public const string AverageDifficulty = "averageDifficulty";
+        public const string ReviewCount = "reviewCount";
 
         public const string Ascending = "asc";
         public const string Descending = "desc";
@@ -29,16 +53,6 @@ public static class Constants
         public const int MaxLength = 5000;
         public const int MinRating = 1;
         public const int MaxRating = 5;
-    }
-
-    public static class Limits
-    {
-        public const int MaxSongsPerUser = 1000;
-        public const int MaxReviewsPerUser = 500;
-        public const int MaxPatternsPerUser = 200;
-        public const int MaxChordsPerUser = 300;
-        public const int MaxReviewLength = 5000;
-        public const int MinReviewLength = 50; 
     }
 
     public static class Timeouts

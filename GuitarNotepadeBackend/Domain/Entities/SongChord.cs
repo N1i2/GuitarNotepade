@@ -1,5 +1,4 @@
 ﻿using Domain.Entities.Base;
-using System;
 
 namespace Domain.Entities;
 
@@ -11,21 +10,19 @@ public class SongChord : BaseEntityWithId
     public virtual Song Song { get; private set; } = null!;
     public virtual Chord Chord { get; private set; } = null!;
 
-    private SongChord() { }
+    protected SongChord() { }
 
     public static SongChord Create(Guid songId, Guid chordId)
     {
-        if(songId == Guid.Empty)
-        {
-            throw new ArgumentNullException("Song ID cannot be empty", nameof(songId));
-        }
+        if (songId == Guid.Empty)
+            throw new ArgumentException("SongId is required", nameof(songId));
+
         if (chordId == Guid.Empty)
-        {
-            throw new ArgumentNullException("Chord ID cannot be empty", nameof(chordId));
-        }
+            throw new ArgumentException("ChordId is required", nameof(chordId));
 
         return new SongChord
         {
+            Id = Guid.NewGuid(),
             SongId = songId,
             ChordId = chordId
         };

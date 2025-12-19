@@ -5,7 +5,15 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { usePathname } from "next/navigation";
-import { Shield, Home, User, LogOut, ListMusic, Hand, FileMusic } from "lucide-react";
+import {
+  Shield,
+  Home,
+  User,
+  LogOut,
+  ListMusic,
+  Hand,
+  FileMusic,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "../ui/separator";
 
 export function Header() {
   const { user, logout } = useAuth();
@@ -82,11 +91,11 @@ export function Header() {
 
               <Button
                 asChild
-                variant={pathname === "/home/song" ? "default" : "ghost"}
+                variant={pathname === "/home/songs" ? "default" : "ghost"}
                 size="sm"
                 className="gap-2"
               >
-                <Link href="/home/song">
+                <Link href="/home/songs">
                   <FileMusic className="h-4 w-4" />
                   Songs
                 </Link>
@@ -112,67 +121,79 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-3">
-          <ThemeToggle />
-
           {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="relative h-9 w-9 rounded-full"
-                >
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage
-                      src={
-                        user.avatarUrl
-                          ? `data:image/jpeg;base64,${user.avatarUrl}`
-                          : undefined
-                      }
-                      alt={user.nikName}
-                    />
-                    <AvatarFallback>{getInitials(user.nikName)}</AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      {user.nikName}
-                    </p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {user.email}
-                    </p>
-                    <div className="flex items-center gap-1">
-                      <span
-                        className={`text-xs px-1.5 py-0.5 rounded ${
-                          user.role === "Admin"
-                            ? "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300"
-                            : "bg-muted"
-                        }`}
-                      >
-                        {user.role}
-                      </span>
+            <>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="relative h-9 w-9 rounded-full"
+                  >
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage
+                        src={
+                          user.avatarUrl
+                            ? `data:image/jpeg;base64,${user.avatarUrl}`
+                            : undefined
+                        }
+                        alt={user.nikName}
+                      />
+                      <AvatarFallback>
+                        {getInitials(user.nikName)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {user.nikName}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {user.email}
+                      </p>
+                      <div className="flex items-center gap-1">
+                        <span
+                          className={`text-xs px-1.5 py-0.5 rounded ${
+                            user.role === "Admin"
+                              ? "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300"
+                              : "bg-muted"
+                          }`}
+                        >
+                          {user.role}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/home/profile" className="cursor-pointer">
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={logout}
-                  className="cursor-pointer text-red-600"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Logout</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/home/profile" className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={logout}
+                    className="cursor-pointer text-red-600"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <div className="flex flex-col mr-5">
+                <span className="text-sm font-medium leading-none">
+                  {user.nikName}
+                </span>
+                <span className="text-xs leading-none text-muted-foreground">
+                  {user.role}
+                </span>
+              </div>
+            </>
           ) : (
             <div className="flex items-center gap-2">
               {pathname === "/login" || pathname === "/register" ? (
@@ -193,6 +214,7 @@ export function Header() {
               )}
             </div>
           )}
+          <ThemeToggle />
         </div>
       </div>
     </header>

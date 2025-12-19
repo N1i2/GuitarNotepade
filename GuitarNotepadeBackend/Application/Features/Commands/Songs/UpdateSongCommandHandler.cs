@@ -1,8 +1,8 @@
-﻿using Application.DTOs.Songs;
+﻿using Application.DTOs.Song;
 using AutoMapper;
+using Domain.Common;
 using Domain.Interfaces;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.Commands.Songs;
 
@@ -19,105 +19,30 @@ public class UpdateSongCommandHandler : IRequestHandler<UpdateSongCommand, SongD
 
     public async Task<SongDto> Handle(UpdateSongCommand request, CancellationToken cancellationToken)
     {
-        var song = await _unitOfWork.Songs.GetQueryable()
-            .Include(s => s.SongChords)
-            .Include(s => s.SongPatterns)
-            .FirstOrDefaultAsync(s => s.Id == request.SongId, cancellationToken);
-
+        var song = await _unitOfWork.Songs.GetByIdAsync(request.SongId, cancellationToken);
         if (song == null)
         {
-            throw new KeyNotFoundException($"Song with ID {request.SongId} not found");
+            throw new ArgumentException("Song not found", nameof(request.SongId));
         }
 
         if (song.OwnerId != request.UserId)
         {
-            throw new UnauthorizedAccessException("You can only update your own songs");
+            var user = await _unitOfWork.Users.GetByIdAsync(request.UserId, cancellationToken);
+            if (user?.Role != Constants.Roles.Admin)
+                throw new UnauthorizedAccessException("Only owner or admin can update song");
         }
 
-        if (!string.IsNullOrEmpty(request.Title) && request.Title != song.Title)
-        {
-            var existingSong = await _unitOfWork.Songs.GetByTitleAndOwnerAsync(
-                request.Title, request.UserId, cancellationToken);
-            if (existingSong != null && existingSong.Id != request.SongId)
-            {
-                throw new InvalidOperationException($"You already have a song with title '{request.Title}'");
-            }
-        }
+        song.Update(
+            request.Title,
+            request.Artist,
+            request.Description,
+            request.IsPublic,
+            request.Key,
+            request.Difficulty);
 
-        if (request.Title != null || request.Artist != null || request.IsPublic.HasValue)
-        {
-            song.Update(
-                title: request.Title,
-                artist: request.Artist,
-                isPublic: request.IsPublic);
-        }
-
-        if (request.Structure != null)
-        {
-            song.SetStructure(request.Structure);
-        }
-
-        if (request.ChordIds != null)
-        {
-            var currentChordIds = song.GetChordIds();
-
-            foreach (var chordId in currentChordIds)
-            {
-                if (!request.ChordIds.Contains(chordId))
-                {
-                    song.RemoveChord(chordId);
-                }
-            }
-
-            foreach (var chordId in request.ChordIds)
-            {
-                if (!currentChordIds.Contains(chordId))
-                {
-                    var chordExists = await _unitOfWork.Chords.ExistsAsync(chordId, cancellationToken);
-                    if (!chordExists)
-                    {
-                        throw new KeyNotFoundException($"Chord with ID {chordId} not found");
-                    }
-                    song.AddChord(chordId);
-                }
-            }
-        }
-
-        if (request.PatternIds != null)
-        {
-            var currentPatternIds = song.GetPatternIds();
-
-            foreach (var patternId in currentPatternIds)
-            {
-                if (!request.PatternIds.Contains(patternId))
-                {
-                    song.RemovePattern(patternId);
-                }
-            }
-
-            foreach (var patternId in request.PatternIds)
-            {
-                if (!currentPatternIds.Contains(patternId))
-                {
-                    var patternExists = await _unitOfWork.StrummingPatterns.ExistsAsync(patternId, cancellationToken);
-                    if (!patternExists)
-                    {
-                        throw new KeyNotFoundException($"Pattern with ID {patternId} not found");
-                    }
-                    song.AddPattern(patternId);
-                }
-            }
-        }
-
+        await _unitOfWork.Songs.UpdateAsync(song, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var updatedSong = await _unitOfWork.Songs.GetQueryable()
-            .Include(s => s.Owner)
-            .Include(s => s.SongChords)
-            .Include(s => s.SongPatterns)
-            .Include(s => s.Reviews)
-            .FirstOrDefaultAsync(s => s.Id == request.SongId, cancellationToken);
-
-        return _mapper.Map<SongDto>(updatedSong!);
+        return _mapper.Map<SongDto>(song);
     }
 }

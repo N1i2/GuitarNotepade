@@ -13,6 +13,8 @@ public class SongReviewRepository : BaseRepository<SongReview>, ISongReviewRepos
         CancellationToken cancellationToken = default)
     {
         return await _dbSet
+            .Include(r => r.User)
+            .Include(r => r.Song)
             .FirstOrDefaultAsync(r => r.SongId == songId && r.UserId == userId, cancellationToken);
     }
 
@@ -54,7 +56,6 @@ public class SongReviewRepository : BaseRepository<SongReview>, ISongReviewRepos
             .Where(r => r.SongId == songId && r.BeautifulLevel.HasValue)
             .Include(r => r.User)
             .OrderByDescending(r => r.BeautifulLevel)
-            .ThenByDescending(r => r.CreatedAt)
             .Take(count)
             .ToListAsync(cancellationToken);
     }
@@ -69,12 +70,14 @@ public class SongReviewRepository : BaseRepository<SongReview>, ISongReviewRepos
     public async Task<int> CountBySongIdAsync(Guid songId, CancellationToken cancellationToken = default)
     {
         return await _dbSet
-            .CountAsync(r => r.SongId == songId, cancellationToken);
+            .Where(r => r.SongId == songId)
+            .CountAsync(cancellationToken);
     }
 
     public async Task<int> CountByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return await _dbSet
-            .CountAsync(r => r.UserId == userId, cancellationToken);
+            .Where(r => r.UserId == userId)
+            .CountAsync(cancellationToken);
     }
 }

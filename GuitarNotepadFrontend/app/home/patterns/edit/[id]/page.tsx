@@ -77,11 +77,9 @@ export default function EditPatternPage() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Используем useRef для стабильных ссылок
   const toastRef = useRef(toast);
   const routerRef = useRef(router);
 
-  // Обновляем refs при изменении
   useEffect(() => {
     toastRef.current = toast;
     routerRef.current = router;
@@ -237,7 +235,6 @@ export default function EditPatternPage() {
     }
   };
 
-  // Исправленный useEffect с isMounted и useRef
   useEffect(() => {
     let isMounted = true;
 
@@ -279,7 +276,6 @@ export default function EditPatternPage() {
         setLoadError(errorMessage);
         toastRef.current.error(errorMessage);
         
-        // Используем setTimeout для редиректа
         setTimeout(() => {
           routerRef.current.push("/home/patterns");
         }, 100);
@@ -292,11 +288,10 @@ export default function EditPatternPage() {
 
     loadPattern();
 
-    // Cleanup функция
     return () => {
       isMounted = false;
     };
-  }, [patternId]); // Только patternId как зависимость
+  }, [patternId]); 
 
   const updateFormField = (field: FormField, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -450,7 +445,6 @@ export default function EditPatternPage() {
 
   const canEdit = user?.id === originalPattern?.createdByUserId;
 
-  // Показываем ошибку загрузки
   if (loadError && !isLoading) {
     return (
       <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">

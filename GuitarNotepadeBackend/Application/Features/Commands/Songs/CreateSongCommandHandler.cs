@@ -1,4 +1,4 @@
-﻿using Application.DTOs.Songs;
+﻿using Application.DTOs.Song;
 using AutoMapper;
 using Domain.Interfaces;
 using MediatR;
@@ -19,100 +19,40 @@ public class CreateSongCommandHandler : IRequestHandler<CreateSongCommand, SongD
 
     public async Task<SongDto> Handle(CreateSongCommand request, CancellationToken cancellationToken)
     {
-        var owner = await _unitOfWork.Users.GetByIdAsync(request.OwnerId, cancellationToken);
-        if (owner == null)
-        {
-            throw new KeyNotFoundException($"User with ID {request.OwnerId} not found");
-        }
-
-        if (owner.IsBlocked)
-        {
-            throw new InvalidOperationException("User is blocked and cannot create songs");
-        }
-
-        var existingSong = await _unitOfWork.Songs.GetByTitleAndOwnerAsync(
-            request.Title, request.OwnerId, cancellationToken);
-        if (existingSong != null)
-        {
-            throw new InvalidOperationException($"You already have a song with title '{request.Title}'");
-        }
+        var user = await _unitOfWork.Users.GetByIdAsync(request.UserId, cancellationToken);
+        if (user == null)
+            throw new ArgumentException("User not found", nameof(request.UserId));
 
         if (request.ParentSongId.HasValue)
         {
             var parentSong = await _unitOfWork.Songs.GetByIdAsync(request.ParentSongId.Value, cancellationToken);
-            if (parentSong == null)
-            {
-                throw new KeyNotFoundException($"Parent song with ID {request.ParentSongId} not found");
-            }
-            if (!parentSong.IsPublic && parentSong.OwnerId != request.OwnerId)
-            {
-                throw new UnauthorizedAccessException("You cannot fork a private song");
-            }
-        }
-
-        if (request.ChordIds != null && request.ChordIds.Any())
-        {
-            foreach (var chordId in request.ChordIds)
-            {
-                if (!await _unitOfWork.Chords.ExistsAsync(chordId, cancellationToken))
-                {
-                    throw new KeyNotFoundException($"Chord with ID {chordId} not found");
-                }
-            }
-        }
-
-        if (request.PatternIds != null && request.PatternIds.Any())
-        {
-            foreach (var patternId in request.PatternIds)
-            {
-                if (!await _unitOfWork.StrummingPatterns.ExistsAsync(patternId, cancellationToken))
-                {
-                    throw new KeyNotFoundException($"Pattern with ID {patternId} not found");
-                }
-            }
+            if (parentSong == null || !parentSong.IsPublic)
+                throw new ArgumentException("Parent song not found or not public", nameof(request.ParentSongId));
         }
 
         var song = Domain.Entities.Song.Create(
-            request.OwnerId,
+            request.UserId,
             request.Title,
             request.IsPublic,
-            request.Structure,
-            request.Artist);
+            request.Artist,
+            request.Description,
+            request.ParentSongId);
 
-        song.SetParents(request.ParentSongId);
+        song.Update(key: request.Key, difficulty: request.Difficulty);
 
         await _unitOfWork.Songs.CreateAsync(song, cancellationToken);
-
-        if (request.ChordIds != null)
-        {
-            foreach (var chordId in request.ChordIds)
-            {
-                song.AddChord(chordId);
-            }
-        }
-
-        if (request.PatternIds != null)
-        {
-            foreach (var patternId in request.PatternIds)
-            {
-                song.AddPattern(patternId);
-            }
-        }
-
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var songWithRelations = await _unitOfWork.Songs.GetQueryable()
+        var fullSong = await _unitOfWork.Songs.GetQueryable()
             .Include(s => s.Owner)
+            .Include(s => s.ParentSong)
+            .Include(s => s.Structure)
             .Include(s => s.SongChords)
+                .ThenInclude(sc => sc.Chord)
             .Include(s => s.SongPatterns)
-            .Include(s => s.Reviews)
+                .ThenInclude(sp => sp.StrummingPattern)
             .FirstOrDefaultAsync(s => s.Id == song.Id, cancellationToken);
 
-        if (songWithRelations == null)
-        {
-            throw new InvalidOperationException("Failed to create song");
-        }
-
-        return _mapper.Map<SongDto>(songWithRelations);
+        return _mapper.Map<SongDto>(fullSong);
     }
 }

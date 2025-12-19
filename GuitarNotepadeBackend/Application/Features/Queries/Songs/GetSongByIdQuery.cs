@@ -1,16 +1,12 @@
-﻿using Application.DTOs.Songs;
+﻿using Application.DTOs.Song;
 using MediatR;
 
 namespace Application.Features.Queries.Songs;
 
-public class GetSongByIdQuery : IRequest<SongDto>
-{
-    public Guid SongId { get; }
-    public Guid? UserId { get; } 
-
-    public GetSongByIdQuery(Guid songId, Guid? userId = null)
-    {
-        SongId = songId;
-        UserId = userId;
-    }
-}
+public record GetSongByIdQuery(
+    Guid SongId,
+    bool IncludeStructure = false,
+    bool IncludeChords = false,
+    bool IncludePatterns = false,
+    bool IncludeReviews = false,
+    bool IncludeComments = false) : IRequest<SongDto>;

@@ -1,5 +1,5 @@
-﻿using Application.DTOs.Generic;
-using Application.DTOs.Songs;
+using Application.DTOs.Generic;
+using Application.DTOs.Song;
 using Application.Features.Commands.Songs;
 using Application.Features.Queries.Songs;
 using AutoMapper;
@@ -25,327 +25,42 @@ public class SongsController : ControllerBase
     }
 
     [HttpGet]
-    [AllowAnonymous]
-    public async Task<ActionResult<PaginatedDto<SongDto>>> GetAllSongs(
-        [FromQuery] string? search = null,
-        [FromQuery] string? title = null,
-        [FromQuery] string? artist = null,
+    public async Task<ActionResult<SongSearchResultDto>> SearchSongs(
+        [FromQuery] string? searchTerm = null,
+        [FromQuery] Guid? ownerId = null,
         [FromQuery] bool? isPublic = null,
         [FromQuery] Guid? chordId = null,
         [FromQuery] Guid? patternId = null,
-        [FromQuery] bool? mySongsOnly = false,
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
+        [FromQuery] string? key = null,
+        [FromQuery] string? difficulty = null,
+        [FromQuery] Guid? parentSongId = null,
+        [FromQuery] decimal? minRating = null,
+        [FromQuery] decimal? maxRating = null,
+        [FromQuery] DateTime? createdFrom = null,
+        [FromQuery] DateTime? createdTo = null,
         [FromQuery] string sortBy = "createdAt",
-        [FromQuery] string sortOrder = "desc")
-    {
-        try
-        {
-            var userId = GetCurrentUserIdIfAuthenticated();
-
-            var filters = new SongFiltersDto
-            {
-                Search = search,
-                Title = title,
-                Artist = artist,
-                IsPublic = isPublic,
-                ChordId = chordId,
-                PatternId = patternId,
-                MySongsOnly = mySongsOnly,
-                OwnerId = mySongsOnly.GetValueOrDefault() ? userId : null,
-                Page = page,
-                PageSize = pageSize,
-                SortBy = sortBy,
-                SortOrder = sortOrder
-            };
-
-            var query = new SearchSongsQuery(filters);
-            var result = await _mediator.Send(query);
-
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-    }
-
-    [HttpGet("{id}")]
-    public async Task<ActionResult<SongDto>> GetSongById(Guid id)
-    {
-        try
-        {
-            var userId = GetCurrentUserId();
-            var query = new GetSongByIdQuery(id, userId);
-            var result = await _mediator.Send(query);
-
-            return Ok(result);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { error = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            Console.WriteLine(ex.Message);
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-    }
-
-    [HttpGet("user/{userId}")]
-    [AllowAnonymous]
-    public async Task<ActionResult<PaginatedDto<SongDto>>> GetUserSongs(
-        Guid userId,
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
-        [FromQuery] string sortBy = "createdAt",
-        [FromQuery] string sortOrder = "desc")
-    {
-        try
-        {
-            var currentUserId = GetCurrentUserIdIfAuthenticated();
-            var isOwner = currentUserId.HasValue && currentUserId.Value == userId;
-
-            var filters = new SongFiltersDto
-            {
-                OwnerId = userId,
-                IsPublic = isOwner ? null : true,
-                Page = page,
-                PageSize = pageSize,
-                SortBy = sortBy,
-                SortOrder = sortOrder
-            };
-
-            var query = new SearchSongsQuery(filters);
-            var result = await _mediator.Send(query);
-
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-    }
-
-    [HttpPost]
-    public async Task<ActionResult<SongDto>> CreateSong([FromBody] CreateSongRequestDto dto)
-    {
-        try
-        {
-            var userId = GetCurrentUserId();
-
-            var command = new CreateSongCommand(
-                title: dto.Title,
-                artist: dto.Artist,
-                isPublic: dto.IsPublic,
-                ownerId: userId,
-                parentSongId: dto.ParentSongId,
-                structure: _mapper.Map<Domain.Entities.HelpEntitys.SongStructure>(dto.Structure),
-                chordIds: dto.ChordIds,
-                patternIds: dto.PatternIds);
-
-            var result = await _mediator.Send(command);
-
-            return CreatedAtAction(nameof(GetSongById), new { id = result.Id }, result);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { error = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            Console.WriteLine(ex.Message);
-
-            return Forbid();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-    }
-
-    [HttpPut("{id}")]
-    public async Task<ActionResult<SongDto>> UpdateSong(Guid id, [FromBody] UpdateSongRequestDto dto)
-    {
-        try
-        {
-            var userId = GetCurrentUserId();
-
-            var command = new UpdateSongCommand(
-                songId: id,
-                userId: userId,
-                title: dto.Title,
-                artist: dto.Artist,
-                isPublic: dto.IsPublic,
-                structure: _mapper.Map<Domain.Entities.HelpEntitys.SongStructure>(dto.Structure),
-                chordIds: dto.ChordIds,
-                patternIds: dto.PatternIds);
-
-            var result = await _mediator.Send(command);
-
-            return Ok(result);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { error = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            Console.WriteLine(ex.Message);
-
-            return Forbid();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-    }
-
-    [HttpDelete("{id}")]
-    public async Task<ActionResult> DeleteSong(Guid id)
-    {
-        try
-        {
-            var userId = GetCurrentUserId();
-            var userRole = GetCurrentUserRole();
-
-            var command = new DeleteSongCommand(id, userId, userRole);
-            await _mediator.Send(command);
-
-            return NoContent();
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { error = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            Console.WriteLine(ex.Message);
-
-            return Forbid();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-    }
-
-    [HttpPatch("{id}/toggle-visibility")]
-    public async Task<ActionResult<SongDto>> ToggleSongVisibility(Guid id)
-    {
-        try
-        {
-            var userId = GetCurrentUserId();
-
-            var song = await _mediator.Send(new GetSongByIdQuery(id, userId));
-
-            var command = new UpdateSongCommand(
-                songId: id,
-                userId: userId,
-                isPublic: !song.IsPublic);
-
-            var result = await _mediator.Send(command);
-
-            return Ok(new
-            {
-                message = $"Song is now {(result.IsPublic ? "public" : "private")}",
-                song = result
-            });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { error = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            Console.WriteLine(ex.Message);
-
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-    }
-
-    [HttpGet("{id}/fork")]
-    public async Task<ActionResult<SongDto>> ForkSong(Guid id)
-    {
-        try
-        {
-            var userId = GetCurrentUserId();
-
-            var originalSong = await _mediator.Send(new GetSongByIdQuery(id, null));
-
-            var createDto = new CreateSongRequestDto
-            {
-                Title = $"{originalSong.Title} (Fork)",
-                Artist = originalSong.Artist,
-                IsPublic = true,
-                ParentSongId = originalSong.Id,
-                Structure = originalSong.Structure,
-                ChordIds = originalSong.ChordIds,
-                PatternIds = originalSong.PatternIds
-            };
-
-            var command = new CreateSongCommand(
-                title: createDto.Title,
-                artist: createDto.Artist,
-                isPublic: createDto.IsPublic,
-                ownerId: userId,
-                parentSongId: createDto.ParentSongId,
-                structure: _mapper.Map<Domain.Entities.HelpEntitys.SongStructure>(createDto.Structure),
-                chordIds: createDto.ChordIds,
-                patternIds: createDto.PatternIds);
-
-            var result = await _mediator.Send(command);
-
-            return CreatedAtAction(nameof(GetSongById), new { id = result.Id }, result);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { error = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            Console.WriteLine(ex.Message);
-
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-    }
-
-    [HttpGet("search")]
-    [AllowAnonymous]
-    public async Task<ActionResult<PaginatedDto<SongDto>>> SearchSongs(
-        [FromQuery] string? q,
+        [FromQuery] string sortOrder = "desc",
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
         try
         {
-            var filters = new SongFiltersDto
+            var filters = new SongSearchFilters
             {
-                Search = q,
+                SearchTerm = searchTerm,
+                OwnerId = ownerId,
+                IsPublic = isPublic,
+                ChordId = chordId,
+                PatternId = patternId,
+                Key = key,
+                Difficulty = difficulty,
+                ParentSongId = parentSongId,
+                MinRating = minRating,
+                MaxRating = maxRating,
+                CreatedFrom = createdFrom,
+                CreatedTo = createdTo,
+                SortBy = sortBy,
+                SortOrder = sortOrder,
                 Page = page,
                 PageSize = pageSize
             };
@@ -361,26 +76,35 @@ public class SongsController : ControllerBase
         }
     }
 
-    [HttpGet("{id}/chords")]
-    [AllowAnonymous]
-    public async Task<ActionResult<List<Guid>>> GetSongChords(Guid id)
+    [HttpGet("{id}")]
+    public async Task<ActionResult<SongDto>> GetSongById(
+        Guid id,
+        [FromQuery] bool includeStructure = false,
+        [FromQuery] bool includeChords = false,
+        [FromQuery] bool includePatterns = false,
+        [FromQuery] bool includeReviews = false,
+        [FromQuery] bool includeComments = false)
     {
         try
         {
-            var userId = GetCurrentUserIdIfAuthenticated();
-            var query = new GetSongByIdQuery(id, userId);
-            var song = await _mediator.Send(query);
+            var query = new GetSongByIdQuery(
+                id,
+                includeStructure,
+                includeChords,
+                includePatterns,
+                includeReviews,
+                includeComments);
 
-            return Ok(song.ChordIds);
+            var result = await _mediator.Send(query);
+
+            return Ok(result);
         }
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { error = ex.Message });
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            Console.WriteLine(ex.Message);
-
             return Forbid();
         }
         catch (Exception ex)
@@ -389,26 +113,279 @@ public class SongsController : ControllerBase
         }
     }
 
-    [HttpGet("{id}/patterns")]
-    [AllowAnonymous]
-    public async Task<ActionResult<List<Guid>>> GetSongPatterns(Guid id)
+    [HttpGet("user/{userId}")]
+    public async Task<ActionResult<PaginatedDto<SongDto>>> GetUserSongs(
+        Guid userId,
+        [FromQuery] bool includePrivate = false,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
     {
         try
         {
-            var userId = GetCurrentUserIdIfAuthenticated();
-            var query = new GetSongByIdQuery(id, userId);
-            var song = await _mediator.Send(query);
+            var currentUserId = GetCurrentUserId();
+            
+            if (userId != currentUserId && includePrivate)
+            {
+                return Forbid();
+            }
 
-            return Ok(song.PatternIds);
+            var query = new GetUserSongsQuery(userId, includePrivate, page, pageSize);
+            var result = await _mediator.Send(query);
+
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("my-songs")]
+    public async Task<ActionResult<PaginatedDto<SongDto>>> GetMySongs(
+        [FromQuery] bool includePrivate = true,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var query = new GetUserSongsQuery(userId, includePrivate, page, pageSize);
+            var result = await _mediator.Send(query);
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("{id}/related")]
+    public async Task<ActionResult<List<SongDto>>> GetRelatedSongs(
+        Guid id,
+        [FromQuery] int limit = 10)
+    {
+        try
+        {
+            var query = new GetRelatedSongsQuery(id, limit);
+            var result = await _mediator.Send(query);
+
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("{id}/structure")]
+    public async Task<ActionResult<SongStructureDto>> GetSongStructure(Guid id)
+    {
+        try
+        {
+            var query = new GetSongStructureQuery(id);
+            var result = await _mediator.Send(query);
+
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("{id}/statistics")]
+    public async Task<ActionResult<SongStatisticsDto>> GetSongStatistics(Guid id)
+    {
+        try
+        {
+            var query = new GetSongStatisticsQuery(id);
+            var result = await _mediator.Send(query);
+
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<SongDto>> CreateSong([FromBody] CreateSongDto dto)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+
+            var command = new CreateSongCommand(
+                userId,
+                dto.Title,
+                dto.Artist,
+                dto.Description,
+                dto.IsPublic,
+                dto.ParentSongId,
+                dto.Key,
+                dto.Difficulty);
+
+            var result = await _mediator.Send(command);
+
+            return CreatedAtAction(nameof(GetSongById), new { id = result.Id }, result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("with-segments")]
+    public async Task<ActionResult<SongDto>> CreateSongWithSegments([FromBody] CreateSongWithSegmentsDto dto)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+
+            var command = new CreateSongWithSegmentsCommand(userId, dto);
+            var result = await _mediator.Send(command);
+
+            return CreatedAtAction(nameof(GetSongById), new { id = result.Id }, result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPut("{id}")]
+    public async Task<ActionResult<SongDto>> UpdateSong(Guid id, [FromBody] UpdateSongDto dto)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+
+            var command = new UpdateSongCommand(
+                id,
+                userId,
+                dto.Title,
+                dto.Artist,
+                dto.Description,
+                dto.IsPublic,
+                dto.Key,
+                dto.Difficulty);
+
+            var result = await _mediator.Send(command);
+
+            return Ok(result);
         }
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { error = ex.Message });
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            Console.WriteLine(ex.Message);
+            return Forbid();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
 
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> DeleteSong(Guid id)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+
+            var command = new DeleteSongCommand(userId, id);
+            await _mediator.Send(command);
+
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("{id}/copy")]
+    public async Task<ActionResult<SongDto>> CopySong(Guid id)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+
+            var command = new CopySongCommand(userId, id);
+            var result = await _mediator.Send(command);
+
+            return CreatedAtAction(nameof(GetSongById), new { id = result.Id }, result);
+        }
+        catch (ArgumentException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPatch("{id}/visibility")]
+    public async Task<ActionResult<SongDto>> ToggleSongVisibility(
+        Guid id,
+        [FromBody] ToggleSongVisibilityDto dto)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+
+            var command = new ToggleSongVisibilityCommand(userId, id, dto.IsPublic);
+            var result = await _mediator.Send(command);
+
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
             return Forbid();
         }
         catch (Exception ex)
@@ -430,31 +407,5 @@ public class SongsController : ControllerBase
 
         return userId;
     }
-
-    private Guid? GetCurrentUserIdIfAuthenticated()
-    {
-        if (!User.Identity?.IsAuthenticated ?? true)
-        {
-            return null;
-        }
-
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)
-                         ?? User.FindFirst("sub")
-                         ?? User.FindFirst("userId");
-
-        if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId))
-        {
-            return userId;
-        }
-
-        return null;
-    }
-
-    private string GetCurrentUserRole()
-    {
-        var roleClaim = User.FindFirst(ClaimTypes.Role)
-                       ?? User.FindFirst("role");
-
-        return roleClaim?.Value ?? "User";
-    }
 }
+

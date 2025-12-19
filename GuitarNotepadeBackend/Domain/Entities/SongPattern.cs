@@ -10,21 +10,23 @@ public class SongPattern : BaseEntityWithId
     public virtual Song Song { get; private set; } = null!;
     public virtual StrummingPattern StrummingPattern { get; private set; } = null!;
 
-    private SongPattern() { }
+    protected SongPattern() { }
 
     public static SongPattern Create(Guid songId, Guid strummingPatternId)
     {
         if (songId == Guid.Empty)
         {
-            throw new ArgumentNullException("Song ID cannot be empty", nameof(songId));
+            throw new ArgumentException("SongId is required", nameof(songId));
         }
+
         if (strummingPatternId == Guid.Empty)
         {
-            throw new ArgumentNullException("Pattern ID cannot be empty", nameof(strummingPatternId));
+            throw new ArgumentException("StrummingPatternId is required", nameof(strummingPatternId));
         }
 
         return new SongPattern
         {
+            Id = Guid.NewGuid(),
             SongId = songId,
             StrummingPatternId = strummingPatternId
         };

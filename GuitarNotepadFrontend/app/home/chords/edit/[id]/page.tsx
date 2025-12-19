@@ -77,11 +77,9 @@ export default function EditChordPage() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Используем useRef для стабильных ссылок на toast и router
   const toastRef = useRef(toast);
   const routerRef = useRef(router);
 
-  // Обновляем refs при изменении
   useEffect(() => {
     toastRef.current = toast;
     routerRef.current = router;
@@ -107,7 +105,6 @@ export default function EditChordPage() {
 
   const currentValues = watch();
 
-  // Главный useEffect для загрузки аккорда
   useEffect(() => {
     let isMounted = true;
 
@@ -140,7 +137,6 @@ export default function EditChordPage() {
         setLoadError(errorMessage);
         toastRef.current.error(errorMessage);
         
-        // Используем setTimeout для редиректа вне эффекта
         setTimeout(() => {
           routerRef.current.push("/home/chords");
         }, 100);
@@ -153,11 +149,10 @@ export default function EditChordPage() {
 
     loadChord();
 
-    // Cleanup функция
     return () => {
       isMounted = false;
     };
-  }, [chordId, reset]); // Только chordId и reset как зависимости
+  }, [chordId, reset]); 
 
   const handleFingeringChange = (newFingering: string) => {
     setValue("fingering", newFingering, { shouldDirty: true, shouldValidate: true });
@@ -242,7 +237,6 @@ export default function EditChordPage() {
 
   const canEdit = user?.id === originalChord?.createdByUserId || user?.role === "Admin";
 
-  // Показываем ошибку загрузки
   if (loadError && !isLoading) {
     return (
       <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">

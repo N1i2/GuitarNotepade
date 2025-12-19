@@ -1,9 +1,7 @@
 ﻿using Domain.Common;
 using Domain.Entities.Base;
-using Domain.Entities.HelpEntitys;
 using Domain.ValidationRules.SongRules;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using System.Text;
 
 namespace Domain.Entities;
 
@@ -11,124 +9,83 @@ public class Song : BaseEntityWithId
 {
     public string Title { get; private set; }
     public string? Artist { get; private set; }
+    public string? Description { get; private set; }
     public bool IsPublic { get; private set; }
     public Guid OwnerId { get; private set; }
     public Guid? ParentSongId { get; private set; }
-    public DateTime CreatedAt { get; private set; }
-    public DateTime? UpdatedAt { get; private set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+
+    public string? Key { get; private set; }
+    public string? Difficulty { get; private set; }
 
     public string FullText { get; private set; }
-    public string StructureJson { get; private set; }
-    public string? CompiledView { get; private set; }
 
-    [JsonIgnore]
-    public virtual User Owner { get; private set; }
-    [JsonIgnore]
+    public int ReviewCount { get; private set; }
+    public decimal? AverageBeautifulRating { get; private set; }
+    public decimal? AverageDifficultyRating { get; private set; }
+    public int TotalLikes { get; private set; }
+    public int TotalDislikes { get; private set; }
+
+    public virtual User Owner { get; private set; } = null!;
     public virtual Song? ParentSong { get; private set; }
-    [JsonIgnore]
+    public virtual SongStructure Structure { get; private set; } = null!;
     public virtual ICollection<Song> ChildSongs { get; private set; }
-    [JsonIgnore]
+    public virtual ICollection<SongComment> Comments { get; private set; }
     public virtual ICollection<SongReview> Reviews { get; private set; }
-    [JsonIgnore]
     public virtual ICollection<SongChord> SongChords { get; private set; }
-    [JsonIgnore]
     public virtual ICollection<SongPattern> SongPatterns { get; private set; }
 
-    private Song()
+    protected Song()
     {
         Title = string.Empty;
         FullText = string.Empty;
-        StructureJson = "{}";
-        Owner = null!;
         ChildSongs = new List<Song>();
+        Comments = new List<SongComment>();
         Reviews = new List<SongReview>();
         SongChords = new List<SongChord>();
         SongPatterns = new List<SongPattern>();
     }
 
-    public static Song Create(Guid ownerId, string title, bool isPublic,
-        SongStructure? initialStructure = null, string? artist = null)
+    public static Song Create(
+        Guid ownerId,
+        string title,
+        bool isPublic,
+        string? artist = null,
+        string? description = null,
+        Guid? parentSongId = null)
     {
         TitleRule.IsValid(title);
 
+        if (!string.IsNullOrWhiteSpace(artist))
+        {
+            OriginalArtistRule.IsValid(artist);
+        }
+
         var song = new Song
         {
+            Id = Guid.NewGuid(),
             OwnerId = ownerId,
-            Title = title,
+            Title = title.Trim(),
+            Artist = artist?.Trim(),
+            Description = description?.Trim(),
             IsPublic = isPublic,
-            Artist = artist,
+            ParentSongId = parentSongId,
             CreatedAt = DateTime.UtcNow
         };
 
-        song.SetStructure(initialStructure ?? new SongStructure());
+        song.Structure = SongStructure.Create(song.Id);
+
         return song;
     }
 
-    public void SetStructure(SongStructure structure)
-    {
-        var options = new JsonSerializerOptions
-        {
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-        };
-
-        StructureJson = JsonSerializer.Serialize(structure, options);
-        UpdateFullText(structure);
-        UpdatedAt = DateTime.UtcNow;
-    }
-
-    private void UpdateFullText(SongStructure structure)
-    {
-        var lyrics = structure.Segments
-            .Where(s => s != null && s.Type == SegmentType.Text && !string.IsNullOrEmpty(s.Lyric))
-            .SelectMany(s => Enumerable.Repeat(s.Lyric!, Math.Max(1, s.RepeatCount)))
-            .ToList();
-
-        var fullTextParts = new List<string>();
-
-        if (!string.IsNullOrEmpty(Artist))
-        {
-            fullTextParts.Add(Artist);
-        }
-
-        if (!string.IsNullOrEmpty(Title))
-        {
-            fullTextParts.Add(Title);
-        }
-
-        if (lyrics.Any())
-        {
-            fullTextParts.Add(string.Join(" ", lyrics));
-        }
-
-        FullText = string.Join(" ", fullTextParts);
-    }
-
-    public SongStructure GetStructure()
-    {
-        if (string.IsNullOrWhiteSpace(StructureJson))
-        {
-            return new SongStructure();
-        }
-
-        try
-        {
-            var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                AllowTrailingCommas = true
-            };
-
-            var result = JsonSerializer.Deserialize<SongStructure>(StructureJson, options);
-            return result ?? new SongStructure();
-        }
-        catch (JsonException ex)
-        {
-            Console.WriteLine(ex.Message);
-            return new SongStructure();
-        }
-    }
-
-    public void Update(string? title = null, string? artist = null, bool? isPublic = null)
+    public void Update(
+        string? title = null,
+        string? artist = null,
+        string? description = null,
+        bool? isPublic = null,
+        string? key = null,
+        string? difficulty = null)
     {
         if (title != null)
         {
@@ -149,55 +106,84 @@ public class Song : BaseEntityWithId
             }
         }
 
+        if (description != null)
+        {
+            Description = description.Trim();
+        }
+
         if (isPublic.HasValue)
         {
             IsPublic = isPublic.Value;
         }
 
-        UpdatedAt = DateTime.UtcNow;
-
-        if (title != null || artist != null)
+        if (key != null)
         {
-            var structure = GetStructure();
-            UpdateFullText(structure);
+            Key = key.Trim();
         }
+
+        if (difficulty != null)
+        {
+            Difficulty = difficulty.Trim();
+        }
+
+        UpdatedAt = DateTime.UtcNow;
+        UpdateFullText();
     }
 
-    public void MakePublic() => IsPublic = true;
-    public void MakePrivate() => IsPublic = false;
-    public void SetParents(Guid? parentsId = null) => ParentSongId = parentsId;
-    public int GetReviewsCount() => Reviews.Count;
-
-    public double? GetAverageBeautifulLevel()
+    public void UpdateFullText()
     {
-        var reviewsWithRating = Reviews
-            .Where(r => r.BeautifulLevel.HasValue)
-            .ToList();
+        var fullTextBuilder = new StringBuilder();
 
-        return reviewsWithRating.Any()
-            ? reviewsWithRating.Average(r => r.BeautifulLevel!.Value)
-            : null;
+        if (!string.IsNullOrEmpty(Artist))
+        {
+            fullTextBuilder.Append(Artist).Append(' ');
+        }
+
+        fullTextBuilder.Append(Title).Append(' ');
+
+        if (!string.IsNullOrEmpty(Description))
+        {
+            fullTextBuilder.Append(Description).Append(' ');
+        }
+
+        var segmentLyrics = Structure.GetAllSegmentLyrics();
+        foreach (var lyric in segmentLyrics)
+        {
+            fullTextBuilder.Append(lyric).Append(' ');
+        }
+
+        FullText = fullTextBuilder.ToString().Trim();
+        UpdatedAt = DateTime.UtcNow;
     }
 
-    public double? GetAverageDifficultyLevel()
+    public void UpdateStatistics()
     {
-        var reviewsWithRating = Reviews
-            .Where(r => r.DifficultyLevel.HasValue)
-            .ToList();
+        ReviewCount = Reviews.Count;
 
-        return reviewsWithRating.Any()
-            ? reviewsWithRating.Average(r => r.DifficultyLevel!.Value)
+        var beautifulReviews = Reviews.Where(r => r.BeautifulLevel.HasValue).ToList();
+        AverageBeautifulRating = beautifulReviews.Any()
+            ? (decimal)beautifulReviews.Average(r => r.BeautifulLevel!.Value)
             : null;
-    }
 
-    public int GetTotalLikes() => Reviews.Sum(r => r.LikesCount);
-    public int GetTotalDislikes() => Reviews.Sum(r => r.DislikesCount);
+        var difficultyReviews = Reviews.Where(r => r.DifficultyLevel.HasValue).ToList();
+        AverageDifficultyRating = difficultyReviews.Any()
+            ? (decimal)difficultyReviews.Average(r => r.DifficultyLevel!.Value)
+            : null;
+
+        TotalLikes = Reviews.Sum(r => r.LikesCount);
+        TotalDislikes = Reviews.Sum(r => r.DislikesCount);
+
+        UpdatedAt = DateTime.UtcNow;
+    }
 
     public void AddChord(Guid chordId)
     {
-        var songChord = SongChord.Create(Id, chordId);
-        SongChords.Add(songChord);
-        UpdatedAt = DateTime.UtcNow;
+        if (!SongChords.Any(sc => sc.ChordId == chordId))
+        {
+            var songChord = SongChord.Create(Id, chordId);
+            SongChords.Add(songChord);
+            UpdatedAt = DateTime.UtcNow;
+        }
     }
 
     public void RemoveChord(Guid chordId)
@@ -212,9 +198,12 @@ public class Song : BaseEntityWithId
 
     public void AddPattern(Guid patternId)
     {
-        var songPattern = SongPattern.Create(Id, patternId);
-        SongPatterns.Add(songPattern);
-        UpdatedAt = DateTime.UtcNow;
+        if (!SongPatterns.Any(sp => sp.StrummingPatternId == patternId))
+        {
+            var songPattern = SongPattern.Create(Id, patternId);
+            SongPatterns.Add(songPattern);
+            UpdatedAt = DateTime.UtcNow;
+        }
     }
 
     public void RemovePattern(Guid patternId)
@@ -227,23 +216,34 @@ public class Song : BaseEntityWithId
         }
     }
 
-    public bool HasChord(Guid chordId)
-    {
-        return SongChords.Any(sc => sc.ChordId == chordId);
-    }
+    public bool HasChord(Guid chordId) => SongChords.Any(sc => sc.ChordId == chordId);
+    public bool HasPattern(Guid patternId) => SongPatterns.Any(sp => sp.StrummingPatternId == patternId);
 
-    public bool HasPattern(Guid patternId)
-    {
-        return SongPatterns.Any(sp => sp.StrummingPatternId == patternId);
-    }
+    public List<Guid> GetChordIds() => SongChords.Select(sc => sc.ChordId).ToList();
+    public List<Guid> GetPatternIds() => SongPatterns.Select(sp => sp.StrummingPatternId).ToList();
 
-    public List<Guid> GetChordIds()
-    {
-        return SongChords.Select(sc => sc.ChordId).ToList();
-    }
+    public bool CanAddComment() => Comments.Count < Constants.Limits.MaxCommentsPerSong;
 
-    public List<Guid> GetPatternIds()
+    public void MakePublic() => IsPublic = true;
+    public void MakePrivate() => IsPublic = false;
+    public void SetParent(Guid? parentSongId) => ParentSongId = parentSongId;
+
+    public static Song CreateFromExisting(Song originalSong, Guid newOwnerId)
     {
-        return SongPatterns.Select(sp => sp.StrummingPatternId).ToList();
+        if (originalSong == null)
+            throw new ArgumentNullException(nameof(originalSong));
+
+        var newSong = Create(
+            ownerId: newOwnerId,
+            title: originalSong.Title,
+            isPublic: true,
+            artist: originalSong.Artist,
+            description: originalSong.Description,
+            parentSongId: originalSong.Id);
+
+        newSong.Key = originalSong.Key;
+        newSong.Difficulty = originalSong.Difficulty;
+
+        return newSong;
     }
 }

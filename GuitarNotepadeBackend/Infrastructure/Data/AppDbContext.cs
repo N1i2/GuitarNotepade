@@ -1,8 +1,6 @@
 ﻿using Domain.Entities;
 using Domain.Entities.Base;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
-using System.Text.Json;
 
 namespace Infrastructure.Data;
 
@@ -13,9 +11,15 @@ public class AppDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Chord> Chords => Set<Chord>();
     public DbSet<StrummingPattern> StrummingPatterns => Set<StrummingPattern>();
+    public DbSet<Song> Songs => Set<Song>();
+    public DbSet<SongStructure> SongStructures => Set<SongStructure>();
+    public DbSet<SongSegment> SongSegments => Set<SongSegment>();
+    public DbSet<SongSegmentPosition> SongSegmentPositions => Set<SongSegmentPosition>();
+    public DbSet<SongLabel> SongLabels => Set<SongLabel>();
+    public DbSet<SegmentLabel> SegmentLabels => Set<SegmentLabel>();
+    public DbSet<SongComment> SongComments => Set<SongComment>();
     public DbSet<SongChord> SongChords => Set<SongChord>();
     public DbSet<SongPattern> SongPatterns => Set<SongPattern>();
-    public DbSet<Song> Songs => Set<Song>();
     public DbSet<SongReview> SongReviews => Set<SongReview>();
     public DbSet<ReviewLike> ReviewLikes => Set<ReviewLike>();
 
@@ -160,6 +164,8 @@ public class AppDbContext : DbContext
             entity.HasIndex(s => s.IsPublic);
             entity.HasIndex(s => s.ParentSongId);
             entity.HasIndex(s => s.FullText);
+            entity.HasIndex(s => s.CreatedAt);
+            entity.HasIndex(s => s.UpdatedAt);
 
             entity.Property(s => s.Title)
                 .IsRequired()
@@ -168,19 +174,27 @@ public class AppDbContext : DbContext
             entity.Property(s => s.Artist)
                 .HasMaxLength(200);
 
+            entity.Property(s => s.Description)
+                .HasMaxLength(2000);
+
+            entity.Property(s => s.Key)
+                .HasMaxLength(10);
+
+            entity.Property(s => s.Difficulty)
+                .HasMaxLength(50);
+
             entity.Property(s => s.FullText)
                 .IsRequired()
                 .HasColumnType("text");
 
-            entity.Property(s => s.StructureJson)
-                .IsRequired()
-                .HasColumnType("jsonb");
-
-            entity.Property(s => s.CompiledView)
-                .HasColumnType("text");
-
             entity.Property(s => s.CreatedAt)
                 .IsRequired();
+
+            entity.Property(s => s.AverageBeautifulRating)
+                .HasPrecision(4, 2);
+
+            entity.Property(s => s.AverageDifficultyRating)
+                .HasPrecision(4, 2);
 
             entity.HasOne(s => s.Owner)
                 .WithMany(u => u.Songs)
@@ -192,9 +206,19 @@ public class AppDbContext : DbContext
                 .HasForeignKey(s => s.ParentSongId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            entity.HasOne(s => s.Structure)
+                .WithOne(ss => ss.Song)
+                .HasForeignKey<SongStructure>(ss => ss.SongId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             entity.HasMany(s => s.Reviews)
                 .WithOne(r => r.Song)
                 .HasForeignKey(r => r.SongId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(s => s.Comments)
+                .WithOne(c => c.Song)
+                .HasForeignKey(c => c.SongId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasMany(s => s.SongChords)
@@ -208,13 +232,165 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<SongChord>(entity =>
+        modelBuilder.Entity<SongStructure>(entity =>
+        {
+            entity.HasKey(ss => ss.Id);
+
+            entity.HasIndex(ss => ss.SongId).IsUnique();
+
+            entity.HasOne(ss => ss.Song)
+                .WithOne(s => s.Structure)
+                .HasForeignKey<SongStructure>(ss => ss.SongId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(ss => ss.SegmentPositions)
+                .WithOne()
+                .HasForeignKey(sp => sp.SongId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SongSegment>(entity =>
+        {
+            entity.HasKey(s => s.Id);
+
+            entity.HasIndex(s => s.Type);
+            entity.HasIndex(s => s.ContentHash);
+            entity.HasIndex(s => s.ChordId);
+            entity.HasIndex(s => s.PatternId);
+
+            entity.Property(s => s.Lyric)
+                .HasMaxLength(2000);
+
+            entity.Property(s => s.Description)
+                .HasMaxLength(1000);
+
+            entity.Property(s => s.Color)
+                .HasMaxLength(50);
+
+            entity.Property(s => s.BackgroundColor)
+                .HasMaxLength(50);
+
+            entity.Property(s => s.ContentHash)
+                .IsRequired()
+                .HasMaxLength(64);
+
+            entity.HasOne(s => s.Chord)
+                .WithMany()
+                .HasForeignKey(s => s.ChordId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(s => s.Pattern)
+                .WithMany()
+                .HasForeignKey(s => s.PatternId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(s => s.Positions)
+                .WithOne(p => p.Segment)
+                .HasForeignKey(p => p.SegmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(s => s.SegmentLabels)
+                .WithOne(sl => sl.Segment)
+                .HasForeignKey(sl => sl.SegmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(s => s.Comments)
+                .WithOne(c => c.Segment)
+                .HasForeignKey(c => c.SegmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SongSegmentPosition>(entity =>
+        {
+            entity.HasKey(sp => sp.Id);
+
+            entity.HasIndex(sp => sp.SongId);
+            entity.HasIndex(sp => sp.SegmentId);
+            entity.HasIndex(sp => sp.PositionIndex);
+            entity.HasIndex(sp => sp.RepeatGroup);
+            entity.HasIndex(sp => new { sp.SongId, sp.PositionIndex }).IsUnique();
+
+            entity.Property(sp => sp.RepeatGroup)
+                .HasMaxLength(100);
+
+            entity.HasOne(sp => sp.Song)
+                .WithMany()
+                .HasForeignKey(sp => sp.SongId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(sp => sp.Segment)
+                .WithMany(s => s.Positions)
+                .HasForeignKey(sp => sp.SegmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SongLabel>(entity =>
+        {
+            entity.HasKey(sl => sl.Id);
+
+            entity.HasIndex(sl => sl.Name).IsUnique();
+
+            entity.Property(sl => sl.Name)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(sl => sl.Color)
+                .HasMaxLength(50);
+
+            entity.HasMany(sl => sl.SegmentLabels)
+                .WithOne(sl => sl.Label)
+                .HasForeignKey(sl => sl.LabelId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SegmentLabel>(entity =>
+        {
+            entity.HasKey(sl => sl.Id);
+
+            entity.HasIndex(sl => new { sl.SegmentId, sl.LabelId }).IsUnique();
+            entity.HasIndex(sl => sl.SegmentId);
+            entity.HasIndex(sl => sl.LabelId);
+
+            entity.HasOne(sl => sl.Segment)
+                .WithMany(s => s.SegmentLabels)
+                .HasForeignKey(sl => sl.SegmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(sl => sl.Label)
+                .WithMany(l => l.SegmentLabels)
+                .HasForeignKey(sl => sl.LabelId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SongComment>(entity =>
         {
             entity.HasKey(sc => sc.Id);
 
             entity.HasIndex(sc => sc.SongId);
+            entity.HasIndex(sc => sc.SegmentId);
+
+            entity.Property(sc => sc.Text)
+                .IsRequired()
+                .HasMaxLength(1000);
+
+            entity.HasOne(sc => sc.Song)
+                .WithMany(s => s.Comments)
+                .HasForeignKey(sc => sc.SongId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(sc => sc.Segment)
+                .WithMany(s => s.Comments)
+                .HasForeignKey(sc => sc.SegmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SongChord>(entity =>
+        {
+            entity.HasKey(sc => sc.Id);
+
+            entity.HasIndex(sc => new { sc.SongId, sc.ChordId }).IsUnique();
+            entity.HasIndex(sc => sc.SongId);
             entity.HasIndex(sc => sc.ChordId);
-            entity.HasIndex(sc => new { sc.SongId, sc.ChordId });
 
             entity.HasOne(sc => sc.Song)
                 .WithMany(s => s.SongChords)
@@ -231,9 +407,9 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(sp => sp.Id);
 
+            entity.HasIndex(sp => new { sp.SongId, sp.StrummingPatternId }).IsUnique();
             entity.HasIndex(sp => sp.SongId);
             entity.HasIndex(sp => sp.StrummingPatternId);
-            entity.HasIndex(sp => new { sp.SongId, sp.StrummingPatternId });
 
             entity.HasOne(sp => sp.Song)
                 .WithMany(s => s.SongPatterns)
@@ -250,19 +426,16 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(r => r.Id);
 
+            entity.HasIndex(r => new { r.SongId, r.UserId }).IsUnique();
             entity.HasIndex(r => r.SongId);
             entity.HasIndex(r => r.UserId);
-            entity.HasIndex(r => new { r.SongId, r.UserId }).IsUnique();
+            entity.HasIndex(r => r.CreatedAt);
+            entity.HasIndex(r => r.BeautifulLevel);
+            entity.HasIndex(r => r.DifficultyLevel);
 
             entity.Property(r => r.ReviewText)
                 .IsRequired()
                 .HasMaxLength(5000);
-
-            entity.Property(r => r.BeautifulLevel)
-                .HasPrecision(3, 2);
-
-            entity.Property(r => r.DifficultyLevel)
-                .HasPrecision(3, 2);
 
             entity.Property(r => r.CreatedAt)
                 .IsRequired();
@@ -287,9 +460,10 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(rl => rl.Id);
 
+            entity.HasIndex(rl => new { rl.ReviewId, rl.UserId }).IsUnique();
             entity.HasIndex(rl => rl.ReviewId);
             entity.HasIndex(rl => rl.UserId);
-            entity.HasIndex(rl => new { rl.ReviewId, rl.UserId }).IsUnique();
+            entity.HasIndex(rl => rl.IsLike);
 
             entity.Property(rl => rl.CreatedAt)
                 .IsRequired();

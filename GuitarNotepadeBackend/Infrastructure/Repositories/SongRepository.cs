@@ -13,8 +13,7 @@ public class SongRepository : BaseRepository<Song>, ISongRepository
     {
         return await _dbSet
             .Where(s => s.OwnerId == userId)
-            .Include(s => s.SongChords).ThenInclude(sc => sc.Chord)
-            .Include(s => s.SongPatterns).ThenInclude(sp => sp.StrummingPattern)
+            .Include(s => s.Structure)
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync(cancellationToken);
     }
@@ -22,28 +21,24 @@ public class SongRepository : BaseRepository<Song>, ISongRepository
     public async Task<List<Song>> GetPublicSongsAsync(int page, int pageSize, string? searchTerm = null,
         string? sortBy = null, bool descending = false, CancellationToken cancellationToken = default)
     {
-        var query = _dbSet.Where(s => s.IsPublic);
+        var query = _dbSet
+            .Where(s => s.IsPublic)
+            .Include(s => s.Owner)
+            .Include(s => s.Structure)
+            .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchTerm))
         {
+            searchTerm = searchTerm.ToLower();
             query = query.Where(s =>
-                s.Title.Contains(searchTerm) ||
-                s.FullText.Contains(searchTerm) ||
-                (s.Artist != null && s.Artist.Contains(searchTerm)));
+                s.FullText.ToLower().Contains(searchTerm) ||
+                s.Title.ToLower().Contains(searchTerm) ||
+                (s.Artist != null && s.Artist.ToLower().Contains(searchTerm)));
         }
 
-        query = sortBy?.ToLower() switch
-        {
-            "title" => descending ? query.OrderByDescending(s => s.Title) : query.OrderBy(s => s.Title),
-            "updatedat" => descending ? query.OrderByDescending(s => s.UpdatedAt) : query.OrderBy(s => s.UpdatedAt),
-            "createdat" => descending ? query.OrderByDescending(s => s.CreatedAt) : query.OrderBy(s => s.CreatedAt),
-            _ => query.OrderByDescending(s => s.CreatedAt)
-        };
+        query = ApplySorting(query, sortBy, descending);
 
         return await query
-            .Include(s => s.Owner)
-            .Include(s => s.SongChords).ThenInclude(sc => sc.Chord)
-            .Include(s => s.SongPatterns).ThenInclude(sp => sp.StrummingPattern)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
@@ -53,22 +48,20 @@ public class SongRepository : BaseRepository<Song>, ISongRepository
         CancellationToken cancellationToken = default)
     {
         return await _dbSet
-            .Include(s => s.SongChords).ThenInclude(sc => sc.Chord)
-            .Include(s => s.SongPatterns).ThenInclude(sp => sp.StrummingPattern)
             .FirstOrDefaultAsync(s => s.Title == title && s.OwnerId == ownerId, cancellationToken);
     }
 
     public async Task<List<Song>> SearchAsync(string searchTerm, int page, int pageSize,
         CancellationToken cancellationToken = default)
     {
+        searchTerm = searchTerm.ToLower();
+
         return await _dbSet
-            .Where(s => s.IsPublic &&
-                (s.Title.Contains(searchTerm) ||
-                 s.FullText.Contains(searchTerm) ||
-                 (s.Artist != null && s.Artist.Contains(searchTerm))))
+            .Where(s => s.IsPublic && (
+                s.FullText.ToLower().Contains(searchTerm) ||
+                s.Title.ToLower().Contains(searchTerm) ||
+                (s.Artist != null && s.Artist.ToLower().Contains(searchTerm))))
             .Include(s => s.Owner)
-            .Include(s => s.SongChords).ThenInclude(sc => sc.Chord)
-            .Include(s => s.SongPatterns).ThenInclude(sp => sp.StrummingPattern)
             .OrderByDescending(s => s.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -78,44 +71,27 @@ public class SongRepository : BaseRepository<Song>, ISongRepository
     public async Task<List<Song>> SearchByChordAsync(Guid chordId, CancellationToken cancellationToken = default)
     {
         return await _dbSet
-            .Where(s => s.IsPublic &&
-                s.SongChords.Any(sc => sc.ChordId == chordId))
+            .Where(s => s.IsPublic && s.SongChords.Any(sc => sc.ChordId == chordId))
             .Include(s => s.Owner)
-            .Include(s => s.SongChords).ThenInclude(sc => sc.Chord)
-            .Include(s => s.SongPatterns).ThenInclude(sp => sp.StrummingPattern)
+            .Include(s => s.Structure)
             .ToListAsync(cancellationToken);
     }
 
     public async Task<List<Song>> SearchByPatternAsync(Guid patternId, CancellationToken cancellationToken = default)
     {
         return await _dbSet
-            .Where(s => s.IsPublic &&
-                s.SongPatterns.Any(sp => sp.StrummingPatternId == patternId))
+            .Where(s => s.IsPublic && s.SongPatterns.Any(sp => sp.StrummingPatternId == patternId))
             .Include(s => s.Owner)
-            .Include(s => s.SongChords).ThenInclude(sc => sc.Chord)
-            .Include(s => s.SongPatterns).ThenInclude(sp => sp.StrummingPattern)
+            .Include(s => s.Structure)
             .ToListAsync(cancellationToken);
     }
 
     public async Task<List<Song>> GetByParentIdAsync(Guid parentSongId, CancellationToken cancellationToken = default)
     {
         return await _dbSet
-            .Where(s => s.ParentSongId == parentSongId)
+            .Where(s => s.ParentSongId == parentSongId && s.IsPublic)
             .Include(s => s.Owner)
-            .Include(s => s.SongChords).ThenInclude(sc => sc.Chord)
-            .Include(s => s.SongPatterns).ThenInclude(sp => sp.StrummingPattern)
             .ToListAsync(cancellationToken);
-    }
-
-    public override async Task<Song?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-    {
-        return await _dbSet
-            .Include(s => s.Owner)
-            .Include(s => s.SongChords).ThenInclude(sc => sc.Chord)
-            .Include(s => s.SongPatterns).ThenInclude(sp => sp.StrummingPattern)
-            .Include(s => s.Reviews).ThenInclude(r => r.User)
-            .Include(s => s.ChildSongs)
-            .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
     }
 
     public async Task<int> CountPublicSongsAsync(string? searchTerm = null,
@@ -125,10 +101,11 @@ public class SongRepository : BaseRepository<Song>, ISongRepository
 
         if (!string.IsNullOrEmpty(searchTerm))
         {
+            searchTerm = searchTerm.ToLower();
             query = query.Where(s =>
-                s.Title.Contains(searchTerm) ||
-                s.FullText.Contains(searchTerm) ||
-                (s.Artist != null && s.Artist.Contains(searchTerm)));
+                s.FullText.ToLower().Contains(searchTerm) ||
+                s.Title.ToLower().Contains(searchTerm) ||
+                (s.Artist != null && s.Artist.ToLower().Contains(searchTerm)));
         }
 
         return await query.CountAsync(cancellationToken);
@@ -137,6 +114,23 @@ public class SongRepository : BaseRepository<Song>, ISongRepository
     public async Task<int> CountByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return await _dbSet
-            .CountAsync(s => s.OwnerId == userId, cancellationToken);
+            .Where(s => s.OwnerId == userId)
+            .CountAsync(cancellationToken);
+    }
+
+    private IQueryable<Song> ApplySorting(IQueryable<Song> query, string? sortBy, bool descending)
+    {
+        return (sortBy?.ToLower(), descending) switch
+        {
+            ("title", false) => query.OrderBy(s => s.Title),
+            ("title", true) => query.OrderByDescending(s => s.Title),
+            ("createdat", false) => query.OrderBy(s => s.CreatedAt),
+            ("createdat", true) => query.OrderByDescending(s => s.CreatedAt),
+            ("updatedat", false) => query.OrderBy(s => s.UpdatedAt ?? s.CreatedAt),
+            ("updatedat", true) => query.OrderByDescending(s => s.UpdatedAt ?? s.CreatedAt),
+            ("reviews", false) => query.OrderBy(s => s.ReviewCount),
+            ("reviews", true) => query.OrderByDescending(s => s.ReviewCount),
+            _ => query.OrderByDescending(s => s.CreatedAt)
+        };
     }
 }

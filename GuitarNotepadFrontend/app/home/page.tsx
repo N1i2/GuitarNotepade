@@ -138,7 +138,7 @@ export default function HomePage() {
                 Access a comprehensive library of songs
               </p>
               <Button asChild className="w-full">
-                <Link href="/home/song">
+                <Link href="/home/songs">
                   <ArrowRight className="h-4 w-4 mr-2" />
                   Go to Songs
                 </Link>
