@@ -43,8 +43,6 @@ public class SongSegment : BaseEntityWithId
         string? color = null,
         string? backgroundColor = null)
     {
-        ValidateSegment(type, lyric, chordId, patternId);
-
         var segment = new SongSegment
         {
             Id = Guid.NewGuid(),
@@ -62,34 +60,6 @@ public class SongSegment : BaseEntityWithId
         return segment;
     }
 
-    private static void ValidateSegment(
-        SegmentType type,
-        string? lyric,
-        Guid? chordId,
-        Guid? patternId)
-    {
-        switch (type)
-        {
-            case SegmentType.Text:
-                if (string.IsNullOrWhiteSpace(lyric))
-                    throw new ArgumentException("Lyric is required for Text segment", nameof(lyric));
-                break;
-
-            case SegmentType.Playback:
-                if (!patternId.HasValue || patternId.Value == Guid.Empty)
-                    throw new ArgumentException("PatternId is required for Playback segment", nameof(patternId));
-                break;
-
-            case SegmentType.Space:
-                break;
-
-            case SegmentType.Section:
-                if (string.IsNullOrWhiteSpace(lyric))
-                    throw new ArgumentException("Lyric is required for Section segment", nameof(lyric));
-                break;
-        }
-    }
-
     public void Update(
         string? lyric = null,
         Guid? chordId = null,
@@ -99,8 +69,6 @@ public class SongSegment : BaseEntityWithId
         string? color = null,
         string? backgroundColor = null)
     {
-        ValidateSegment(Type, lyric ?? Lyric, chordId ?? ChordId, patternId ?? PatternId);
-
         if (lyric != null) Lyric = lyric.Trim();
         if (chordId.HasValue) ChordId = chordId;
         if (patternId.HasValue) PatternId = patternId;

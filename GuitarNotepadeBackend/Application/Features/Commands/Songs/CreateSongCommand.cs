@@ -6,9 +6,9 @@ namespace Application.Features.Commands.Songs;
 public record CreateSongCommand(
     Guid UserId,
     string Title,
+    string Gener,
+    string Theme,
     string? Artist,
     string? Description,
     bool IsPublic,
-    Guid? ParentSongId,
-    string? Key,
-    string? Difficulty) : IRequest<SongDto>;
+    Guid? ParentSongId) : IRequest<SongDto>;

@@ -13,11 +13,10 @@ public class Song : BaseEntityWithId
     public bool IsPublic { get; private set; }
     public Guid OwnerId { get; private set; }
     public Guid? ParentSongId { get; private set; }
+    public string Genre { get; set; }
+    public string Theme { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
-
-    public string? Key { get; private set; }
-    public string? Difficulty { get; private set; }
 
     public string FullText { get; private set; }
 
@@ -40,6 +39,8 @@ public class Song : BaseEntityWithId
     {
         Title = string.Empty;
         FullText = string.Empty;
+        Theme = string.Empty;
+        Genre = string.Empty;
         ChildSongs = new List<Song>();
         Comments = new List<SongComment>();
         Reviews = new List<SongReview>();
@@ -51,6 +52,8 @@ public class Song : BaseEntityWithId
         Guid ownerId,
         string title,
         bool isPublic,
+        string genre,
+        string theme,
         string? artist = null,
         string? description = null,
         Guid? parentSongId = null)
@@ -67,6 +70,8 @@ public class Song : BaseEntityWithId
             Id = Guid.NewGuid(),
             OwnerId = ownerId,
             Title = title.Trim(),
+            Genre = genre,
+            Theme = theme,
             Artist = artist?.Trim(),
             Description = description?.Trim(),
             IsPublic = isPublic,
@@ -82,15 +87,25 @@ public class Song : BaseEntityWithId
     public void Update(
         string? title = null,
         string? artist = null,
+        string? genre = null, 
+        string? theme = null,
         string? description = null,
-        bool? isPublic = null,
-        string? key = null,
-        string? difficulty = null)
+        bool? isPublic = null)
     {
         if (title != null)
         {
             TitleRule.IsValid(title);
             Title = title.Trim();
+        }
+
+        if(genre != null)
+        {
+            Genre = genre;
+        }
+
+        if (theme != null)
+        {
+            Theme = theme;
         }
 
         if (artist != null)
@@ -116,18 +131,13 @@ public class Song : BaseEntityWithId
             IsPublic = isPublic.Value;
         }
 
-        if (key != null)
-        {
-            Key = key.Trim();
-        }
-
-        if (difficulty != null)
-        {
-            Difficulty = difficulty.Trim();
-        }
-
         UpdatedAt = DateTime.UtcNow;
         UpdateFullText();
+    }
+
+    public void SetFullText(string fullText)
+    {
+        FullText = fullText;
     }
 
     public void UpdateFullText()
@@ -231,18 +241,19 @@ public class Song : BaseEntityWithId
     public static Song CreateFromExisting(Song originalSong, Guid newOwnerId)
     {
         if (originalSong == null)
+        {
             throw new ArgumentNullException(nameof(originalSong));
+        }
 
         var newSong = Create(
             ownerId: newOwnerId,
             title: originalSong.Title,
+            genre: originalSong.Genre,
+            theme: originalSong.Theme,
             isPublic: true,
             artist: originalSong.Artist,
             description: originalSong.Description,
             parentSongId: originalSong.Id);
-
-        newSong.Key = originalSong.Key;
-        newSong.Difficulty = originalSong.Difficulty;
 
         return newSong;
     }

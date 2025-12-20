@@ -5,8 +5,6 @@
     public bool? IsPublic { get; set; }
     public Guid? ChordId { get; set; }
     public Guid? PatternId { get; set; }
-    public string? Key { get; set; }
-    public string? Difficulty { get; set; }
     public Guid? ParentSongId { get; set; }
     public decimal? MinRating { get; set; }
     public decimal? MaxRating { get; set; }

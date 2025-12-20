@@ -21,6 +21,8 @@ public class SongService : ISongService
         Guid ownerId,
         string title,
         bool isPublic,
+        string genre,
+        string theme,
         string? artist = null,
         string? description = null,
         Guid? parentSongId = null,
@@ -37,7 +39,7 @@ public class SongService : ISongService
                 throw new ArgumentException("Parent song not found or not public", nameof(parentSongId));
         }
 
-        var song = Song.Create(ownerId, title, isPublic, artist, description, parentSongId);
+        var song = Song.Create(ownerId, title, isPublic, genre, theme, artist, description, parentSongId);
         song = await _unitOfWork.Songs.CreateAsync(song, cancellationToken);
 
         _logger.LogInformation("Song created: {SongId} by user {UserId}", song.Id, ownerId);
@@ -47,18 +49,18 @@ public class SongService : ISongService
     public async Task<Song> UpdateSongAsync(
         Guid songId,
         string? title = null,
+        string? genre = null,
+        string? theme = null,
         string? artist = null,
         string? description = null,
         bool? isPublic = null,
-        string? key = null,
-        string? difficulty = null,
         CancellationToken cancellationToken = default)
     {
         var song = await _unitOfWork.Songs.GetByIdAsync(songId, cancellationToken);
         if (song == null)
             throw new ArgumentException("Song not found", nameof(songId));
 
-        song.Update(title, artist, description, isPublic, key, difficulty);
+        song.Update(title, artist, genre, theme, description, isPublic);
         await _unitOfWork.Songs.UpdateAsync(song, cancellationToken);
 
         _logger.LogInformation("Song updated: {SongId}", songId);

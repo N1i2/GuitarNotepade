@@ -11,6 +11,7 @@ public class SongSegmentPosition : BaseEntityWithId
 
     public virtual Song Song { get; private set; } = null!;
     public virtual SongSegment Segment { get; private set; } = null!;
+    public virtual SongStructure SongStructure { get; private set; } = null!;
 
     protected SongSegmentPosition() { }
 
@@ -24,6 +25,7 @@ public class SongSegmentPosition : BaseEntityWithId
         {
             throw new ArgumentException("SongId is required", nameof(songId));
         }
+
 
         if (segmentId == Guid.Empty)
         {

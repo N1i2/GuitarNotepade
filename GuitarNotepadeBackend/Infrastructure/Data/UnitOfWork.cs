@@ -1,6 +1,5 @@
 ﻿using Domain.Interfaces;
 using Domain.Interfaces.Repositories;
-using Infrastructure.Data;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore.Storage;
 

@@ -9,50 +9,54 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, X, Check } from 'lucide-react';
-import { CHORD_COLORS, getNextAvailableColor, isColorUnique } from '@/lib/song-segment-utils';
+import { Search, Check } from 'lucide-react';
 import { useSongCreation } from '@/app/contexts/song-creation-context';
 
-interface AddChordModalProps {
+interface ReplaceChordModalProps {
   open: boolean;
   onClose: () => void;
-  existingChordIds: string[];
+  chordId: string;
+  existingChordIds: string[]; 
 }
 
-export function AddChordModal({ open, onClose, existingChordIds }: AddChordModalProps) {
+export function ReplaceChordModal({ 
+  open, 
+  onClose, 
+  chordId, 
+  existingChordIds 
+}: ReplaceChordModalProps) {
   const { state, dispatch } = useSongCreation();
   const [chords, setChords] = useState<Chord[]>([]);
   const [filteredChords, setFilteredChords] = useState<Chord[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedChordId, setSelectedChordId] = useState<string>('');
-  const [selectedColor, setSelectedColor] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   
-  const usedColors = state.selectedChords.map(c => c.color);
-  const availableColors = CHORD_COLORS.filter(color => 
-    isColorUnique(color, [...usedColors, ...state.selectedPatterns.map(p => p.color)])
-  );
+  const currentChord = state.selectedChords.find(c => c.chordId === chordId);
 
   useEffect(() => {
     if (open) {
       loadChords();
-      setSelectedColor(getNextAvailableColor([...usedColors, ...state.selectedPatterns.map(p => p.color)], CHORD_COLORS));
     }
-  }, [open, state.selectedChords, state.selectedPatterns]);
+  }, [open]);
 
-  useEffect(() => {
-    if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase();
-      setFilteredChords(
-        chords.filter(chord => 
-          chord.name.toLowerCase().includes(searchLower) &&
-          !existingChordIds.includes(chord.id)
-        )
-      );
-    } else {
-      setFilteredChords(chords.filter(chord => !existingChordIds.includes(chord.id)));
-    }
-  }, [searchTerm, chords, existingChordIds]);
+useEffect(() => {
+  if (searchTerm.trim()) {
+    const searchLower = searchTerm.toLowerCase();
+    setFilteredChords(
+      chords.filter(chord => 
+        chord.name.toLowerCase().includes(searchLower) &&
+        chord.id !== chordId &&
+        !existingChordIds.includes(chord.id) 
+      )
+    );
+  } else {
+    setFilteredChords(chords.filter(chord => 
+      chord.id !== chordId &&
+      !existingChordIds.includes(chord.id)
+    ));
+  }
+}, [searchTerm, chords, chordId, existingChordIds]);
 
   const loadChords = async () => {
     try {
@@ -71,39 +75,37 @@ export function AddChordModal({ open, onClose, existingChordIds }: AddChordModal
     }
   };
 
-  const handleAddChord = () => {
-    if (!selectedChordId || !selectedColor) return;
+  const handleReplaceChord = () => {
+    if (!selectedChordId || !currentChord) return;
 
-    const chord = chords.find(c => c.id === selectedChordId);
-    if (!chord) return;
+    const newChord = chords.find(c => c.id === selectedChordId);
+    if (!newChord) return;
 
-    const newChord = {
-      chordId: chord.id,
-      chordName: chord.name,
-      color: selectedColor,
+    const newChordDto = {
+      chordId: newChord.id,
+      chordName: newChord.name,
+      color: currentChord.color, 
     };
 
-    dispatch({ type: 'ADD_CHORD', payload: newChord });
-    dispatch({ type: 'SELECT_CHORD', payload: chord.id });
-    dispatch({ type: 'SET_TOOL', payload: 'chord' });
+    dispatch({ 
+      type: 'REPLACE_CHORD', 
+      payload: { 
+        oldId: chordId, 
+        newId: newChord.id,
+        chord: newChordDto
+      } 
+    });
     
     onClose();
-    setSelectedChordId('');
-    setSelectedColor('');
-    setSearchTerm('');
-  };
-
-  const handleColorSelect = (color: string) => {
-    setSelectedColor(color);
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Добавить аккорд</DialogTitle>
+          <DialogTitle>Заменить аккорд</DialogTitle>
           <DialogDescription>
-            Выберите аккорд и цвет для подчеркивания
+            Выберите новый аккорд для замены "{currentChord?.chordName}"
           </DialogDescription>
         </DialogHeader>
 
@@ -135,9 +137,7 @@ export function AddChordModal({ open, onClose, existingChordIds }: AddChordModal
                   {filteredChords.map((chord) => (
                     <Button
                       key={chord.id}
-                      variant={
-                        selectedChordId === chord.id ? "default" : "outline"
-                      }
+                      variant={selectedChordId === chord.id ? 'default' : 'outline'}
                       className="justify-start h-auto py-3"
                       onClick={() => setSelectedChordId(chord.id)}
                     >
@@ -152,51 +152,34 @@ export function AddChordModal({ open, onClose, existingChordIds }: AddChordModal
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  {existingChordIds.length >= 20
-                    ? "Достигнут максимум 20 аккордов"
-                    : searchTerm
-                    ? "Аккорды не найдены"
-                    : "Все доступные аккорды уже добавлены"}
+                  {searchTerm
+                    ? 'Аккорды не найдены'
+                    : 'Нет доступных аккордов для замены'}
                 </div>
               )}
             </ScrollArea>
           </div>
 
           {selectedChordId && (
-            <div className="space-y-3 border-t pt-4">
-              <Label>Выберите цвет для подчеркивания</Label>
-              <div className="grid grid-cols-5 gap-2">
-                {availableColors.map((color, index) => (
-                  <button
-                    key={`color-${color}-${index}`} 
-                    className={`h-10 rounded-md border-2 transition-all ${
-                      selectedColor === color
-                        ? "ring-2 ring-offset-2 ring-primary"
-                        : ""
-                    }`}
-                    style={{ backgroundColor: color }}
-                    onClick={() => handleColorSelect(color)}
-                    title={color}
-                  />
-                ))}
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {currentChord && (
+                    <div
+                      className="w-5 h-5 rounded-full border"
+                      style={{ backgroundColor: currentChord.color }}
+                    />
+                  )}
+                  <div>
+                    <div className="font-medium">
+                      Замена: {currentChord?.chordName} → {chords.find(c => c.id === selectedChordId)?.name}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Цвет аккорда останется прежним
+                    </div>
+                  </div>
+                </div>
               </div>
-
-              {selectedColor && (
-                <div className="flex items-center gap-2 text-sm">
-                  <div
-                    className="w-4 h-1 rounded"
-                    style={{ backgroundColor: selectedColor }}
-                  />
-                  <span>Так будет выглядеть подчеркивание</span>
-                </div>
-              )}
-
-              {availableColors.length === 0 && (
-                <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
-                  Все цвета заняты. Удалите некоторые аккорды или паттерны,
-                  чтобы освободить цвета.
-                </div>
-              )}
             </div>
           )}
 
@@ -205,10 +188,10 @@ export function AddChordModal({ open, onClose, existingChordIds }: AddChordModal
               Отмена
             </Button>
             <Button
-              onClick={handleAddChord}
-              disabled={!selectedChordId || !selectedColor}
+              onClick={handleReplaceChord}
+              disabled={!selectedChordId}
             >
-              Добавить аккорд
+              Заменить аккорд
             </Button>
           </div>
         </div>

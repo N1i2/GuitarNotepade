@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class createv3 : Migration
+    public partial class createbd : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -31,9 +31,9 @@ namespace Infrastructure.Data.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     NikName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    PasswordHash = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    PasswordHash = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     Role = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    AvatarUrl = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    AvatarUrl = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     Bio = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
                     BlockedUntil = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     BlockReason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
@@ -49,9 +49,9 @@ namespace Infrastructure.Data.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    Fingering = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    Name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Fingering = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
@@ -78,14 +78,14 @@ namespace Infrastructure.Data.Migrations
                     IsPublic = table.Column<bool>(type: "boolean", nullable: false),
                     OwnerId = table.Column<Guid>(type: "uuid", nullable: false),
                     ParentSongId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Genre = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Theme = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    Key = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: true),
-                    Difficulty = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     FullText = table.Column<string>(type: "text", nullable: false),
                     ReviewCount = table.Column<int>(type: "integer", nullable: false),
-                    AverageBeautifulRating = table.Column<decimal>(type: "numeric(4,2)", precision: 4, scale: 2, nullable: true),
-                    AverageDifficultyRating = table.Column<decimal>(type: "numeric(4,2)", precision: 4, scale: 2, nullable: true),
+                    AverageBeautifulRating = table.Column<decimal>(type: "numeric", nullable: true),
+                    AverageDifficultyRating = table.Column<decimal>(type: "numeric", nullable: true),
                     TotalLikes = table.Column<int>(type: "integer", nullable: false),
                     TotalDislikes = table.Column<int>(type: "integer", nullable: false)
                 },
@@ -162,7 +162,7 @@ namespace Infrastructure.Data.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     SongId = table.Column<Guid>(type: "uuid", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ReviewText = table.Column<string>(type: "character varying(5000)", maxLength: 5000, nullable: false),
+                    ReviewText = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     BeautifulLevel = table.Column<int>(type: "integer", nullable: true),
@@ -197,6 +197,7 @@ namespace Infrastructure.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_SongStructures", x => x.Id);
+                    table.UniqueConstraint("AK_SongStructures_SongId", x => x.SongId);
                     table.ForeignKey(
                         name: "FK_SongStructures_Songs_SongId",
                         column: x => x.SongId,
@@ -235,15 +236,15 @@ namespace Infrastructure.Data.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Type = table.Column<int>(type: "integer", nullable: false),
-                    Lyric = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    Type = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    Lyric = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     Duration = table.Column<int>(type: "integer", nullable: true),
-                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     ChordId = table.Column<Guid>(type: "uuid", nullable: true),
                     PatternId = table.Column<Guid>(type: "uuid", nullable: true),
                     Color = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     BackgroundColor = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    ContentHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false)
+                    ContentHash = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -253,13 +254,13 @@ namespace Infrastructure.Data.Migrations
                         column: x => x.ChordId,
                         principalTable: "Chords",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
                         name: "FK_SongSegments_StrummingPatterns_PatternId",
                         column: x => x.PatternId,
                         principalTable: "StrummingPatterns",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateTable(
@@ -322,7 +323,8 @@ namespace Infrastructure.Data.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     SongId = table.Column<Guid>(type: "uuid", nullable: false),
                     SegmentId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Text = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false)
+                    Text = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -364,7 +366,7 @@ namespace Infrastructure.Data.Migrations
                         name: "FK_SongSegmentPositions_SongStructures_SongId",
                         column: x => x.SongId,
                         principalTable: "SongStructures",
-                        principalColumn: "Id",
+                        principalColumn: "SongId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_SongSegmentPositions_Songs_SongId",
@@ -378,21 +380,6 @@ namespace Infrastructure.Data.Migrations
                 name: "IX_Chords_CreatedByUserId",
                 table: "Chords",
                 column: "CreatedByUserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Chords_Name",
-                table: "Chords",
-                column: "Name");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ReviewLikes_IsLike",
-                table: "ReviewLikes",
-                column: "IsLike");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ReviewLikes_ReviewId",
-                table: "ReviewLikes",
-                column: "ReviewId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ReviewLikes_ReviewId_UserId",
@@ -411,11 +398,6 @@ namespace Infrastructure.Data.Migrations
                 column: "LabelId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_SegmentLabels_SegmentId",
-                table: "SegmentLabels",
-                column: "SegmentId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_SegmentLabels_SegmentId_LabelId",
                 table: "SegmentLabels",
                 columns: new[] { "SegmentId", "LabelId" },
@@ -425,11 +407,6 @@ namespace Infrastructure.Data.Migrations
                 name: "IX_SongChords_ChordId",
                 table: "SongChords",
                 column: "ChordId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SongChords_SongId",
-                table: "SongChords",
-                column: "SongId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_SongChords_SongId_ChordId",
@@ -448,17 +425,6 @@ namespace Infrastructure.Data.Migrations
                 column: "SongId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_SongLabels_Name",
-                table: "SongLabels",
-                column: "Name",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SongPatterns_SongId",
-                table: "SongPatterns",
-                column: "SongId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_SongPatterns_SongId_StrummingPatternId",
                 table: "SongPatterns",
                 columns: new[] { "SongId", "StrummingPatternId" },
@@ -470,50 +436,14 @@ namespace Infrastructure.Data.Migrations
                 column: "StrummingPatternId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_SongReviews_BeautifulLevel",
-                table: "SongReviews",
-                column: "BeautifulLevel");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SongReviews_CreatedAt",
-                table: "SongReviews",
-                column: "CreatedAt");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SongReviews_DifficultyLevel",
-                table: "SongReviews",
-                column: "DifficultyLevel");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_SongReviews_SongId",
                 table: "SongReviews",
                 column: "SongId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_SongReviews_SongId_UserId",
-                table: "SongReviews",
-                columns: new[] { "SongId", "UserId" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_SongReviews_UserId",
                 table: "SongReviews",
                 column: "UserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Songs_CreatedAt",
-                table: "Songs",
-                column: "CreatedAt");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Songs_FullText",
-                table: "Songs",
-                column: "FullText");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Songs_IsPublic",
-                table: "Songs",
-                column: "IsPublic");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Songs_OwnerId",
@@ -526,34 +456,14 @@ namespace Infrastructure.Data.Migrations
                 column: "ParentSongId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Songs_Title",
-                table: "Songs",
-                column: "Title");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Songs_UpdatedAt",
-                table: "Songs",
-                column: "UpdatedAt");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_SongSegmentPositions_PositionIndex",
                 table: "SongSegmentPositions",
                 column: "PositionIndex");
 
             migrationBuilder.CreateIndex(
-                name: "IX_SongSegmentPositions_RepeatGroup",
-                table: "SongSegmentPositions",
-                column: "RepeatGroup");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_SongSegmentPositions_SegmentId",
                 table: "SongSegmentPositions",
                 column: "SegmentId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SongSegmentPositions_SongId",
-                table: "SongSegmentPositions",
-                column: "SongId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_SongSegmentPositions_SongId_PositionIndex",
@@ -567,62 +477,14 @@ namespace Infrastructure.Data.Migrations
                 column: "ChordId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_SongSegments_ContentHash",
-                table: "SongSegments",
-                column: "ContentHash");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_SongSegments_PatternId",
                 table: "SongSegments",
                 column: "PatternId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_SongSegments_Type",
-                table: "SongSegments",
-                column: "Type");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SongStructures_SongId",
-                table: "SongStructures",
-                column: "SongId",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_StrummingPatterns_CreatedByUserId",
                 table: "StrummingPatterns",
                 column: "CreatedByUserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_StrummingPatterns_IsFingerStyle",
-                table: "StrummingPatterns",
-                column: "IsFingerStyle");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_StrummingPatterns_Name",
-                table: "StrummingPatterns",
-                column: "Name");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Users_BlockedUntil",
-                table: "Users",
-                column: "BlockedUntil");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Users_Email",
-                table: "Users",
-                column: "Email",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Users_NikName",
-                table: "Users",
-                column: "NikName",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Users_Role",
-                table: "Users",
-                column: "Role");
         }
 
         /// <inheritdoc />

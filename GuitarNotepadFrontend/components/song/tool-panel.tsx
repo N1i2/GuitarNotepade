@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   MousePointer, 
   Music, 
@@ -11,23 +13,24 @@ import {
   X,
   Eraser,
   Plus,
-  Palette
+  Palette,
+  Replace
 } from 'lucide-react';
 import { AddChordModal } from './add-chord-modal';
 import { AddPatternModal } from './add-pattern-modal';
+import { CHORD_COLORS, PATTERN_COLORS } from '@/lib/song-segment-utils';
 import { useSongCreation } from '@/app/contexts/song-creation-context';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useThemeColors } from '@/hooks/theme-song';
+import { ReplaceChordModal } from './replace-chord-modal';
+import { ReplacePatternModal } from './replace-pattern-modal';
 
 export function ToolPanel() {
   const { state, dispatch } = useSongCreation();
   const [showAddChord, setShowAddChord] = useState(false);
   const [showAddPattern, setShowAddPattern] = useState(false);
+  const [showReplaceChord, setShowReplaceChord] = useState<string | null>(null);
+  const [showReplacePattern, setShowReplacePattern] = useState<string | null>(null);
   const [editingChordId, setEditingChordId] = useState<string | null>(null);
   const [editingPatternId, setEditingPatternId] = useState<string | null>(null);
-  
-  const { chordColors, patternColors } = useThemeColors();
 
   const handleToolSelect = (tool: 'select' | 'chord' | 'pattern' | 'comment') => {
     dispatch({ type: 'SET_TOOL', payload: tool });
@@ -81,14 +84,14 @@ export function ToolPanel() {
       if (state.selectedChordId === 'empty') {
         return {
           title: 'Режим очистки аккордов',
-          description: 'Выделите текст и нажмите "Очистить выделение"',
+          description: 'Выделите текст для удаления аккордов',
           icon: <Eraser className="h-4 w-4" />
         };
       } else {
         const chord = state.selectedChords.find(c => c.chordId === state.selectedChordId);
         return {
           title: `Аккорд: ${chord?.chordName}`,
-          description: 'Выделите текст для автоматического применения',
+          description: 'Выделите текст для применения аккорда',
           color: chord?.color,
           icon: <Music className="h-4 w-4" />
         };
@@ -97,14 +100,14 @@ export function ToolPanel() {
       if (state.selectedPatternId === 'empty') {
         return {
           title: 'Режим очистки паттернов',
-          description: 'Выделите текст и нажмите "Очистить выделение"',
+          description: 'Выделите текст для удаления паттернов',
           icon: <Eraser className="h-4 w-4" />
         };
       } else {
         const pattern = state.selectedPatterns.find(p => p.patternId === state.selectedPatternId);
         return {
           title: `Паттерн: ${pattern?.patternName}`,
-          description: 'Выделите текст для автоматического применения',
+          description: 'Выделите текст для применения паттерна',
           color: pattern?.color,
           icon: <ListMusic className="h-4 w-4" />
         };
@@ -127,7 +130,7 @@ export function ToolPanel() {
         <CardHeader>
           <CardTitle>Инструменты</CardTitle>
           <CardDescription>
-            Выберите инструмент и примените его к тексту
+            Выберите инструмент для работы с текстом
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -224,24 +227,36 @@ export function ToolPanel() {
 
           {state.selectedChords.length > 0 && (
             <div className="space-y-2">
-              <div className="text-sm font-medium">Аккорды</div>
-              <div className="space-y-2">
+              <div className="text-sm font-medium">Аккорды в песне</div>
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                 {state.selectedChords.map(chord => (
                   <div
                     key={chord.chordId}
-                    className={`flex items-center justify-between p-2 rounded-md border hover:bg-muted/50 cursor-pointer ${
-                      state.selectedChordId === chord.chordId ? 'ring-2 ring-primary' : ''
+                    className={`flex items-center justify-between p-2 rounded-md border hover:bg-muted/50 cursor-pointer transition-colors ${
+                      state.selectedChordId === chord.chordId ? 'ring-2 ring-primary bg-primary/5' : ''
                     }`}
                     onClick={() => handleChordSelect(chord.chordId)}
                   >
                     <div className="flex items-center gap-2">
                       <div
-                        className="w-3 h-3 rounded-full"
+                        className="w-3 h-3 rounded-full border"
                         style={{ backgroundColor: chord.color }}
                       />
                       <span className="font-medium">{chord.chordName}</span>
                     </div>
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowReplaceChord(chord.chordId);
+                        }}
+                        className="h-6 w-6 p-0"
+                        title="Заменить аккорд"
+                      >
+                        <Replace className="h-3 w-3" />
+                      </Button>
                       <Button
                         size="sm"
                         variant="ghost"
@@ -258,7 +273,7 @@ export function ToolPanel() {
                         size="sm"
                         variant="ghost"
                         onClick={(e) => handleRemoveChord(chord.chordId, e)}
-                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                         title="Удалить аккорд"
                       >
                         <X className="h-3 w-3" />
@@ -272,13 +287,13 @@ export function ToolPanel() {
 
           {state.selectedPatterns.length > 0 && (
             <div className="space-y-2">
-              <div className="text-sm font-medium">Паттерны</div>
-              <div className="space-y-2">
+              <div className="text-sm font-medium">Паттерны в песне</div>
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                 {state.selectedPatterns.map(pattern => (
                   <div
                     key={pattern.patternId}
-                    className={`flex items-center justify-between p-2 rounded-md border hover:bg-muted/50 cursor-pointer ${
-                      state.selectedPatternId === pattern.patternId ? 'ring-2 ring-primary' : ''
+                    className={`flex items-center justify-between p-2 rounded-md border hover:bg-muted/50 cursor-pointer transition-colors ${
+                      state.selectedPatternId === pattern.patternId ? 'ring-2 ring-primary bg-primary/5' : ''
                     }`}
                     onClick={() => handlePatternSelect(pattern.patternId)}
                   >
@@ -294,7 +309,19 @@ export function ToolPanel() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowReplacePattern(pattern.patternId);
+                        }}
+                        className="h-6 w-6 p-0"
+                        title="Заменить паттерн"
+                      >
+                        <Replace className="h-3 w-3" />
+                      </Button>
                       <Button
                         size="sm"
                         variant="ghost"
@@ -311,7 +338,7 @@ export function ToolPanel() {
                         size="sm"
                         variant="ghost"
                         onClick={(e) => handleRemovePattern(pattern.patternId, e)}
-                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                         title="Удалить паттерн"
                       >
                         <X className="h-3 w-3" />
@@ -324,11 +351,17 @@ export function ToolPanel() {
           )}
 
           {activeToolInfo && (
-            <div className="p-3 rounded-lg border bg-muted">
+            <div className="p-3 rounded-lg border bg-muted/30">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {activeToolInfo.icon}
                   <span className="font-medium">{activeToolInfo.title}</span>
+                  {activeToolInfo.color && (
+                    <div
+                      className="w-3 h-3 rounded-full ml-2 border"
+                      style={{ backgroundColor: activeToolInfo.color }}
+                    />
+                  )}
                 </div>
                 <Button
                   size="sm"
@@ -367,6 +400,23 @@ export function ToolPanel() {
           existingPatternIds={state.selectedPatterns.map(p => p.patternId)}
         />
       )}
+
+{showReplaceChord && (
+  <ReplaceChordModal
+    open={!!showReplaceChord}
+    onClose={() => setShowReplaceChord(null)}
+    chordId={showReplaceChord!}
+    existingChordIds={state.selectedChords.map(c => c.chordId).filter(id => id !== showReplaceChord)}
+  />
+)}
+
+      {showReplacePattern && (
+        <ReplacePatternModal
+          open={!!showReplacePattern}
+          onClose={() => setShowReplacePattern(null)}
+          patternId={showReplacePattern!}
+        />
+      )}
       
       <Dialog open={!!editingChordId} onOpenChange={() => setEditingChordId(null)}>
         <DialogContent className="sm:max-w-md">
@@ -375,7 +425,7 @@ export function ToolPanel() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-5 gap-2">
-              {chordColors.map(color => (
+              {CHORD_COLORS.map(color => (
                 <button
                   key={color}
                   className="h-10 rounded-md border-2 transition-all hover:scale-105"
@@ -396,7 +446,7 @@ export function ToolPanel() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-5 gap-2">
-              {patternColors.map(color => (
+              {PATTERN_COLORS.map(color => (
                 <button
                   key={color}
                   className="h-10 rounded-md border transition-all hover:scale-105"

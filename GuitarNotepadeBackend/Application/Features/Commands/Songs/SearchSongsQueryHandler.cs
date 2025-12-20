@@ -31,12 +31,8 @@ public class SearchSongsQueryHandler : IRequestHandler<SearchSongsQuery, SongSea
         {
             query = query.Where(s => s.IsPublic == filters.IsPublic.Value);
         }
-        else
-        {
-            query = query.Where(s => s.IsPublic);
-        }
 
-        if (!string.IsNullOrEmpty(filters.SearchTerm))
+        if (!string.IsNullOrWhiteSpace(filters.SearchTerm))
         {
             var searchTerm = filters.SearchTerm.ToLower();
             query = query.Where(s =>
@@ -59,16 +55,6 @@ public class SearchSongsQueryHandler : IRequestHandler<SearchSongsQuery, SongSea
         if (filters.PatternId.HasValue)
         {
             query = query.Where(s => s.SongPatterns.Any(sp => sp.StrummingPatternId == filters.PatternId.Value));
-        }
-
-        if (!string.IsNullOrEmpty(filters.Key))
-        {
-            query = query.Where(s => s.Key == filters.Key);
-        }
-
-        if (!string.IsNullOrEmpty(filters.Difficulty))
-        {
-            query = query.Where(s => s.Difficulty == filters.Difficulty);
         }
 
         if (filters.ParentSongId.HasValue)

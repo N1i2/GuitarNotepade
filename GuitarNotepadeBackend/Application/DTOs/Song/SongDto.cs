@@ -14,9 +14,6 @@ public class SongDto
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 
-    public string? Key { get; set; }
-    public string? Difficulty { get; set; }
-
     public int ReviewCount { get; set; }
     public decimal? AverageBeautifulRating { get; set; }
     public decimal? AverageDifficultyRating { get; set; }

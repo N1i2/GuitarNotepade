@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251219161050_createv3")]
-    partial class createv3
+    [Migration("20251220194153_createbd")]
+    partial class createbd
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -38,18 +38,18 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<string>("Fingering")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("Fingering")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -57,8 +57,6 @@ namespace Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
-
-                    b.HasIndex("Name");
 
                     b.ToTable("Chords");
                 });
@@ -86,10 +84,6 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IsLike");
-
-                    b.HasIndex("ReviewId");
-
                     b.HasIndex("UserId");
 
                     b.HasIndex("ReviewId", "UserId")
@@ -114,8 +108,6 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasIndex("LabelId");
 
-                    b.HasIndex("SegmentId");
-
                     b.HasIndex("SegmentId", "LabelId")
                         .IsUnique();
 
@@ -133,12 +125,10 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("character varying(200)");
 
                     b.Property<decimal?>("AverageBeautifulRating")
-                        .HasPrecision(4, 2)
-                        .HasColumnType("numeric(4,2)");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal?>("AverageDifficultyRating")
-                        .HasPrecision(4, 2)
-                        .HasColumnType("numeric(4,2)");
+                        .HasColumnType("numeric");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -147,20 +137,17 @@ namespace Infrastructure.Data.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
 
-                    b.Property<string>("Difficulty")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
                     b.Property<string>("FullText")
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Genre")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<bool>("IsPublic")
                         .HasColumnType("boolean");
-
-                    b.Property<string>("Key")
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
 
                     b.Property<Guid>("OwnerId")
                         .HasColumnType("uuid");
@@ -170,6 +157,11 @@ namespace Infrastructure.Data.Migrations
 
                     b.Property<int>("ReviewCount")
                         .HasColumnType("integer");
+
+                    b.Property<string>("Theme")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -187,19 +179,9 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedAt");
-
-                    b.HasIndex("FullText");
-
-                    b.HasIndex("IsPublic");
-
                     b.HasIndex("OwnerId");
 
                     b.HasIndex("ParentSongId");
-
-                    b.HasIndex("Title");
-
-                    b.HasIndex("UpdatedAt");
 
                     b.ToTable("Songs");
                 });
@@ -220,8 +202,6 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasIndex("ChordId");
 
-                    b.HasIndex("SongId");
-
                     b.HasIndex("SongId", "ChordId")
                         .IsUnique();
 
@@ -233,6 +213,9 @@ namespace Infrastructure.Data.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("SegmentId")
                         .HasColumnType("uuid");
@@ -271,9 +254,6 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
-                        .IsUnique();
-
                     b.ToTable("SongLabels");
                 });
 
@@ -290,8 +270,6 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("SongId");
 
                     b.HasIndex("StrummingPatternId");
 
@@ -324,8 +302,8 @@ namespace Infrastructure.Data.Migrations
 
                     b.Property<string>("ReviewText")
                         .IsRequired()
-                        .HasMaxLength(5000)
-                        .HasColumnType("character varying(5000)");
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
 
                     b.Property<Guid>("SongId")
                         .HasColumnType("uuid");
@@ -338,18 +316,9 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BeautifulLevel");
-
-                    b.HasIndex("CreatedAt");
-
-                    b.HasIndex("DifficultyLevel");
-
                     b.HasIndex("SongId");
 
                     b.HasIndex("UserId");
-
-                    b.HasIndex("SongId", "UserId")
-                        .IsUnique();
 
                     b.ToTable("SongReviews");
                 });
@@ -373,35 +342,33 @@ namespace Infrastructure.Data.Migrations
 
                     b.Property<string>("ContentHash")
                         .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<int?>("Duration")
                         .HasColumnType("integer");
 
                     b.Property<string>("Lyric")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<Guid?>("PatternId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ChordId");
 
-                    b.HasIndex("ContentHash");
-
                     b.HasIndex("PatternId");
-
-                    b.HasIndex("Type");
 
                     b.ToTable("SongSegments");
                 });
@@ -429,11 +396,7 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasIndex("PositionIndex");
 
-                    b.HasIndex("RepeatGroup");
-
                     b.HasIndex("SegmentId");
-
-                    b.HasIndex("SongId");
 
                     b.HasIndex("SongId", "PositionIndex")
                         .IsUnique();
@@ -451,9 +414,6 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("SongId")
-                        .IsUnique();
 
                     b.ToTable("SongStructures");
                 });
@@ -494,10 +454,6 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasIndex("CreatedByUserId");
 
-                    b.HasIndex("IsFingerStyle");
-
-                    b.HasIndex("Name");
-
                     b.ToTable("StrummingPatterns");
                 });
 
@@ -508,8 +464,8 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("AvatarUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<string>("Bio")
                         .IsRequired()
@@ -538,8 +494,8 @@ namespace Infrastructure.Data.Migrations
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -547,16 +503,6 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("character varying(50)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("BlockedUntil");
-
-                    b.HasIndex("Email")
-                        .IsUnique();
-
-                    b.HasIndex("NikName")
-                        .IsUnique();
-
-                    b.HasIndex("Role");
 
                     b.ToTable("Users");
                 });
@@ -708,12 +654,12 @@ namespace Infrastructure.Data.Migrations
                     b.HasOne("Domain.Entities.Chord", "Chord")
                         .WithMany()
                         .HasForeignKey("ChordId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("Domain.Entities.StrummingPattern", "Pattern")
                         .WithMany()
                         .HasForeignKey("PatternId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Chord");
 
@@ -734,15 +680,18 @@ namespace Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Domain.Entities.SongStructure", null)
+                    b.HasOne("Domain.Entities.SongStructure", "SongStructure")
                         .WithMany("SegmentPositions")
                         .HasForeignKey("SongId")
+                        .HasPrincipalKey("SongId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Segment");
 
                     b.Navigation("Song");
+
+                    b.Navigation("SongStructure");
                 });
 
             modelBuilder.Entity("Domain.Entities.SongStructure", b =>

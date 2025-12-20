@@ -1,4 +1,6 @@
-import { CHORD_COLORS, PATTERN_COLORS } from '@/types/songs';
+'use client';
+
+import { CHORD_COLORS, PATTERN_COLORS } from '@/lib/song-segment-utils';
 
 export function useThemeColors() {
   return {

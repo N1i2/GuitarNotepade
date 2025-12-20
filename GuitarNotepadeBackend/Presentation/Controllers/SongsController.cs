@@ -31,8 +31,6 @@ public class SongsController : ControllerBase
         [FromQuery] bool? isPublic = null,
         [FromQuery] Guid? chordId = null,
         [FromQuery] Guid? patternId = null,
-        [FromQuery] string? key = null,
-        [FromQuery] string? difficulty = null,
         [FromQuery] Guid? parentSongId = null,
         [FromQuery] decimal? minRating = null,
         [FromQuery] decimal? maxRating = null,
@@ -52,8 +50,6 @@ public class SongsController : ControllerBase
                 IsPublic = isPublic,
                 ChordId = chordId,
                 PatternId = patternId,
-                Key = key,
-                Difficulty = difficulty,
                 ParentSongId = parentSongId,
                 MinRating = minRating,
                 MaxRating = maxRating,
@@ -236,12 +232,12 @@ public class SongsController : ControllerBase
             var command = new CreateSongCommand(
                 userId,
                 dto.Title,
+                dto.Genre,
+                dto.Theme,
                 dto.Artist,
                 dto.Description,
                 dto.IsPublic,
-                dto.ParentSongId,
-                dto.Key,
-                dto.Difficulty);
+                dto.ParentSongId);
 
             var result = await _mediator.Send(command);
 
@@ -291,10 +287,10 @@ public class SongsController : ControllerBase
                 userId,
                 dto.Title,
                 dto.Artist,
+                dto.Genre,
+                dto.Theme,
                 dto.Description,
-                dto.IsPublic,
-                dto.Key,
-                dto.Difficulty);
+                dto.IsPublic);
 
             var result = await _mediator.Send(command);
 

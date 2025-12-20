@@ -11,63 +11,55 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, X, Check, Music, ListMusic } from 'lucide-react';
-import { PATTERN_COLORS, getNextAvailableColor, isColorUnique } from '@/lib/song-segment-utils';
+import { Search, Check, Music, ListMusic } from 'lucide-react';
 import { useSongCreation } from '@/app/contexts/song-creation-context';
 
-interface AddPatternModalProps {
+interface ReplacePatternModalProps {
   open: boolean;
   onClose: () => void;
-  existingPatternIds: string[];
+  patternId: string;
 }
 
-export function AddPatternModal({ open, onClose, existingPatternIds }: AddPatternModalProps) {
+export function ReplacePatternModal({ open, onClose, patternId }: ReplacePatternModalProps) {
   const { state, dispatch } = useSongCreation();
   const [patterns, setPatterns] = useState<Pattern[]>([]);
   const [filteredPatterns, setFilteredPatterns] = useState<Pattern[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedPatternId, setSelectedPatternId] = useState<string>("");
-  const [selectedColor, setSelectedColor] = useState<string>("");
-  const [patternType, setPatternType] = useState<"all" | "strumming" | "fingerstyle">("all");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPatternId, setSelectedPatternId] = useState<string>('');
+  const [patternType, setPatternType] = useState<'all' | 'strumming' | 'fingerstyle'>('all');
   const [isLoading, setIsLoading] = useState(true);
   
-  const usedColors = state.selectedPatterns.map(p => p.color);
-  const availableColors = PATTERN_COLORS.filter(color => 
-    isColorUnique(color, [...usedColors, ...state.selectedChords.map(c => c.color)])
-  );
+  const currentPattern = state.selectedPatterns.find(p => p.patternId === patternId);
 
   useEffect(() => {
     if (open) {
       loadPatterns();
-      setSelectedColor(getNextAvailableColor([...usedColors, ...state.selectedChords.map(c => c.color)], PATTERN_COLORS));
     }
-  }, [open, state.selectedPatterns, state.selectedChords]);
+  }, [open]);
 
   useEffect(() => {
-    let filtered = patterns.filter(
-      (pattern) => !existingPatternIds.includes(pattern.id)
-    );
+    let filtered = patterns.filter(pattern => pattern.id !== patternId);
 
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(
-        (pattern) =>
+        pattern =>
           pattern.name.toLowerCase().includes(searchLower) ||
           (pattern.description &&
             pattern.description.toLowerCase().includes(searchLower))
       );
     }
 
-    if (patternType !== "all") {
-      filtered = filtered.filter((pattern) =>
-        patternType === "strumming"
+    if (patternType !== 'all') {
+      filtered = filtered.filter(pattern =>
+        patternType === 'strumming'
           ? !pattern.isFingerStyle
           : pattern.isFingerStyle
       );
     }
 
     setFilteredPatterns(filtered);
-  }, [searchTerm, patterns, existingPatternIds, patternType]);
+  }, [searchTerm, patterns, patternId, patternType]);
 
   const loadPatterns = async () => {
     try {
@@ -75,51 +67,49 @@ export function AddPatternModal({ open, onClose, existingPatternIds }: AddPatter
       const data = await PatternsService.getAllPatterns({
         page: 1,
         pageSize: 100,
-        sortBy: "name",
-        sortOrder: "asc",
+        sortBy: 'name',
+        sortOrder: 'asc',
       });
       setPatterns(data.items);
     } catch (error) {
-      console.error("Failed to load patterns:", error);
+      console.error('Failed to load patterns:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleAddPattern = () => {
-    if (!selectedPatternId || !selectedColor) return;
+  const handleReplacePattern = () => {
+    if (!selectedPatternId || !currentPattern) return;
 
-    const pattern = patterns.find((p) => p.id === selectedPatternId);
-    if (!pattern) return;
+    const newPattern = patterns.find(p => p.id === selectedPatternId);
+    if (!newPattern) return;
 
-    const newPattern = {
-      patternId: pattern.id,
-      patternName: pattern.name,
-      isFingerStyle: pattern.isFingerStyle,
-      color: selectedColor,
+    const newPatternDto = {
+      patternId: newPattern.id,
+      patternName: newPattern.name,
+      isFingerStyle: newPattern.isFingerStyle,
+      color: currentPattern.color, 
     };
 
-    dispatch({ type: "ADD_PATTERN", payload: newPattern });
-    dispatch({ type: "SELECT_PATTERN", payload: pattern.id });
-    dispatch({ type: "SET_TOOL", payload: "pattern" });
-
+    dispatch({ 
+      type: 'REPLACE_PATTERN', 
+      payload: { 
+        oldId: patternId, 
+        newId: newPattern.id,
+        pattern: newPatternDto
+      } 
+    });
+    
     onClose();
-    setSelectedPatternId("");
-    setSelectedColor("");
-    setSearchTerm("");
-  };
-
-  const handleColorSelect = (color: string) => {
-    setSelectedColor(color);
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Добавить паттерн</DialogTitle>
+          <DialogTitle>Заменить паттерн</DialogTitle>
           <DialogDescription>
-            Выберите паттерн и цвет для фона
+            Выберите новый паттерн для замены "{currentPattern?.patternName}"
           </DialogDescription>
         </DialogHeader>
 
@@ -170,7 +160,7 @@ export function AddPatternModal({ open, onClose, existingPatternIds }: AddPatter
                   {filteredPatterns.map((pattern) => (
                     <Button
                       key={pattern.id}
-                      variant={selectedPatternId === pattern.id ? "default" : "outline"}
+                      variant={selectedPatternId === pattern.id ? 'default' : 'outline'}
                       className="justify-start h-auto py-3 px-4 text-left"
                       onClick={() => setSelectedPatternId(pattern.id)}
                     >
@@ -178,10 +168,10 @@ export function AddPatternModal({ open, onClose, existingPatternIds }: AddPatter
                         <div className="text-left">
                           <div className="font-medium">{pattern.name}</div>
                           <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                            {pattern.description || "Без описания"}
+                            {pattern.description || 'Без описания'}
                           </div>
                           <Badge variant="outline" className="mt-2 text-xs">
-                            {pattern.isFingerStyle ? "Fingerstyle" : "Strumming"}
+                            {pattern.isFingerStyle ? 'Fingerstyle' : 'Strumming'}
                           </Badge>
                         </div>
                         {selectedPatternId === pattern.id && (
@@ -193,50 +183,34 @@ export function AddPatternModal({ open, onClose, existingPatternIds }: AddPatter
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  {existingPatternIds.length >= 10
-                    ? "Достигнут максимум 10 паттернов"
-                    : searchTerm || patternType !== "all"
-                    ? "Паттерны не найдены"
-                    : "Все доступные паттерны уже добавлены"}
+                  {searchTerm || patternType !== 'all'
+                    ? 'Паттерны не найдены'
+                    : 'Нет доступных паттернов для замены'}
                 </div>
               )}
             </ScrollArea>
           </div>
 
           {selectedPatternId && (
-            <div className="space-y-3 border-t pt-4">
-              <Label>Выберите цвет для фона</Label>
-              <div className="grid grid-cols-5 gap-2">
-                {availableColors.map((color) => (
-                  <button
-                    key={`color-${color}`}
-                    className={`h-10 rounded-md border transition-all ${
-                      selectedColor === color
-                        ? "ring-2 ring-offset-2 ring-primary"
-                        : ""
-                    }`}
-                    style={{ backgroundColor: color }}
-                    onClick={() => handleColorSelect(color)}
-                    title={color}
-                  />
-                ))}
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {currentPattern && (
+                    <div
+                      className="w-5 h-5 rounded border"
+                      style={{ backgroundColor: currentPattern.color }}
+                    />
+                  )}
+                  <div>
+                    <div className="font-medium">
+                      Замена: {currentPattern?.patternName} → {patterns.find(p => p.id === selectedPatternId)?.name}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Цвет паттерна останется прежним
+                    </div>
+                  </div>
+                </div>
               </div>
-              
-              {selectedColor && (
-                <div className="flex items-center gap-2 text-sm">
-                  <div
-                    className="w-4 h-4 rounded border"
-                    style={{ backgroundColor: selectedColor }}
-                  />
-                  <span>Так будет выглядеть фон текста</span>
-                </div>
-              )}
-              
-              {availableColors.length === 0 && (
-                <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
-                  Все цвета заняты. Удалите некоторые аккорды или паттерны, чтобы освободить цвета.
-                </div>
-              )}
             </div>
           )}
 
@@ -245,10 +219,10 @@ export function AddPatternModal({ open, onClose, existingPatternIds }: AddPatter
               Отмена
             </Button>
             <Button
-              onClick={handleAddPattern}
-              disabled={!selectedPatternId || !selectedColor}
+              onClick={handleReplacePattern}
+              disabled={!selectedPatternId}
             >
-              Добавить паттерн
+              Заменить паттерн
             </Button>
           </div>
         </div>

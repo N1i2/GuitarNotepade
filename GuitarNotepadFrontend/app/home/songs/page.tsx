@@ -4,34 +4,64 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
-import { Song, SongFilters } from "@/types/songs";
+import { SongDto, SongSearchResultDto } from "@/types/songs";
+import { SongsService } from "@/lib/api/song-service";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Plus, Music, Grid3x3, Hash, User, Eye, EyeOff, Filter, Music2, Globe, Lock, Users, GitFork } from "lucide-react";
+import { 
+  Search, 
+  Plus, 
+  Music, 
+  Grid3x3, 
+  User, 
+  Eye, 
+  EyeOff, 
+  Filter, 
+  Music2, 
+  Globe, 
+  Lock, 
+  GitFork,
+  Star,
+  MessageSquare,
+  GitBranch,
+  Heart
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Pagination } from "@/components/user-management/pagination";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SongsService } from "@/lib/api/song-service";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 
 interface SongGridItem {
   id: string;
   title: string;
-  artist: string;
+  artist?: string;
   isPublic: boolean;
   ownerId: string;
-  ownerNickname?: string;
+  ownerNickname: string;
   chordCount: number;
   patternCount: number;
   createdAt: string;
   updatedAt?: string;
   canEdit: boolean;
   isForked: boolean;
-  sectionCount: number;
+  averageBeautifulRating?: number;
+  averageDifficultyRating?: number;
+  reviewCount: number;
+  commentCount: number;
+  genre?: string;
+  theme?: string;
+  key?: string;
+  difficulty?: string;
 }
 
 export default function SongsPage() {
@@ -39,7 +69,7 @@ export default function SongsPage() {
   const { user } = useAuth();
   const toast = useToast();
 
-  const [allSongs, setAllSongs] = useState<Song[]>([]);
+  const [allSongs, setAllSongs] = useState<SongDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -48,6 +78,15 @@ export default function SongsPage() {
   const [visibilityFilter, setVisibilityFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("createdAt");
   const [sortOrder, setSortOrder] = useState<string>("desc");
+  
+  const [useBeautyFilter, setUseBeautyFilter] = useState(false);
+  const [useDifficultyFilter, setUseDifficultyFilter] = useState(false);
+  
+  const [beautyRange, setBeautyRange] = useState<[number, number]>([1, 5]);
+  const [difficultyRange, setDifficultyRange] = useState<[number, number]>([1, 5]);
+  
+  const [searchInText, setSearchInText] = useState(false);
+  
   const pageSize = 12;
 
   const filteredSongs = useMemo(() => {
@@ -63,13 +102,41 @@ export default function SongsPage() {
       songsArray = songsArray.filter(song => !song.isPublic);
     }
     
+    if (useBeautyFilter) {
+      songsArray = songsArray.filter(song => {
+        if (!song.averageBeautifulRating) return false; 
+        return song.averageBeautifulRating >= beautyRange[0] && 
+               song.averageBeautifulRating <= beautyRange[1];
+      });
+    }
+    
+    if (useDifficultyFilter) {
+      songsArray = songsArray.filter(song => {
+        if (!song.averageDifficultyRating) return false; 
+        return song.averageDifficultyRating >= difficultyRange[0] && 
+               song.averageDifficultyRating <= difficultyRange[1];
+      });
+    }
+    
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
-      songsArray = songsArray.filter(song => 
-        song.title.toLowerCase().includes(searchLower) ||
-        song.artist.toLowerCase().includes(searchLower) ||
-        song.ownerNickname?.toLowerCase().includes(searchLower)
-      );
+      songsArray = songsArray.filter(song => {
+        if (
+          song.title.toLowerCase().includes(searchLower) ||
+          (song.artist && song.artist.toLowerCase().includes(searchLower)) ||
+          (song.ownerNickname && song.ownerNickname.toLowerCase().includes(searchLower)) ||
+          (song.genre && song.genre.toLowerCase().includes(searchLower)) ||
+          (song.theme && song.theme.toLowerCase().includes(searchLower))
+        ) {
+          return true;
+        }
+        
+        if (searchInText && song.fullText) {
+          return song.fullText.toLowerCase().includes(searchLower);
+        }
+        
+        return false;
+      });
     }
     
     songsArray.sort((a, b) => {
@@ -81,8 +148,8 @@ export default function SongsPage() {
           bValue = b.title.toLowerCase();
           break;
         case "artist":
-          aValue = a.artist.toLowerCase();
-          bValue = b.artist.toLowerCase();
+          aValue = (a.artist || "").toLowerCase();
+          bValue = (b.artist || "").toLowerCase();
           break;
         case "createdAt":
           aValue = new Date(a.createdAt);
@@ -91,6 +158,18 @@ export default function SongsPage() {
         case "updatedAt":
           aValue = new Date(a.updatedAt || a.createdAt);
           bValue = new Date(b.updatedAt || b.createdAt);
+          break;
+        case "averageBeautiful":
+          aValue = a.averageBeautifulRating || 0;
+          bValue = b.averageBeautifulRating || 0;
+          break;
+        case "averageDifficulty":
+          aValue = a.averageDifficultyRating || 0;
+          bValue = b.averageDifficultyRating || 0;
+          break;
+        case "reviewCount":
+          aValue = a.reviewCount || 0;
+          bValue = b.reviewCount || 0;
           break;
         default:
           aValue = new Date(a.createdAt);
@@ -115,28 +194,41 @@ export default function SongsPage() {
       hasPreviousPage: currentPage > 1,
       hasNextPage: startIndex + pageSize < songsArray.length
     };
-  }, [allSongs, searchTerm, currentPage, showOnlyMySongs, visibilityFilter, sortBy, sortOrder, user]);
+  }, [
+    allSongs, 
+    searchTerm, 
+    currentPage, 
+    showOnlyMySongs, 
+    visibilityFilter, 
+    sortBy, 
+    sortOrder, 
+    useBeautyFilter,
+    beautyRange,
+    useDifficultyFilter,
+    difficultyRange,
+    searchInText, 
+    user
+  ]);
 
   const loadAllSongs = async () => {
     setIsLoading(true);
     try {
-      let allSongsData: Song[] = [];
+      let allSongsData: SongDto[] = [];
       let currentPageNum = 1;
       let hasMore = true;
       const loadPageSize = 100;
 
       while (hasMore) {
-        const filters: SongFilters = {
+        const data: SongSearchResultDto = await SongsService.searchSongs({
           page: currentPageNum,
           pageSize: loadPageSize,
-          sortBy: "createdAt" as any,
-          sortOrder: "desc" as any
-        };
+          sortBy: "createdAt",
+          sortOrder: "desc"
+        });
 
-        const data = await SongsService.getAllSongs(filters);
-        allSongsData = [...allSongsData, ...data.items];
+        allSongsData = [...allSongsData, ...data.songs];
         
-        if (data.items.length < loadPageSize || data.currentPage === data.totalPages) {
+        if (data.songs.length < loadPageSize || currentPageNum === data.totalPages) {
           hasMore = false;
           setTotalSongsCount(data.totalCount);
         } else {
@@ -163,7 +255,16 @@ export default function SongsPage() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, showOnlyMySongs, visibilityFilter]);
+  }, [
+    searchTerm, 
+    showOnlyMySongs, 
+    visibilityFilter, 
+    useBeautyFilter,
+    beautyRange,
+    useDifficultyFilter,
+    difficultyRange,
+    searchInText
+  ]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -191,7 +292,10 @@ export default function SongsPage() {
   const handleToggleVisibility = async (songId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      const updatedSong = await SongsService.toggleSongVisibility(songId);
+      const song = allSongs.find(s => s.id === songId);
+      if (!song) return;
+      
+      const updatedSong = await SongsService.toggleSongVisibility(songId, !song.isPublic);
       setAllSongs(prev => prev.map(song => 
         song.id === songId ? updatedSong : song
       ));
@@ -202,24 +306,43 @@ export default function SongsPage() {
   };
 
   const getSongItemsForGrid = (): SongGridItem[] => {
-    return filteredSongs.items.map(song => ({
-      id: song.id,
-      title: song.title,
-      artist: song.artist,
-      isPublic: song.isPublic,
-      ownerId: song.ownerId,
-      ownerNickname: song.ownerNickname,
-      chordCount: song.chordIds.length,
-      patternCount: song.patternIds.length,
-      createdAt: song.createdAt,
-      updatedAt: song.updatedAt,
-      canEdit: user ? (user.id === song.ownerId || user.role === "Admin") : false,
-      isForked: !!song.parentSongId,
-      sectionCount: song.structure?.sections?.length || 0
-    }));
+    return filteredSongs.items.map(song => {
+      const canEdit = user ? (user.id === song.ownerId || user.role === "Admin") : false;
+      
+      let commentCount = 0;
+      if (song.structure?.segmentPositions) {
+        commentCount = song.structure.segmentPositions.reduce(
+          (acc, pos) => acc + (pos.segment?.comments?.length || 0), 
+          0
+        );
+      }
+      
+      return {
+        id: song.id,
+        title: song.title,
+        artist: song.artist,
+        isPublic: song.isPublic,
+        ownerId: song.ownerId,
+        ownerNickname: song.ownerNickname,
+        chordCount: song.chordIds?.length || 0,
+        patternCount: song.patternIds?.length || 0,
+        createdAt: song.createdAt,
+        updatedAt: song.updatedAt,
+        canEdit,
+        isForked: !!song.parentSongId,
+        averageBeautifulRating: song.averageBeautifulRating,
+        averageDifficultyRating: song.averageDifficultyRating,
+        reviewCount: song.reviewCount || 0,
+        commentCount,
+        genre: song.genre,
+        theme: song.theme,
+        key: song.key,
+        difficulty: song.difficulty,
+      };
+    });
   };
 
-  const getSongColor = (artist: string) => {
+  const getSongColor = (title: string) => {
     const colors = [
       "bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-950/30 dark:to-teal-900/20 border-teal-200 dark:border-teal-800",
       "bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20 border-blue-200 dark:border-blue-800",
@@ -229,7 +352,7 @@ export default function SongsPage() {
       "bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/20 border-emerald-200 dark:border-emerald-800",
     ];
 
-    const hash = artist.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const hash = title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return colors[hash % colors.length];
   };
 
@@ -242,6 +365,47 @@ export default function SongsPage() {
     });
   };
 
+  const renderRatingStars = (rating?: number) => {
+    if (!rating) return null;
+    
+    return (
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star
+            key={star}
+            className={`h-3 w-3 ${star <= Math.round(rating) ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`}
+          />
+        ))}
+        <span className="text-xs font-medium ml-1">{rating.toFixed(1)}</span>
+      </div>
+    );
+  };
+
+  const clearAllFilters = () => {
+    setShowOnlyMySongs(false);
+    setVisibilityFilter("all");
+    setSearchTerm("");
+    setSearchInText(false);
+    
+    setUseBeautyFilter(false);
+    setUseDifficultyFilter(false);
+    setBeautyRange([1, 5]);
+    setDifficultyRange([1, 5]);
+  };
+
+  const hasActiveFilters = () => {
+    return (
+      showOnlyMySongs ||
+      visibilityFilter !== "all" ||
+      searchTerm ||
+      searchInText ||
+      useBeautyFilter ||
+      useDifficultyFilter ||
+      (useBeautyFilter && (beautyRange[0] > 1 || beautyRange[1] < 5)) ||
+      (useDifficultyFilter && (difficultyRange[0] > 1 || difficultyRange[1] < 5))
+    );
+  };
+
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
       <div className="space-y-6">
@@ -249,7 +413,7 @@ export default function SongsPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Songs Library</h1>
             <p className="text-muted-foreground mt-2">
-              Browse and manage your guitar songs. Click any song to view its details.
+              Browse and manage guitar songs. Click any song to view its details.
             </p>
           </div>
           <div className="hidden md:block">
@@ -289,6 +453,20 @@ export default function SongsPage() {
               <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
                 <div className="flex items-center space-x-2">
                   <Checkbox 
+                    id="searchInText" 
+                    checked={searchInText}
+                    onCheckedChange={(checked) => setSearchInText(checked as boolean)}
+                  />
+                  <Label 
+                    htmlFor="searchInText" 
+                    className="text-sm font-medium cursor-pointer"
+                  >
+                    Search in text
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
                     id="showOnlyMySongs" 
                     checked={showOnlyMySongs}
                     onCheckedChange={(checked) => setShowOnlyMySongs(checked as boolean)}
@@ -322,7 +500,7 @@ export default function SongsPage() {
               </div>
             </div>
             
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="visibilityFilter" className="text-sm font-medium">
                   <div className="flex items-center gap-2">
@@ -343,6 +521,78 @@ export default function SongsPage() {
               </div>
               
               <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="useBeautyFilter" 
+                    checked={useBeautyFilter}
+                    onCheckedChange={(checked) => {
+                      setUseBeautyFilter(checked as boolean);
+                      if (checked) {
+                        setBeautyRange([1, 5]); 
+                      }
+                    }}
+                  />
+                  <Label 
+                    htmlFor="useBeautyFilter" 
+                    className="text-sm font-medium cursor-pointer"
+                  >
+                    Filter by Beauty Rating
+                  </Label>
+                </div>
+                {useBeautyFilter && (
+                  <div className="mt-2 pl-6">
+                    <Label className="text-sm font-medium">
+                      Beauty: {beautyRange[0]}-{beautyRange[1]}
+                    </Label>
+                    <Slider
+                      value={beautyRange}
+                      min={1}
+                      max={5}
+                      step={0.5}
+                      onValueChange={setBeautyRange as any}
+                      className="w-full"
+                    />
+                  </div>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="useDifficultyFilter" 
+                    checked={useDifficultyFilter}
+                    onCheckedChange={(checked) => {
+                      setUseDifficultyFilter(checked as boolean);
+                      if (checked) {
+                        setDifficultyRange([1, 5]); 
+                      }
+                    }}
+                  />
+                  <Label 
+                    htmlFor="useDifficultyFilter" 
+                    className="text-sm font-medium cursor-pointer"
+                  >
+                    Filter by Difficulty Rating
+                  </Label>
+                </div>
+                {useDifficultyFilter && (
+                  <div className="mt-2 pl-6">
+                    <Label className="text-sm font-medium">
+                      Difficulty: {difficultyRange[0]}-{difficultyRange[1]}
+                    </Label>
+                    <Slider
+                      value={difficultyRange}
+                      min={1}
+                      max={5}
+                      step={0.5}
+                      onValueChange={setDifficultyRange as any}
+                      className="w-full"
+                    />
+                  </div>
+                )}
+              </div>
+              
+              <div className="space-y-2">
                 <Label htmlFor="sortBy" className="text-sm font-medium">
                   Sort By
                 </Label>
@@ -355,24 +605,36 @@ export default function SongsPage() {
                     <SelectItem value="updatedAt">Date Updated</SelectItem>
                     <SelectItem value="title">Title</SelectItem>
                     <SelectItem value="artist">Artist</SelectItem>
+                    <SelectItem value="averageBeautiful">Beauty</SelectItem>
+                    <SelectItem value="averageDifficulty">Difficulty</SelectItem>
+                    <SelectItem value="reviewCount">Reviews</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="mt-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Select value={sortOrder} onValueChange={setSortOrder}>
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="Order" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="desc">Descending</SelectItem>
+                    <SelectItem value="asc">Ascending</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="sortOrder" className="text-sm font-medium">
-                  Order
-                </Label>
-                <Select value={sortOrder} onValueChange={setSortOrder}>
-                  <SelectTrigger id="sortOrder">
-                    <SelectValue placeholder="Sort order" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="desc">Newest First</SelectItem>
-                    <SelectItem value="asc">Oldest First</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {hasActiveFilters() && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearAllFilters}
+                >
+                  Clear All Filters
+                </Button>
+              )}
             </div>
             
             {user && showOnlyMySongs && (
@@ -396,6 +658,29 @@ export default function SongsPage() {
                 </div>
               </div>
             )}
+            
+            <div className="mt-3 flex flex-wrap gap-2">
+              {useBeautyFilter && (
+                <Badge variant="secondary" className="text-xs">
+                  Beauty: {beautyRange[0]}-{beautyRange[1]}
+                </Badge>
+              )}
+              {useDifficultyFilter && (
+                <Badge variant="secondary" className="text-xs">
+                  Difficulty: {difficultyRange[0]}-{difficultyRange[1]}
+                </Badge>
+              )}
+              {useBeautyFilter && !useDifficultyFilter && (
+                <span className="text-xs text-muted-foreground">
+                  (Showing only songs with beauty ratings)
+                </span>
+              )}
+              {useDifficultyFilter && !useBeautyFilter && (
+                <span className="text-xs text-muted-foreground">
+                  (Showing only songs with difficulty ratings)
+                </span>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -444,7 +729,7 @@ export default function SongsPage() {
                   {getSongItemsForGrid().map((song) => (
                     <Card
                       key={song.id}
-                      className={`cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg border-2 ${getSongColor(song.artist)} relative group overflow-hidden`}
+                      className={`cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg border-2 ${getSongColor(song.title)} relative group overflow-hidden`}
                       onClick={() => handleSongClick(song.id)}
                     >
                       <CardContent className="p-6 h-full flex flex-col">
@@ -457,7 +742,7 @@ export default function SongsPage() {
                           )}
                           {song.isForked && (
                             <Badge variant="outline" className="flex items-center gap-1">
-                              <GitFork className="h-3 w-3" />
+                              <GitBranch className="h-3 w-3" />
                               Forked
                             </Badge>
                           )}
@@ -467,6 +752,11 @@ export default function SongsPage() {
                               Owner
                             </Badge>
                           )}
+                          {song.genre && (
+                            <Badge variant="outline">
+                              {song.genre}
+                            </Badge>
+                          )}
                         </div>
 
                         <h3 className="text-xl font-bold mb-1 line-clamp-1">
@@ -474,14 +764,25 @@ export default function SongsPage() {
                         </h3>
                         
                         <p className="text-muted-foreground mb-3 line-clamp-1">
-                          {song.artist}
+                          {song.artist || "No artist"}
                         </p>
                         
+                        <div className="mb-4 space-y-2">
+                          {song.averageBeautifulRating && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-muted-foreground">Beauty:</span>
+                              {renderRatingStars(song.averageBeautifulRating)}
+                            </div>
+                          )}
+                          {song.averageDifficultyRating && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-muted-foreground">Difficulty:</span>
+                              {renderRatingStars(song.averageDifficultyRating)}
+                            </div>
+                          )}
+                        </div>
+                        
                         <div className="grid grid-cols-3 gap-2 mb-4">
-                          <div className="text-center p-2 bg-white/50 dark:bg-gray-800/50 rounded-md">
-                            <div className="text-lg font-bold">{song.sectionCount}</div>
-                            <div className="text-xs text-muted-foreground">Sections</div>
-                          </div>
                           <div className="text-center p-2 bg-white/50 dark:bg-gray-800/50 rounded-md">
                             <div className="text-lg font-bold">{song.chordCount}</div>
                             <div className="text-xs text-muted-foreground">Chords</div>
@@ -490,7 +791,29 @@ export default function SongsPage() {
                             <div className="text-lg font-bold">{song.patternCount}</div>
                             <div className="text-xs text-muted-foreground">Patterns</div>
                           </div>
+                          <div className="text-center p-2 bg-white/50 dark:bg-gray-800/50 rounded-md">
+                            <div className="text-lg font-bold">{song.commentCount}</div>
+                            <div className="text-xs text-muted-foreground">
+                              <MessageSquare className="h-3 w-3 inline mr-1" />
+                              Comments
+                            </div>
+                          </div>
                         </div>
+                        
+                        {(song.key || song.difficulty) && (
+                          <div className="mb-4 flex flex-wrap gap-2">
+                            {song.key && (
+                              <div className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
+                                {song.key}
+                              </div>
+                            )}
+                            {song.difficulty && (
+                              <div className="text-xs px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded">
+                                {song.difficulty}
+                              </div>
+                            )}
+                          </div>
+                        )}
                         
                         <div className="mt-auto pt-3 border-t">
                           <div className="flex items-center justify-between">
@@ -517,30 +840,9 @@ export default function SongsPage() {
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                     </svg>
                                   </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-8 w-8 p-0 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
-                                    onClick={(e) => handleToggleVisibility(song.id, e)}
-                                    title={song.isPublic ? "Make private" : "Make public"}
-                                  >
-                                    {song.isPublic ? (
-                                      <Lock className="h-4 w-4" />
-                                    ) : (
-                                      <Globe className="h-4 w-4" />
-                                    )}
-                                  </Button>
+
                                 </>
                               )}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-8 w-8 p-0 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
-                                onClick={(e) => handleForkSong(song.id, e)}
-                                title="Fork song"
-                              >
-                                <GitFork className="h-4 w-4" />
-                              </Button>
                             </div>
                           </div>
                         </div>
@@ -574,38 +876,9 @@ export default function SongsPage() {
                     ? "You haven't created any songs yet. Create your first one!"
                     : "No songs available yet. Create the first one!"}
                 </p>
-                {(searchTerm || showOnlyMySongs || visibilityFilter !== "all") && (
+                {(searchTerm || showOnlyMySongs || visibilityFilter !== "all" || 
+                  useBeautyFilter || useDifficultyFilter) && (
                   <div className="flex gap-2 justify-center mt-4 flex-wrap">
-                    {searchTerm && (
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setSearchTerm("");
-                        }}
-                      >
-                        Clear Search
-                      </Button>
-                    )}
-                    {showOnlyMySongs && (
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setShowOnlyMySongs(false);
-                        }}
-                      >
-                        Show All Songs
-                      </Button>
-                    )}
-                    {visibilityFilter !== "all" && (
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setVisibilityFilter("all");
-                        }}
-                      >
-                        Clear Visibility Filter
-                      </Button>
-                    )}
                     <Button
                       variant="default"
                       onClick={handleCreateNew}

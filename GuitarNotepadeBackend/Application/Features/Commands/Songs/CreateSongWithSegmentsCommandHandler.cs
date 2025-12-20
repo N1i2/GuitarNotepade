@@ -30,33 +30,38 @@ public class CreateSongWithSegmentsCommandHandler : IRequestHandler<CreateSongWi
 
     public async Task<SongDto> Handle(CreateSongWithSegmentsCommand request, CancellationToken cancellationToken)
     {
-        await _unitOfWork.BeginTransactionAsync(cancellationToken);
-
         try
         {
             var user = await _unitOfWork.Users.GetByIdAsync(request.UserId, cancellationToken);
             if (user == null)
+            {
                 throw new ArgumentException("User not found", nameof(request.UserId));
+            }
 
             if (request.Dto.ParentSongId.HasValue)
             {
                 var parentSong = await _unitOfWork.Songs.GetByIdAsync(request.Dto.ParentSongId.Value, cancellationToken);
                 if (parentSong == null || !parentSong.IsPublic)
+                {
                     throw new ArgumentException("Parent song not found or not public", nameof(request.Dto.ParentSongId));
+                }
             }
 
-            var song = Domain.Entities.Song.Create(
+            var song = Song.Create(
                 request.UserId,
                 request.Dto.Title,
                 request.Dto.IsPublic,
+                request.Dto.Genre,
+                request.Dto.Theme,
                 request.Dto.Artist,
                 request.Dto.Description,
                 request.Dto.ParentSongId);
 
-            song.Update(key: request.Dto.Key, difficulty: request.Dto.Difficulty);
+            await _unitOfWork.Songs.AddAsync(song, cancellationToken);
 
-            await _unitOfWork.Songs.CreateAsync(song, cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _unitOfWork.SongStructures.AddAsync(song.Structure, cancellationToken);
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken); 
 
             if (request.Dto.Segments != null && request.Dto.Segments.Any())
             {
@@ -68,7 +73,12 @@ public class CreateSongWithSegmentsCommandHandler : IRequestHandler<CreateSongWi
                 for (int i = 0; i < sortedSegments.Count; i++)
                 {
                     var segmentDto = sortedSegments[i];
-                    var segmentType = Enum.Parse<SegmentType>(segmentDto.SegmentData.Type);
+
+                    SegmentType segmentType;
+                    if (!Enum.TryParse<SegmentType>(segmentDto.SegmentData.Type, out segmentType))
+                    {
+                        segmentType = SegmentType.Text;
+                    }
 
                     var segmentData = new SongStructure.SegmentData(
                         segmentType,
@@ -88,41 +98,21 @@ public class CreateSongWithSegmentsCommandHandler : IRequestHandler<CreateSongWi
                     }
                 }
 
-                var existingSegments = new List<SongSegment>();
-                var segmentManager = new SongSegmentManager(existingSegments);
+                var createdSegments = new List<SongSegment>();
 
-                foreach (var segmentData in segmentDataList)
-                {
-                    var segment = segmentManager.GetOrCreateSegment(segmentData);
-                    
-                    if (segment.Id == Guid.Empty)
-                    {
-                        segment = await _unitOfWork.SongSegments.CreateAsync(segment, cancellationToken);
-                        existingSegments.Add(segment);
-                    }
-                    else if (!existingSegments.Any(s => s.Id == segment.Id))
-                    {
-                        existingSegments.Add(segment);
-                    }
-                }
-
-                await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-                song.Structure.SegmentPositions.Clear();
-                
-                var positionIndex = 0;
                 foreach (var segmentData in segmentDataList)
                 {
                     var contentHash = SongSegment.CalculateContentHash(
                         segmentData.Lyric,
                         segmentData.ChordId,
                         segmentData.PatternId);
-                    
-                    var segment = existingSegments.FirstOrDefault(s => s.ContentHash == contentHash);
 
-                    if (segment == null)
+                    var existingSegment = await _unitOfWork.SongSegments.GetQueryable()
+                        .FirstOrDefaultAsync(s => s.ContentHash == contentHash, cancellationToken);
+
+                    if (existingSegment == null)
                     {
-                        segment = await _songSegmentService.CreateSegmentAsync(
+                        var segment = SongSegment.Create(
                             segmentData.Type,
                             segmentData.Lyric,
                             segmentData.ChordId,
@@ -130,12 +120,22 @@ public class CreateSongWithSegmentsCommandHandler : IRequestHandler<CreateSongWi
                             segmentData.Duration,
                             segmentData.Description,
                             segmentData.Color,
-                            segmentData.BackgroundColor,
-                            cancellationToken);
-                        existingSegments.Add(segment);
-                        await _unitOfWork.SaveChangesAsync(cancellationToken);
-                    }
+                            segmentData.BackgroundColor);
 
+                        await _unitOfWork.SongSegments.AddAsync(segment, cancellationToken);
+                        createdSegments.Add(segment);
+                    }
+                    else
+                    {
+                        createdSegments.Add(existingSegment);
+                    }
+                }
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+                var positionIndex = 0;
+                foreach (var segment in createdSegments)
+                {
                     string? repeatGroup = null;
                     if (repeatGroups.ContainsKey(positionIndex))
                     {
@@ -143,13 +143,13 @@ public class CreateSongWithSegmentsCommandHandler : IRequestHandler<CreateSongWi
                     }
 
                     var position = SongSegmentPosition.Create(
-                        songId: song.Id,
-                        segmentId: segment.Id,
-                        positionIndex: positionIndex,
-                        repeatGroup: repeatGroup);
+                        song.Id, 
+                        
+                        segment.Id,
+                        positionIndex,
+                        repeatGroup);
 
-                    song.Structure.SegmentPositions.Add(position);
-                    await _unitOfWork.SongSegmentPositions.CreateAsync(position, cancellationToken);
+                    await _unitOfWork.SongSegmentPositions.AddAsync(position, cancellationToken);
                     positionIndex++;
                 }
 
@@ -163,7 +163,8 @@ public class CreateSongWithSegmentsCommandHandler : IRequestHandler<CreateSongWi
 
                 foreach (var chordId in uniqueChordIds)
                 {
-                    song.AddChord(chordId);
+                    var songChord = SongChord.Create(song.Id, chordId);
+                    await _unitOfWork.SongChords.AddAsync(songChord, cancellationToken);
                 }
 
                 var uniquePatternIds = segmentDataList
@@ -174,41 +175,38 @@ public class CreateSongWithSegmentsCommandHandler : IRequestHandler<CreateSongWi
 
                 foreach (var patternId in uniquePatternIds)
                 {
-                    song.AddPattern(patternId);
+                    var songPattern = SongPattern.Create(song.Id, patternId);
+                    await _unitOfWork.SongPatterns.AddAsync(songPattern, cancellationToken);
                 }
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
 
                 if (request.Dto.SegmentComments != null && request.Dto.SegmentComments.Any())
                 {
-                    var segmentPositions = song.Structure.SegmentPositions
-                        .OrderBy(sp => sp.PositionIndex)
-                        .ToList();
-
                     foreach (var commentGroup in request.Dto.SegmentComments)
                     {
                         var segmentIndex = commentGroup.Key;
-                        if (segmentIndex >= 0 && segmentIndex < segmentPositions.Count)
+                        if (segmentIndex >= 0 && segmentIndex < createdSegments.Count)
                         {
-                            var segmentPosition = segmentPositions[segmentIndex];
-                            var segmentId = segmentPosition.SegmentId;
+                            var segmentId = createdSegments[segmentIndex].Id;
 
                             foreach (var commentDto in commentGroup.Value)
                             {
-                                await _songCommentService.CreateCommentAsync(
+                                var comment = SongComment.Create(
                                     song.Id,
                                     commentDto.Text,
-                                    segmentId,
-                                    cancellationToken);
+                                    segmentId);
+
+                                await _unitOfWork.SongComments.AddAsync(comment, cancellationToken);
                             }
                         }
                     }
+
+                    await _unitOfWork.SaveChangesAsync(cancellationToken);
                 }
             }
 
-            song.UpdateFullText();
-            await _unitOfWork.Songs.UpdateAsync(song, cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-            await _unitOfWork.CommitTransactionAsync(cancellationToken);
+            await UpdateFullTextAsync(song.Id, cancellationToken); 
 
             var fullSong = await _unitOfWork.Songs.GetQueryable()
                 .Include(s => s.Owner)
@@ -230,11 +228,56 @@ public class CreateSongWithSegmentsCommandHandler : IRequestHandler<CreateSongWi
 
             return _mapper.Map<SongDto>(fullSong);
         }
-        catch
+        catch (Exception ex)
         {
-            await _unitOfWork.RollbackTransactionAsync(cancellationToken);
+            Console.WriteLine($"Error creating song with segments: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
             throw;
         }
     }
-}
 
+    private async Task UpdateFullTextAsync(Guid songId, CancellationToken cancellationToken)
+    {
+        var song = await _unitOfWork.Songs.GetQueryable()
+            .Include(s => s.Structure)
+                .ThenInclude(st => st.SegmentPositions)
+                    .ThenInclude(sp => sp.Segment)
+            .FirstOrDefaultAsync(s => s.Id == songId, cancellationToken);
+
+        if (song == null) return;
+
+        var fullTextBuilder = new System.Text.StringBuilder();
+
+        if (!string.IsNullOrEmpty(song.Artist))
+        {
+            fullTextBuilder.Append(song.Artist).Append(' ');
+        }
+
+        fullTextBuilder.Append(song.Title).Append(' ');
+
+        if (!string.IsNullOrEmpty(song.Description))
+        {
+            fullTextBuilder.Append(song.Description).Append(' ');
+        }
+
+        if (song.Structure?.SegmentPositions != null)
+        {
+            var segmentLyrics = song.Structure.SegmentPositions
+                .OrderBy(sp => sp.PositionIndex)
+                .Select(sp => sp.Segment?.Lyric)
+                .Where(lyric => !string.IsNullOrEmpty(lyric))
+                .ToList();
+
+            foreach (var lyric in segmentLyrics)
+            {
+                fullTextBuilder.Append(lyric).Append(' ');
+            }
+        }
+
+        song.SetFullText(fullTextBuilder.ToString().Trim());
+        song.UpdatedAt = DateTime.UtcNow;
+
+        await _unitOfWork.Songs.UpdateAsync(song, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+}

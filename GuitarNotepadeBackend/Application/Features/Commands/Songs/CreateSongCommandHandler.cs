@@ -34,11 +34,11 @@ public class CreateSongCommandHandler : IRequestHandler<CreateSongCommand, SongD
             request.UserId,
             request.Title,
             request.IsPublic,
+            request.Gener,
+            request.Theme,
             request.Artist,
             request.Description,
             request.ParentSongId);
-
-        song.Update(key: request.Key, difficulty: request.Difficulty);
 
         await _unitOfWork.Songs.CreateAsync(song, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

@@ -1,76 +1,105 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Plus, Eraser, Music, ListMusic } from 'lucide-react';
-import { Label } from '@/components/ui/label';
-import { useSongCreation } from '@/app/contexts/song-creation-context';
-import { applyToolToSelection } from '@/lib/song-segment-utils';
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Plus,
+  Eraser,
+  MessageSquare,
+  ChevronRight,
+  Music,
+  ListMusic,
+} from "lucide-react";
+import { useSongCreation } from "@/app/contexts/song-creation-context";
+import {
+  applyToolToSelection,
+  clearToolFromSelection,
+  calculateContentHash,
+} from "@/lib/song-segment-utils";
+import { SegmentsList } from "./segments-list";
+import { AddCommentModal } from "./add-comment-modal";
+import { toast } from "sonner";
 
 export function SongTextEditor() {
   const { state, dispatch } = useSongCreation();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const [selection, setSelection] = useState({ start: 0, end: 0 });
+  const [showAddComment, setShowAddComment] = useState(false);
+  const [hoveredSegment, setHoveredSegment] = useState<number | null>(null);
 
   const handleTextChange = (value: string) => {
-    dispatch({ type: 'SET_TEXT', payload: value });
-    
+    dispatch({ type: "SET_TEXT", payload: value });
+
     const validSegments = state.segments
-      .filter(segment => segment.startIndex < value.length)
-      .map(segment => ({
+      .filter((segment) => segment.startIndex < value.length)
+      .map((segment) => ({
         ...segment,
         length: Math.min(segment.length, value.length - segment.startIndex),
-        text: value.substring(segment.startIndex, segment.startIndex + segment.length)
+        text: value.substring(
+          segment.startIndex,
+          segment.startIndex + segment.length
+        ),
       }))
-      .filter(segment => segment.length > 0);
-    
+      .filter((segment) => segment.length > 0);
+
     if (validSegments.length !== state.segments.length) {
-      dispatch({ type: 'SET_SEGMENTS', payload: validSegments });
+      dispatch({ type: "SET_SEGMENTS", payload: validSegments });
     }
   };
 
-  const handleTextareaSelect = () => {
+  const handleTextareaSelect = useCallback(() => {
     if (!textareaRef.current) return;
-    
+
     const start = textareaRef.current.selectionStart;
     const end = textareaRef.current.selectionEnd;
     setSelection({ start, end });
-    
+
     if (start !== end && (state.selectedChordId || state.selectedPatternId)) {
       applyToSelection(start, end);
     }
-  };
+  }, [state.selectedChordId, state.selectedPatternId]);
 
   const applyToSelection = (start: number, end: number) => {
     const selectedText = state.text.substring(start, end);
-    if (!selectedText.trim() && selectedText !== '[SPACE]') return;
+    if (!selectedText.trim() && selectedText !== "[SPACE]") return;
 
-    let tool: 'chord' | 'pattern' | null = null;
+    let tool: "chord" | "pattern" | null = null;
     let selectedId: string | undefined;
-    
-    if (state.currentTool === 'chord' && state.selectedChordId) {
-      tool = 'chord';
+
+    if (state.currentTool === "chord" && state.selectedChordId) {
+      tool = "chord";
       selectedId = state.selectedChordId;
-    } else if (state.currentTool === 'pattern' && state.selectedPatternId) {
-      tool = 'pattern';
+    } else if (state.currentTool === "pattern" && state.selectedPatternId) {
+      tool = "pattern";
       selectedId = state.selectedPatternId;
     }
-    
+
     if (!tool || !selectedId) return;
 
-    const newSegments = applyToolToSelection(
-      state.segments,
-      state.text,
-      start,
-      end,
-      tool,
-      selectedId,
-      state.selectedChords,
-      state.selectedPatterns
-    );
-
-    dispatch({ type: 'SET_SEGMENTS', payload: newSegments });
+    if (selectedId === "empty") {
+      const newSegments = clearToolFromSelection(
+        state.segments,
+        start,
+        end,
+        tool
+      );
+      dispatch({ type: "SET_SEGMENTS", payload: newSegments });
+    } else {
+      const newSegments = applyToolToSelection(
+        state.segments,
+        state.text,
+        start,
+        end,
+        tool,
+        selectedId,
+        state.selectedChords,
+        state.selectedPatterns
+      );
+      dispatch({ type: "SET_SEGMENTS", payload: newSegments });
+    }
 
     if (textareaRef.current) {
       textareaRef.current.setSelectionRange(start, start);
@@ -78,180 +107,323 @@ export function SongTextEditor() {
     }
   };
 
-  const handleManualApply = () => {
-    if (!textareaRef.current) return;
-    
-    const start = textareaRef.current.selectionStart;
-    const end = textareaRef.current.selectionEnd;
-    
-    if (start === end) {
-      alert('Пожалуйста, выделите текст сначала');
-      return;
-    }
-    
-    if (!state.selectedChordId && !state.selectedPatternId) {
-      alert('Пожалуйста, выберите аккорд или паттерн сначала');
-      return;
-    }
-    
-    applyToSelection(start, end);
-  };
+const handleManualApply = () => {
+  if (!textareaRef.current) return;
+
+  const start = textareaRef.current.selectionStart;
+  const end = textareaRef.current.selectionEnd;
+
+  if (start === end) {
+    toast.error("Пожалуйста, выделите текст сначала");
+    return;
+  }
+
+  if (!state.selectedChordId && !state.selectedPatternId) {
+    toast.error("Пожалуйста, выберите аккорд или паттерн сначала");
+    return;
+  }
+
+  let tool: 'chord' | 'pattern' | null = null;
+  let selectedId: string | undefined;
+
+  if (state.currentTool === 'chord' && state.selectedChordId) {
+    tool = 'chord';
+    selectedId = state.selectedChordId;
+  } else if (state.currentTool === 'pattern' && state.selectedPatternId) {
+    tool = 'pattern';
+    selectedId = state.selectedPatternId;
+  }
+
+  if (!tool || !selectedId) return;
+
+  const newSegments = applyToolToSelection(
+    state.segments,
+    state.text,
+    start,
+    end,
+    tool,
+    selectedId,
+    state.selectedChords,
+    state.selectedPatterns
+  );
+  
+  dispatch({ type: 'SET_SEGMENTS', payload: newSegments });
+
+  if (textareaRef.current) {
+    textareaRef.current.setSelectionRange(start, start);
+    textareaRef.current.focus();
+  }
+};
 
   const addSpaceSegment = () => {
-    const spaceText = '[SPACE]';
-    const newText = state.text + (state.text && !state.text.endsWith('\n') ? '\n' : '') + spaceText + '\n';
+    const spaceText = "[SPACE]";
+    const newText =
+      state.text +
+      (state.text && !state.text.endsWith("\n") ? "\n" : "") +
+      spaceText +
+      "\n";
     handleTextChange(newText);
-    
+
     const startIndex = newText.lastIndexOf(spaceText);
     const newSegment = {
       id: `space-${Date.now()}`,
+      order: state.segments.length,
       startIndex,
       length: spaceText.length,
       text: spaceText,
       chordId: undefined,
       patternId: undefined,
-      backgroundColor: '#f0f0f0',
+      backgroundColor: "#f0f0f0",
     };
-    dispatch({ type: 'ADD_SEGMENT', payload: newSegment });
+    dispatch({ type: "ADD_SEGMENT", payload: newSegment });
   };
 
-  const handleClearSelection = () => {
+  const handleAddComment = () => {
     if (!textareaRef.current) return;
-    
+
     const start = textareaRef.current.selectionStart;
     const end = textareaRef.current.selectionEnd;
-    
-    if (start === end) return;
-    
-    const newSegments = state.segments.map(segment => {
-      if (segment.startIndex < end && segment.startIndex + segment.length > start) {
-        if (state.currentTool === 'chord' && state.selectedChordId === 'empty') {
-          return { ...segment, chordId: undefined, color: undefined };
-        } else if (state.currentTool === 'pattern' && state.selectedPatternId === 'empty') {
-          return { ...segment, patternId: undefined, backgroundColor: undefined };
-        }
-      }
-      return segment;
-    });
-    
-    dispatch({ type: 'SET_SEGMENTS', payload: newSegments });
+
+    if (start === end) {
+      toast.error("Please select text for comment");
+      return;
+    }
+
+    const selectedText = state.text.substring(start, end);
+    const existingSegment = state.segments.find(
+      (s) => s.startIndex === start && s.length === end - start
+    );
+
+    let segmentId: string;
+    if (existingSegment) {
+      segmentId = existingSegment.id;
+    } else {
+      segmentId = `comment-segment-${Date.now()}`;
+      const newSegment: any = {
+        id: segmentId,
+        order: state.segments.length,
+        startIndex: start,
+        length: end - start,
+        text: selectedText,
+        chordId: undefined,
+        patternId: undefined,
+      };
+
+      dispatch({ type: "ADD_SEGMENT", payload: newSegment });
+    }
+
+    setShowAddComment(true);
+    localStorage.setItem("commentSegmentId", segmentId);
+    localStorage.setItem("commentSelection", JSON.stringify({ start, end }));
+  };
+
+  const handleSegmentClick = (segmentId: string) => {
+    const segment = state.segments.find((s) => s.id === segmentId);
+    if (!segment || !textareaRef.current) return;
+
+    textareaRef.current.focus();
+    textareaRef.current.setSelectionRange(
+      segment.startIndex,
+      segment.startIndex + segment.length
+    );
+
+    const lineHeight = 20;
+    const linesBefore =
+      state.text.substring(0, segment.startIndex).split("\n").length - 1;
+    textareaRef.current.scrollTop = linesBefore * lineHeight;
   };
 
   const renderTextWithSegments = () => {
     if (!state.text) return null;
 
-    const segments = [...state.segments].sort((a, b) => a.startIndex - b.startIndex);
-    const result = [];
+    const segments = [...state.segments].sort(
+      (a, b) => a.startIndex - b.startIndex
+    );
+    const result: React.ReactNode[] = [];
     let lastIndex = 0;
 
-    for (const segment of segments) {
-      if (segment.startIndex > state.text.length) continue;
-      
+    segments.forEach((segment, index) => {
+      if (segment.startIndex > state.text.length) return;
+
       if (segment.startIndex > lastIndex) {
         const beforeText = state.text.substring(lastIndex, segment.startIndex);
         if (beforeText) {
-          result.push(<span key={`text-${lastIndex}`}>{beforeText}</span>);
+          result.push(
+            <span key={`text-${lastIndex}`} className="whitespace-pre-wrap">
+              {beforeText}
+            </span>
+          );
         }
       }
 
-      const segmentEnd = Math.min(segment.startIndex + segment.length, state.text.length);
+      const segmentEnd = Math.min(
+        segment.startIndex + segment.length,
+        state.text.length
+      );
       const segmentText = state.text.substring(segment.startIndex, segmentEnd);
-      
+
       if (!segmentText) {
         lastIndex = segmentEnd;
-        continue;
+        return;
       }
 
       const segmentStyles: React.CSSProperties = {};
-      
+
       if (segment.color) {
         segmentStyles.borderBottom = `3px solid ${segment.color}`;
-        segmentStyles.paddingBottom = '1px';
+        segmentStyles.paddingBottom = "2px";
+        segmentStyles.textDecoration = "none";
       }
-      
+
       if (segment.backgroundColor) {
         segmentStyles.backgroundColor = segment.backgroundColor;
-        segmentStyles.padding = '2px 4px';
-        segmentStyles.borderRadius = '3px';
+        segmentStyles.padding = "1px 3px";
+        segmentStyles.borderRadius = "3px";
+        segmentStyles.margin = "0 1px";
       }
+
+      const hasComments = state.comments.some(
+        (c) => c.segmentId === segment.id
+      );
 
       result.push(
         <span
           key={segment.id}
           style={segmentStyles}
-          className="relative inline-block group"
-          data-segment-start={segment.startIndex}
-          title={segmentText}
+          className="relative inline-block group cursor-pointer whitespace-pre-wrap"
+          data-segment-index={index}
+          onMouseEnter={() => setHoveredSegment(index)}
+          onMouseLeave={() => setHoveredSegment(null)}
+          onClick={() => handleSegmentClick(segment.id)}
+          title={`${segmentText}\n${
+            segment.chordId
+              ? "Аккорд: " +
+                state.selectedChords.find((c) => c.chordId === segment.chordId)
+                  ?.chordName
+              : ""
+          }\n${
+            segment.patternId
+              ? "Паттерн: " +
+                state.selectedPatterns.find(
+                  (p) => p.patternId === segment.patternId
+                )?.patternName
+              : ""
+          }`}
         >
           {segmentText}
+          {hasComments && (
+            <span className="absolute -top-1 -right-1">
+              <MessageSquare className="h-3 w-3 text-blue-500" />
+            </span>
+          )}
+
+          {hoveredSegment === index &&
+            (segment.chordId || segment.patternId) && (
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md shadow-lg z-50 whitespace-nowrap">
+                <div className="flex items-center gap-2">
+                  {segment.chordId && (
+                    <>
+                      <Music className="h-3 w-3" />
+                      <span>
+                        {
+                          state.selectedChords.find(
+                            (c) => c.chordId === segment.chordId
+                          )?.chordName
+                        }
+                      </span>
+                    </>
+                  )}
+                  {segment.patternId && (
+                    <>
+                      <ListMusic className="h-3 w-3" />
+                      <span>
+                        {
+                          state.selectedPatterns.find(
+                            (p) => p.patternId === segment.patternId
+                          )?.patternName
+                        }
+                      </span>
+                    </>
+                  )}
+                </div>
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900"></div>
+              </div>
+            )}
         </span>
       );
 
       lastIndex = segmentEnd;
-    }
+    });
 
     if (lastIndex < state.text.length) {
-      result.push(<span key={`text-${lastIndex}`}>{state.text.substring(lastIndex)}</span>);
+      result.push(
+        <span key={`text-${lastIndex}`} className="whitespace-pre-wrap">
+          {state.text.substring(lastIndex)}
+        </span>
+      );
     }
 
     return result;
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <div className="text-sm text-muted-foreground">
-          {state.text.length} символов • {state.segments.length} сегментов
-        </div>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={addSpaceSegment}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Добавить пробел
-        </Button>
-      </div>
-
+    <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-3">
-          <Label>Редактировать текст</Label>
-          <Textarea
-            ref={textareaRef}
-            value={state.text}
-            onChange={(e) => handleTextChange(e.target.value)}
-            onSelect={handleTextareaSelect}
-            placeholder="Напишите текст песни здесь..."
-            className="min-h-[350px] font-mono resize-none"
-            rows={15}
-          />
-          <div className="flex flex-col gap-3">
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={handleManualApply}
-                disabled={!state.selectedChordId && !state.selectedPatternId}
-                className="flex-1"
-              >
-                Применить {state.currentTool === 'chord' ? 'аккорд' : state.currentTool === 'pattern' ? 'паттерн' : ''}
-              </Button>
-              {(state.selectedChordId === 'empty' || state.selectedPatternId === 'empty') && (
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={handleClearSelection}
-                  className="flex-1"
-                >
-                  Очистить выделение
-                </Button>
-              )}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <Label>Редактировать текст</Label>
+            <div className="text-sm text-muted-foreground">
+              {state.text.length} символов • {state.segments.length} сегментов
             </div>
+          </div>
+          <div className="relative">
+            <Textarea
+              ref={textareaRef}
+              value={state.text}
+              onChange={(e) => handleTextChange(e.target.value)}
+              onSelect={handleTextareaSelect}
+              placeholder="Напишите текст песни здесь..."
+              className="min-h-[400px] font-mono resize-none text-base leading-relaxed"
+              rows={20}
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <Button
+              size="sm"
+              onClick={handleManualApply}
+              disabled={!state.selectedChordId && !state.selectedPatternId}
+              className="flex-1"
+            >
+              Применить{" "}
+              {state.currentTool === "chord"
+                ? "аккорд"
+                : state.currentTool === "pattern"
+                ? "паттерн"
+                : ""}
+            </Button>
+            <Button size="sm" variant="outline" onClick={addSpaceSegment}>
+              <Plus className="h-4 w-4 mr-2" />
+              Добавить пробел
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleAddComment}>
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Добавить комментарий
+            </Button>
           </div>
         </div>
 
-        <div className="space-y-3">
-          <Label>Предпросмотр</Label>
-          <div className="min-h-[350px] p-4 border rounded-lg bg-background whitespace-pre-wrap font-mono overflow-y-auto leading-relaxed">
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <Label>Предпросмотр</Label>
+            <div className="text-sm text-muted-foreground">
+              Наведите на выделенный текст для информации
+            </div>
+          </div>
+          <div
+            ref={previewRef}
+            className="min-h-[400px] p-4 border rounded-lg bg-background whitespace-pre-wrap font-mono overflow-y-auto leading-relaxed text-base"
+          >
             {renderTextWithSegments() || (
               <div className="text-muted-foreground italic h-full flex items-center justify-center">
                 Предпросмотр текста появится здесь...
@@ -261,41 +433,23 @@ export function SongTextEditor() {
         </div>
       </div>
 
-      {(state.currentTool === 'chord' && state.selectedChordId) || 
-       (state.currentTool === 'pattern' && state.selectedPatternId) ? (
-        <div className="p-4 rounded-lg border-2 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-          <div className="flex items-center gap-3">
-            <div className="w-4 h-4 rounded-full bg-blue-500" />
-            <div className="flex-1">
-              <div className="font-semibold">
-                {state.currentTool === 'chord' 
-                  ? (state.selectedChordId === 'empty' 
-                      ? 'Режим очистки аккордов' 
-                      : `Активный аккорд: ${state.selectedChords.find(c => c.chordId === state.selectedChordId)?.chordName}`)
-                  : (state.selectedPatternId === 'empty'
-                      ? 'Режим очистки паттернов'
-                      : `Активный паттерн: ${state.selectedPatterns.find(p => p.patternId === state.selectedPatternId)?.patternName}`)
-                }
-              </div>
-              <div className="text-sm text-muted-foreground mt-1">
-                Выделите текст для применения
-              </div>
-            </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                dispatch({ type: 'SET_TOOL', payload: 'select' });
-                dispatch({ type: 'SELECT_CHORD', payload: undefined! });
-                dispatch({ type: 'SELECT_PATTERN', payload: undefined! });
-              }}
-              className="h-8 w-8 p-0"
-            >
-              <div className="text-lg">×</div>
-            </Button>
-          </div>
+      <div className="mt-8">
+        <div className="flex items-center gap-2 mb-4">
+          <ChevronRight className="h-5 w-5 text-primary" />
+          <h3 className="text-lg font-semibold">Список сегментов</h3>
+          <span className="text-sm text-muted-foreground ml-2">
+            ({state.segments.length} сегментов)
+          </span>
         </div>
-      ) : null}
+        <SegmentsList onSegmentClick={handleSegmentClick} />
+      </div>
+
+      {showAddComment && (
+        <AddCommentModal
+          open={showAddComment}
+          onClose={() => setShowAddComment(false)}
+        />
+      )}
     </div>
   );
 }

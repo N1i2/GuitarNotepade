@@ -1,81 +1,30 @@
-import { 
-  SongCreationState, 
-  SongSegmentDto
-} from '@/types/songs';
+import { SongCreationState } from '@/types/songs';
+import { prepareSegmentsForBackend, prepareCommentsForBackend } from './song-segment-utils';
 
- * Преобразует состояние UI в формат, ожидаемый бэкендом
- */
-export function convertToBackendFormat(state: SongCreationState, artist: string = ''): CreateSongWithSegmentsDto {
-
-  const sortedSegments = [...state.segments].sort((a, b) => a.startIndex - b.startIndex);
+export function convertStateToBackendFormat(state: SongCreationState): any {
+  const segments = prepareSegmentsForBackend(state.segments, state.text);
   
-  const segments: SongSegmentDto[] = sortedSegments.map(segment => {
-    const segmentType = segment.text === '[SPACE]' 
-      ? SegmentType.Space 
-      : (segment.chordId || segment.patternId) 
-        ? SegmentType.Playback 
-        : SegmentType.Text;
-
-    return {
-      type: segmentType,
-      lyric: segment.text === '[SPACE]' ? '' : segment.text,
-      chordId: segment.chordId && segment.chordId !== 'empty' && segment.chordId !== 'undefined' 
-        ? segment.chordId 
-        : undefined,
-      patternId: segment.patternId && segment.patternId !== 'empty' && segment.patternId !== 'undefined'
-        ? segment.patternId
-        : undefined,
-      color: segment.color,
-      backgroundColor: segment.backgroundColor,
-      repeatCount: 1,
-      startIndex: segment.startIndex,
-      length: segment.length,
-    };
-  });
-
-  const metadata: SongMetadataDto = {
-    comments: state.comments.map(comment => ({
-      text: comment.text,
-      segmentId: comment.segmentId,
-    })),
-    labels: [],
-    segmentLabels: [],
-  };
-
-  const chordIdsSet = new Set<string>();
-  const patternIdsSet = new Set<string>();
+  const segmentComments = prepareCommentsForBackend(state.comments, state.segments);
   
-  segments.forEach(segment => {
-    if (segment.chordId) {
-      chordIdsSet.add(segment.chordId);
-    }
-    if (segment.patternId) {
-      patternIdsSet.add(segment.patternId);
-    }
-  });
-
-  state.selectedChords.forEach(chord => {
-    if (chord.chordId && chord.chordId !== 'empty' && chord.chordId !== 'undefined') {
-      chordIdsSet.add(chord.chordId);
-    }
-  });
-
-  state.selectedPatterns.forEach(pattern => {
-    if (pattern.patternId && pattern.patternId !== 'empty' && pattern.patternId !== 'undefined') {
-      patternIdsSet.add(pattern.patternId);
-    }
-  });
+  const chordIds = Array.from(new Set(state.segments
+    .filter(s => s.chordId && s.chordId !== 'empty')
+    .map(s => s.chordId!)));
+  
+  const patternIds = Array.from(new Set(state.segments
+    .filter(s => s.patternId && s.patternId !== 'empty')
+    .map(s => s.patternId!)));
 
   return {
-    title: state.title || 'Untitled Song',
-    artist: artist,
-    isPublic: state.isPublic || false,
+    title: state.title || 'Untitled',
+    artist: state.artist || '',
+    genre: state.genre || '',
+    theme: state.theme || '',
+    description: state.description || '',
+    isPublic: state.isPublic,
     parentSongId: undefined,
-    structure: {
-      segments,
-      metadata,
-    },
-    chordIds: Array.from(chordIdsSet),
-    patternIds: Array.from(patternIdsSet),
+    segments: segments,
+    segmentComments: Object.keys(segmentComments).length > 0 ? segmentComments : undefined,
+    chordIds: chordIds.length > 0 ? chordIds : undefined,
+    patternIds: patternIds.length > 0 ? patternIds : undefined,
   };
 }

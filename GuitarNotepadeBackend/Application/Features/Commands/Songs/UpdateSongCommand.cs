@@ -8,7 +8,7 @@ public record UpdateSongCommand(
     Guid SongId,
     string? Title,
     string? Artist,
+    string? Genre,
+    string? Theme,
     string? Description,
-    bool? IsPublic,
-    string? Key,
-    string? Difficulty) : IRequest<SongDto>;
+    bool? IsPublic) : IRequest<SongDto>;

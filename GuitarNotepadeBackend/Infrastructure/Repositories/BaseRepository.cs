@@ -63,4 +63,14 @@ public class BaseRepository<T> : IBaseRepository<T> where T : BaseEntityWithId
     {
         return await _dbSet.AnyAsync(e => e.Id == id, cancellationToken);
     }
+
+    public void Add(T entity)
+    {
+        _dbSet.Add(entity);
+    }
+
+    public async Task AddAsync(T entity, CancellationToken cancellationToken = default)
+    {
+        await _dbSet.AddAsync(entity, cancellationToken);
+    }
 }

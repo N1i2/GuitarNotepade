@@ -35,10 +35,10 @@ public class UpdateSongCommandHandler : IRequestHandler<UpdateSongCommand, SongD
         song.Update(
             request.Title,
             request.Artist,
+            request.Genre,
+            request.Theme,
             request.Description,
-            request.IsPublic,
-            request.Key,
-            request.Difficulty);
+            request.IsPublic);
 
         await _unitOfWork.Songs.UpdateAsync(song, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

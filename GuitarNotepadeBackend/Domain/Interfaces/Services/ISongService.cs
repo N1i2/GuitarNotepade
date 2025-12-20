@@ -9,6 +9,8 @@ public interface ISongService
         Guid ownerId,
         string title,
         bool isPublic,
+        string genre,
+        string theme,
         string? artist = null,
         string? description = null,
         Guid? parentSongId = null,
@@ -17,11 +19,11 @@ public interface ISongService
     Task<Song> UpdateSongAsync(
         Guid songId,
         string? title = null,
+        string? genre = null,
+        string? theme = null,
         string? artist = null,
         string? description = null,
         bool? isPublic = null,
-        string? key = null,
-        string? difficulty = null,
         CancellationToken cancellationToken = default);
 
     Task<SongStructure> BuildSongStructureAsync(
