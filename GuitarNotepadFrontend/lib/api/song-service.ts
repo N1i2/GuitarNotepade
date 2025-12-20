@@ -1,4 +1,4 @@
-import { CreateSongDto, CreateSongWithSegmentsDto, PaginatedDto, SongDto, SongSearchFilters, SongSearchResultDto, SongStatisticsDto, SongStructureDto, ToggleSongVisibilityDto, UpdateSongDto } from "@/types/songs";
+import { SongDto, SongSearchFilters, SongSearchResultDto, SongStructureDto } from "@/types/songs";
 import { apiClient } from "./client";
 
 export class SongsService {

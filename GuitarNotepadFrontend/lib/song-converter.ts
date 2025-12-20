@@ -1,9 +1,6 @@
 import { 
   SongCreationState, 
-  SongSegmentDto, 
-  SegmentType, 
-  SongMetadataDto,
-  CreateSongWithSegmentsDto 
+  SongSegmentDto
 } from '@/types/songs';
 
  * Преобразует состояние UI в формат, ожидаемый бэкендом
