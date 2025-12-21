@@ -15,8 +15,7 @@ import {
 import { useSongCreation } from "@/app/contexts/song-creation-context";
 import {
   applyToolToSelection,
-  clearToolFromSelection,
-  calculateContentHash,
+  findSegmentAtPosition,
 } from "@/lib/song-segment-utils";
 import { SegmentsList } from "./segments-list";
 import { AddCommentModal } from "./add-comment-modal";
@@ -28,6 +27,7 @@ export function SongTextEditor() {
   const previewRef = useRef<HTMLDivElement>(null);
   const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [showAddComment, setShowAddComment] = useState(false);
+  const [commentSegmentId, setCommentSegmentId] = useState<string>("");
   const [hoveredSegment, setHoveredSegment] = useState<number | null>(null);
 
   const handleTextChange = (value: string) => {
@@ -57,10 +57,18 @@ export function SongTextEditor() {
     const end = textareaRef.current.selectionEnd;
     setSelection({ start, end });
 
-    if (start !== end && (state.selectedChordId || state.selectedPatternId)) {
+    if (start !== end) {
       applyToSelection(start, end);
     }
-  }, [state.selectedChordId, state.selectedPatternId]);
+  }, [
+    state.selectedChordId,
+    state.selectedPatternId,
+    state.currentTool,
+    state.segments,
+    state.text,
+    state.selectedChords,
+    state.selectedPatterns,
+  ]);
 
   const applyToSelection = (start: number, end: number) => {
     const selectedText = state.text.substring(start, end);
@@ -79,27 +87,24 @@ export function SongTextEditor() {
 
     if (!tool || !selectedId) return;
 
-    if (selectedId === "empty") {
-      const newSegments = clearToolFromSelection(
-        state.segments,
-        start,
-        end,
-        tool
-      );
-      dispatch({ type: "SET_SEGMENTS", payload: newSegments });
-    } else {
-      const newSegments = applyToolToSelection(
-        state.segments,
-        state.text,
-        start,
-        end,
-        tool,
-        selectedId,
-        state.selectedChords,
-        state.selectedPatterns
-      );
-      dispatch({ type: "SET_SEGMENTS", payload: newSegments });
-    }
+    console.log(`=== НАЧАЛО ПРИМЕНЕНИЯ ===`);
+    console.log(
+      `Режим: ${state.currentTool}, Инструмент: ${tool}, ID: ${selectedId}`
+    );
+    console.log(`Выделен текст: "${selectedText}" (${start}-${end})`);
+
+    const newSegments = applyToolToSelection(
+      state.segments,
+      state.text,
+      start,
+      end,
+      tool,
+      selectedId,
+      state.selectedChords,
+      state.selectedPatterns
+    );
+
+    dispatch({ type: "SET_SEGMENTS", payload: newSegments });
 
     if (textareaRef.current) {
       textareaRef.current.setSelectionRange(start, start);
@@ -107,53 +112,68 @@ export function SongTextEditor() {
     }
   };
 
-const handleManualApply = () => {
-  if (!textareaRef.current) return;
+  const handleTextareaClick = (e: React.MouseEvent<HTMLTextAreaElement>) => {
+    if (!textareaRef.current || state.currentTool !== "comment") return;
 
-  const start = textareaRef.current.selectionStart;
-  const end = textareaRef.current.selectionEnd;
+    const textarea = textareaRef.current;
+    const cursorPosition = textarea.selectionStart;
 
-  if (start === end) {
-    toast.error("Пожалуйста, выделите текст сначала");
-    return;
-  }
+    const segment = findSegmentAtPosition(state.segments, cursorPosition);
+    if (segment) {
+      setCommentSegmentId(segment.id);
+      setShowAddComment(true);
+    } else {
+      toast.error("Не удалось найти сегмент для комментария");
+    }
+  };
 
-  if (!state.selectedChordId && !state.selectedPatternId) {
-    toast.error("Пожалуйста, выберите аккорд или паттерн сначала");
-    return;
-  }
+  const handleManualApply = () => {
+    if (!textareaRef.current) return;
 
-  let tool: 'chord' | 'pattern' | null = null;
-  let selectedId: string | undefined;
+    const start = textareaRef.current.selectionStart;
+    const end = textareaRef.current.selectionEnd;
 
-  if (state.currentTool === 'chord' && state.selectedChordId) {
-    tool = 'chord';
-    selectedId = state.selectedChordId;
-  } else if (state.currentTool === 'pattern' && state.selectedPatternId) {
-    tool = 'pattern';
-    selectedId = state.selectedPatternId;
-  }
+    if (start === end) {
+      toast.error("Пожалуйста, выделите текст сначала");
+      return;
+    }
 
-  if (!tool || !selectedId) return;
+    if (!state.selectedChordId && !state.selectedPatternId) {
+      toast.error("Пожалуйста, выберите аккорд или паттерн сначала");
+      return;
+    }
 
-  const newSegments = applyToolToSelection(
-    state.segments,
-    state.text,
-    start,
-    end,
-    tool,
-    selectedId,
-    state.selectedChords,
-    state.selectedPatterns
-  );
-  
-  dispatch({ type: 'SET_SEGMENTS', payload: newSegments });
+    let tool: "chord" | "pattern" | null = null;
+    let selectedId: string | undefined;
 
-  if (textareaRef.current) {
-    textareaRef.current.setSelectionRange(start, start);
-    textareaRef.current.focus();
-  }
-};
+    if (state.currentTool === "chord" && state.selectedChordId) {
+      tool = "chord";
+      selectedId = state.selectedChordId;
+    } else if (state.currentTool === "pattern" && state.selectedPatternId) {
+      tool = "pattern";
+      selectedId = state.selectedPatternId;
+    }
+
+    if (!tool || !selectedId) return;
+
+    const newSegments = applyToolToSelection(
+      state.segments,
+      state.text,
+      start,
+      end,
+      tool,
+      selectedId,
+      state.selectedChords,
+      state.selectedPatterns
+    );
+
+    dispatch({ type: "SET_SEGMENTS", payload: newSegments });
+
+    if (textareaRef.current) {
+      textareaRef.current.setSelectionRange(start, start);
+      textareaRef.current.focus();
+    }
+  };
 
   const addSpaceSegment = () => {
     const spaceText = "[SPACE]";
@@ -178,7 +198,7 @@ const handleManualApply = () => {
     dispatch({ type: "ADD_SEGMENT", payload: newSegment });
   };
 
-  const handleAddComment = () => {
+  const handleAddCommentOld = () => {
     if (!textareaRef.current) return;
 
     const start = textareaRef.current.selectionStart;
@@ -212,9 +232,8 @@ const handleManualApply = () => {
       dispatch({ type: "ADD_SEGMENT", payload: newSegment });
     }
 
+    setCommentSegmentId(segmentId);
     setShowAddComment(true);
-    localStorage.setItem("commentSegmentId", segmentId);
-    localStorage.setItem("commentSelection", JSON.stringify({ start, end }));
   };
 
   const handleSegmentClick = (segmentId: string) => {
@@ -231,6 +250,11 @@ const handleManualApply = () => {
     const linesBefore =
       state.text.substring(0, segment.startIndex).split("\n").length - 1;
     textareaRef.current.scrollTop = linesBefore * lineHeight;
+  };
+
+  const handleCloseCommentModal = () => {
+    setShowAddComment(false);
+    setCommentSegmentId("");
   };
 
   const renderTextWithSegments = () => {
@@ -267,19 +291,27 @@ const handleManualApply = () => {
         return;
       }
 
-      const segmentStyles: React.CSSProperties = {};
+      const segmentStyles: React.CSSProperties = {
+        position: "relative" as "relative",
+        display: "inline-block",
+      };
 
       if (segment.color) {
         segmentStyles.borderBottom = `3px solid ${segment.color}`;
-        segmentStyles.paddingBottom = "2px";
-        segmentStyles.textDecoration = "none";
       }
 
       if (segment.backgroundColor) {
         segmentStyles.backgroundColor = segment.backgroundColor;
-        segmentStyles.padding = "1px 3px";
+        segmentStyles.paddingLeft = "3px";
+        segmentStyles.paddingRight = "3px";
+        segmentStyles.paddingTop = "1px";
+        segmentStyles.paddingBottom = "1px";
         segmentStyles.borderRadius = "3px";
-        segmentStyles.margin = "0 1px";
+        segmentStyles.marginLeft = "1px";
+        segmentStyles.marginRight = "1px";
+        if (segment.color) {
+          segmentStyles.marginBottom = "3px";
+        }
       }
 
       const hasComments = state.comments.some(
@@ -382,6 +414,7 @@ const handleManualApply = () => {
               value={state.text}
               onChange={(e) => handleTextChange(e.target.value)}
               onSelect={handleTextareaSelect}
+              onClick={handleTextareaClick}
               placeholder="Напишите текст песни здесь..."
               className="min-h-[400px] font-mono resize-none text-base leading-relaxed"
               rows={20}
@@ -406,7 +439,7 @@ const handleManualApply = () => {
               <Plus className="h-4 w-4 mr-2" />
               Добавить пробел
             </Button>
-            <Button size="sm" variant="outline" onClick={handleAddComment}>
+            <Button size="sm" variant="outline" onClick={handleAddCommentOld}>
               <MessageSquare className="h-4 w-4 mr-2" />
               Добавить комментарий
             </Button>
@@ -447,7 +480,8 @@ const handleManualApply = () => {
       {showAddComment && (
         <AddCommentModal
           open={showAddComment}
-          onClose={() => setShowAddComment(false)}
+          onClose={handleCloseCommentModal}
+          segmentId={commentSegmentId}
         />
       )}
     </div>

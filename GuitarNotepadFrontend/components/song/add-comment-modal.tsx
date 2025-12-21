@@ -1,77 +1,94 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { useSongCreation } from '@/app/contexts/song-creation-context';
-import { useAuth } from '@/components/providers/auth-provider';
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { useSongCreation } from "@/app/contexts/song-creation-context";
+import { useAuth } from "@/components/providers/auth-provider";
 
 interface AddCommentModalProps {
   open: boolean;
   onClose: () => void;
+  segmentId: string;
 }
 
-export function AddCommentModal({ open, onClose }: AddCommentModalProps) {
+export function AddCommentModal({
+  open,
+  onClose,
+  segmentId,
+}: AddCommentModalProps) {
   const { user } = useAuth();
   const toast = useToast();
   const { state, dispatch } = useSongCreation();
-  const [comment, setComment] = useState('');
-  const [selectedSegmentId, setSelectedSegmentId] = useState<string>('');
-  const [segmentText, setSegmentText] = useState('');
+  const [comment, setComment] = useState("");
+  const [segmentText, setSegmentText] = useState("");
 
   useEffect(() => {
-    if (open) {
-      const segmentId = localStorage.getItem('commentSegmentId');
-      const selection = JSON.parse(localStorage.getItem('commentSelection') || '{}');
-      
-      if (segmentId) {
-        setSelectedSegmentId(segmentId);
-        const segment = state.segments.find(s => s.id === segmentId);
-        if (segment) {
-          setSegmentText(segment.text);
-        } else if (selection.start !== undefined) {
-          const text = state.text.substring(selection.start, selection.end);
-          setSegmentText(text);
+    if (open && segmentId) {
+      const segment = state.segments.find((s) => s.id === segmentId);
+      if (segment) {
+        setSegmentText(segment.text);
+
+        const existingComment = state.comments.find(
+          (c) => c.segmentId === segmentId
+        );
+        if (existingComment) {
+          setComment(existingComment.text);
         }
       }
     }
-  }, [open, state.segments, state.text]);
+  }, [open, segmentId, state.segments, state.comments]);
 
   const handleSubmit = () => {
-    if (!comment.trim()) {
-      toast.error('Введите текст комментария');
+    if (!comment.trim() || !segmentId) {
+      toast.error("Введите текст комментария");
       return;
     }
 
     if (!user) {
-      toast.error('Для добавления комментария необходимо войти в систему');
+      toast.error("Для добавления комментария необходимо войти в систему");
       return;
     }
 
-    const newComment = {
-      id: `comment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      segmentId: selectedSegmentId,
-      authorId: user.id,
-      authorName: user.nikName || user.email,
-      text: comment.trim(),
-      createdAt: new Date().toISOString(),
-    };
+    const existingComment = state.comments.find(
+      (c) => c.segmentId === segmentId
+    );
 
-    dispatch({ type: 'ADD_COMMENT', payload: newComment });
-    
-    toast.success('Комментарий добавлен');
+    if (existingComment) {
+      dispatch({
+        type: "UPDATE_COMMENT",
+        payload: { ...existingComment, text: comment.trim() },
+      });
+      toast.success("Комментарий обновлен");
+    } else {
+      const newComment = {
+        id: `comment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        segmentId: segmentId,
+        authorId: user.id,
+        authorName: user.nikName || user.email,
+        text: comment.trim(),
+        createdAt: new Date().toISOString(),
+      };
+
+      dispatch({ type: "ADD_COMMENT", payload: newComment });
+      toast.success("Комментарий добавлен");
+    }
+
     handleClose();
   };
 
   const handleClose = () => {
-    setComment('');
-    setSelectedSegmentId('');
-    setSegmentText('');
-    localStorage.removeItem('commentSegmentId');
-    localStorage.removeItem('commentSelection');
+    setComment("");
+    setSegmentText("");
     onClose();
   };
 
@@ -81,15 +98,15 @@ export function AddCommentModal({ open, onClose }: AddCommentModalProps) {
         <DialogHeader>
           <DialogTitle>Добавить комментарий</DialogTitle>
           <DialogDescription>
-            Добавьте комментарий к выделенному тексту
+            Добавьте комментарий к выделенному сегменту
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Выделенный текст</Label>
+            <Label>Текст сегмента</Label>
             <div className="p-3 bg-muted rounded-md border text-sm">
-              {segmentText.length > 200 
+              {segmentText.length > 200
                 ? `${segmentText.substring(0, 200)}...`
                 : segmentText}
               {segmentText.length > 200 && (
@@ -99,7 +116,7 @@ export function AddCommentModal({ open, onClose }: AddCommentModalProps) {
               )}
             </div>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="comment">Комментарий *</Label>
             <Textarea
@@ -115,13 +132,15 @@ export function AddCommentModal({ open, onClose }: AddCommentModalProps) {
               <span>{comment.length}/1000</span>
             </div>
           </div>
-          
+
           <div className="flex gap-3 justify-end pt-4">
             <Button variant="outline" onClick={handleClose}>
               Отмена
             </Button>
             <Button onClick={handleSubmit} disabled={!comment.trim()}>
-              Добавить комментарий
+              {state.comments.find((c) => c.segmentId === segmentId)
+                ? "Обновить"
+                : "Добавить"}
             </Button>
           </div>
         </div>

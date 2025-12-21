@@ -1,25 +1,119 @@
-import { UISegment, SongChordDto, SongPatternDto, UIComment } from '@/types/songs';
+import {
+  UISegment,
+  SongChordDto,
+  SongPatternDto,
+  UIComment,
+} from "@/types/songs";
 
-export const CHORD_COLORS = [
- '#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2', 
-  '#EF476F', '#073B4C', '#FF9F1C', '#2EC4B6', '#E71D36',
-  '#011627', '#FDFFFC', '#B91372', '#06BCC1', '#C5D86D',
-  '#F4D35E', '#EE964B', '#F95738', '#0D3B66', '#FAF0CA'
-];
+export const ALL_COLORS = [
+  "#FF6B6B",
+  "#4ECDC4",
+  "#FFD166",
+  "#06D6A0",
+  "#118AB2",
+  "#EF476F",
+  "#073B4C",
+  "#FF9F1C",
+  "#2EC4B6",
+  "#E71D36",
+  "#B91372",
+  "#06BCC1",
+  "#C5D86D",
+  "#F4D35E",
+  "#EE964B",
+  "#F95738",
+  "#0D3B66",
+  "#FAF0CA",
+  "#A663CC",
+  "#6A994E",
+  "#E63946",
+  "#A8DADC",
+  "#457B9D",
+  "#1D3557",
+  "#F4A261",
+  "#2A9D8F",
+  "#E9C46A",
+  "#264653",
+  "#E76F51",
+  "#F4E285",
+].filter((color) => color !== "#000000" && color !== "#FFFFFF");
 
-export const PATTERN_COLORS = [
-  '#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2', 
-  '#EF476F', '#073B4C', '#FF9F1C', '#2EC4B6', '#E71D36',
-  '#011627', '#FDFFFC', '#B91372', '#06BCC1', '#C5D86D',
-  '#F4D35E', '#EE964B', '#F95738', '#0D3B66', '#FAF0CA'
-].filter((color, index, self) => self.indexOf(color) === index);
+export const CHORD_COLORS = ALL_COLORS.slice(0, 20);
 
-export function isColorUnique(color: string, usedColors: string[]): boolean {
-  return !usedColors.includes(color);
+export const PATTERN_COLORS = ALL_COLORS.slice(20, 30);
+
+export function isColorUniqueForType(
+  color: string,
+  usedColors: string[],
+  type: "chord" | "pattern"
+): boolean {
+  const validColors = type === "chord" ? CHORD_COLORS : PATTERN_COLORS;
+  return !usedColors.includes(color) && validColors.includes(color);
 }
 
-export function getNextAvailableColor(usedColors: string[], availableColors: string[]): string {
-  return availableColors.find(color => !usedColors.includes(color)) || availableColors[0];
+export function getNextAvailableColorForType(
+  usedColors: string[],
+  type: "chord" | "pattern"
+): string {
+  const availableColors = type === "chord" ? CHORD_COLORS : PATTERN_COLORS;
+
+  for (const color of availableColors) {
+    if (!usedColors.includes(color)) {
+      return color;
+    }
+  }
+
+  return availableColors[0];
+}
+
+export function isColorValidForType(
+  color: string,
+  type: "chord" | "pattern"
+): boolean {
+  const validColors = type === "chord" ? CHORD_COLORS : PATTERN_COLORS;
+  return validColors.includes(color);
+}
+
+export function findSegmentAtPosition(
+  segments: UISegment[],
+  position: number
+): UISegment | undefined {
+  const sortedSegments = [...segments].sort(
+    (a, b) => a.startIndex - b.startIndex
+  );
+
+  for (const segment of sortedSegments) {
+    if (
+      segment.startIndex <= position &&
+      segment.startIndex + segment.length > position
+    ) {
+      return segment;
+    }
+  }
+
+  if (sortedSegments.length === 0) return undefined;
+
+  if (position <= sortedSegments[0].startIndex) {
+    return sortedSegments[0];
+  }
+
+  const lastSegment = sortedSegments[sortedSegments.length - 1];
+  if (position >= lastSegment.startIndex + lastSegment.length) {
+    return lastSegment;
+  }
+
+  for (let i = 0; i < sortedSegments.length - 1; i++) {
+    const current = sortedSegments[i];
+    const next = sortedSegments[i + 1];
+    if (
+      position >= current.startIndex + current.length &&
+      position <= next.startIndex
+    ) {
+      return current;
+    }
+  }
+
+  return undefined;
 }
 
 export function splitSegmentsAtBoundary(
@@ -28,48 +122,50 @@ export function splitSegmentsAtBoundary(
   end: number
 ): UISegment[] {
   const result: UISegment[] = [];
-  
+
   for (const segment of segments) {
     const segmentEnd = segment.startIndex + segment.length;
-    
+
     if (segmentEnd <= start || segment.startIndex >= end) {
       result.push(segment);
       continue;
     }
-    
-    if (segment.startIndex < start && segmentEnd > start) {
-      result.push({
+
+    if (segment.startIndex < start) {
+      const leftSegment: UISegment = {
         ...segment,
         id: `${segment.id}-left`,
         length: start - segment.startIndex,
         text: segment.text.substring(0, start - segment.startIndex),
-      });
+      };
+      result.push(leftSegment);
     }
-    
-    if (segment.startIndex < end && segmentEnd > end) {
-      result.push({
+
+    if (segmentEnd > end) {
+      const rightSegment: UISegment = {
         ...segment,
         id: `${segment.id}-right`,
         startIndex: end,
         length: segmentEnd - end,
         text: segment.text.substring(end - segment.startIndex),
-      });
+      };
+      result.push(rightSegment);
     }
   }
-  
+
   return result;
 }
 
 export function mergeAdjacentSegments(segments: UISegment[]): UISegment[] {
   if (segments.length <= 1) return segments;
-  
+
   const sorted = [...segments].sort((a, b) => a.startIndex - b.startIndex);
   const result: UISegment[] = [];
   let current = { ...sorted[0] };
-  
+
   for (let i = 1; i < sorted.length; i++) {
     const next = sorted[i];
-    
+
     if (
       current.startIndex + current.length === next.startIndex &&
       current.chordId === next.chordId &&
@@ -84,7 +180,7 @@ export function mergeAdjacentSegments(segments: UISegment[]): UISegment[] {
       current = { ...next };
     }
   }
-  
+
   result.push(current);
   return result;
 }
@@ -94,172 +190,243 @@ export function applyToolToSelection(
   text: string,
   start: number,
   end: number,
-  tool: 'chord' | 'pattern',
+  tool: "chord" | "pattern",
   selectedId: string,
   chords: SongChordDto[],
   patterns: SongPatternDto[]
 ): UISegment[] {
-  let newSegments = splitSegmentsAtBoundary(segments, start, end);
-  
-  newSegments = newSegments.filter(s => !(s.startIndex >= start && s.startIndex + s.length <= end));
-  
-  const selectedText = text.substring(start, end);
-  
-  if (!selectedText.trim() && selectedText !== '[SPACE]') {
-    return mergeAdjacentSegments(newSegments);
-  }
-  
-  const overlappedSegments = segments.filter(s => 
-    s.startIndex < end && s.startIndex + s.length > start
+  console.log(`=== ПРИМЕНЕНИЕ ИНСТРУМЕНТА ===`);
+  console.log(`Инструмент: ${tool}, ID: ${selectedId}`);
+  console.log(
+    `Выделение: ${start}-${end}, Текст: "${text.substring(start, end)}"`
   );
-  
-  const newSegment: UISegment = {
-    id: `segment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    order: newSegments.filter(s => s.startIndex < start).length,
-    startIndex: start,
-    length: end - start,
-    text: selectedText,
-    chordId: undefined,
-    patternId: undefined,
-    color: undefined,
-    backgroundColor: undefined,
-    commentIds: [],
-  };
-  
-  if (overlappedSegments.length > 0) {
-    const firstOverlap = overlappedSegments[0];
-    
-    if (tool === 'chord') {
-      newSegment.patternId = firstOverlap.patternId;
-      newSegment.backgroundColor = firstOverlap.backgroundColor;
-    } else {
-      newSegment.chordId = firstOverlap.chordId;
-      newSegment.color = firstOverlap.color;
-    }
-  }
-  
-  if (tool === 'chord' && selectedId !== 'empty') {
-    const chord = chords.find(c => c.chordId === selectedId);
-    if (chord) {
-      newSegment.chordId = selectedId;
-      newSegment.color = chord.color;
-    }
-  } else if (tool === 'pattern' && selectedId !== 'empty') {
-    const pattern = patterns.find(p => p.patternId === selectedId);
-    if (pattern) {
-      newSegment.patternId = selectedId;
-      newSegment.backgroundColor = pattern.color;
-    }
-  }
-  
-  if (selectedId === 'empty') {
-    if (tool === 'chord') {
-      newSegment.chordId = undefined;
-      newSegment.color = undefined;
-    } else {
-      newSegment.patternId = undefined;
-      newSegment.backgroundColor = undefined;
-    }
-  }
-  
-  newSegments.push(newSegment);
-  
-  return mergeAdjacentSegments(newSegments.sort((a, b) => a.startIndex - b.startIndex));
-}
 
-export function mergePartialSelections(
-  segments: UISegment[],
-  text: string, 
-  start: number,
-  end: number,
-  tool: 'chord' | 'pattern',
-  selectedId: string,
-  chords: SongChordDto[],
-  patterns: SongPatternDto[]
-): UISegment[] {
-  const overlappedSegments = segments.filter(s => 
-    s.startIndex < end && s.startIndex + s.length > start
+  if (start === end) return segments;
+
+  const selectedText = text.substring(start, end);
+  if (!selectedText.trim() && selectedText !== "[SPACE]") return segments;
+
+  const overlappingSegments = segments.filter(
+    (s) => s.startIndex < end && s.startIndex + s.length > start
   );
-  
-  if (overlappedSegments.length === 0) {
-    return applyToolToSelection(segments, text, start, end, tool, selectedId, chords, patterns);
-  }
-  
-  const firstSegment = overlappedSegments[0];
-  const allSame = overlappedSegments.every(segment => {
-    if (tool === 'chord') {
-      return segment.chordId === firstSegment.chordId;
-    } else {
-      return segment.patternId === firstSegment.patternId;
-    }
-  });
-  
-  if (allSame && selectedId !== 'empty') {
-    const minStart = Math.min(start, ...overlappedSegments.map(s => s.startIndex));
-    const maxEnd = Math.max(end, ...overlappedSegments.map(s => s.startIndex + s.length));
-    
-    const otherSegments = segments.filter(s => 
-      !overlappedSegments.some(os => os.id === s.id)
-    );
-    
+
+  console.log(`Пересекающихся сегментов: ${overlappingSegments.length}`);
+
+  if (overlappingSegments.length === 0) {
+    console.log("Создаем новый сегмент");
+
     const newSegment: UISegment = {
-      ...firstSegment,
-      id: `merged-${Date.now()}`,
-      startIndex: minStart,
-      length: maxEnd - minStart,
-      text: text.substring(minStart, maxEnd),
+      id: `segment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      order: segments.filter((s) => s.startIndex < start).length,
+      startIndex: start,
+      length: end - start,
+      text: selectedText,
+      chordId: undefined,
+      patternId: undefined,
+      color: undefined,
+      backgroundColor: undefined,
     };
-    
-    return mergeAdjacentSegments([...otherSegments, newSegment]);
+
+    if (tool === "chord" && selectedId !== "empty") {
+      const chord = chords.find((c) => c.chordId === selectedId);
+      if (chord) {
+        newSegment.chordId = selectedId;
+        newSegment.color = chord.color;
+      }
+    } else if (tool === "pattern" && selectedId !== "empty") {
+      const pattern = patterns.find((p) => p.patternId === selectedId);
+      if (pattern) {
+        newSegment.patternId = selectedId;
+        newSegment.backgroundColor = pattern.color;
+      }
+    }
+
+    const result = [...segments, newSegment].sort(
+      (a, b) => a.startIndex - b.startIndex
+    );
+
+    debugSegments(result, text);
+
+    return result;
   }
-  
-  return applyToolToSelection(segments, text, start, end, tool, selectedId, chords, patterns);
+
+  console.log("Обрабатываем пересекающиеся сегменты");
+
+  let resultSegments: UISegment[] = [];
+  const sortedSegments = [...segments].sort(
+    (a, b) => a.startIndex - b.startIndex
+  );
+
+  for (let i = 0; i < sortedSegments.length; i++) {
+    const segment = sortedSegments[i];
+    const segmentEnd = segment.startIndex + segment.length;
+
+    console.log(
+      `  Сегмент ${i}: "${segment.text}" (${segment.startIndex}-${segmentEnd})`
+    );
+
+    if (segmentEnd <= start || segment.startIndex >= end) {
+      console.log(`    Не пересекается - добавляем как есть`);
+      resultSegments.push(segment);
+      continue;
+    }
+
+    if (segment.startIndex >= start && segmentEnd <= end) {
+      console.log(`    Полностью внутри выделения - обновляем`);
+      const updatedSegment = { ...segment };
+
+      if (tool === "chord") {
+        if (selectedId === "empty") {
+          updatedSegment.chordId = undefined;
+          updatedSegment.color = undefined;
+          console.log(`    Очищаем аккорд`);
+        } else {
+          const chord = chords.find((c) => c.chordId === selectedId);
+          updatedSegment.chordId = selectedId;
+          updatedSegment.color = chord?.color;
+          console.log(`    Устанавливаем аккорд: ${selectedId}`);
+        }
+      } else {
+        if (selectedId === "empty") {
+          updatedSegment.patternId = undefined;
+          updatedSegment.backgroundColor = undefined;
+          console.log(`    Очищаем паттерн`);
+        } else {
+          const pattern = patterns.find((p) => p.patternId === selectedId);
+          updatedSegment.patternId = selectedId;
+          updatedSegment.backgroundColor = pattern?.color;
+          console.log(`    Устанавливаем паттерн: ${selectedId}`);
+        }
+      }
+
+      resultSegments.push(updatedSegment);
+      continue;
+    }
+
+    console.log(`    Частичное пересечение - разделяем`);
+
+    if (segment.startIndex < start) {
+      const beforeSegment: UISegment = {
+        ...segment,
+        id: `${segment.id}-before-${Date.now()}`,
+        length: start - segment.startIndex,
+        text: segment.text.substring(0, start - segment.startIndex),
+      };
+      console.log(
+        `    Левая часть: "${beforeSegment.text}" (${
+          beforeSegment.startIndex
+        }-${beforeSegment.startIndex + beforeSegment.length})`
+      );
+      resultSegments.push(beforeSegment);
+    }
+
+    const middleStart = Math.max(segment.startIndex, start);
+    const middleEnd = Math.min(segmentEnd, end);
+    const middleLength = middleEnd - middleStart;
+    const middleText = text.substring(middleStart, middleEnd);
+
+    const middleSegment: UISegment = {
+      ...segment,
+      id: `${segment.id}-middle-${Date.now()}`,
+      startIndex: middleStart,
+      length: middleLength,
+      text: middleText,
+    };
+
+    console.log(
+      `    Средняя часть: "${middleSegment.text}" (${
+        middleSegment.startIndex
+      }-${middleSegment.startIndex + middleSegment.length})`
+    );
+
+    if (tool === "chord") {
+      if (selectedId === "empty") {
+        middleSegment.chordId = undefined;
+        middleSegment.color = undefined;
+        console.log(`    Очищаем аккорд в средней части`);
+      } else {
+        const chord = chords.find((c) => c.chordId === selectedId);
+        middleSegment.chordId = selectedId;
+        middleSegment.color = chord?.color;
+        console.log(`    Устанавливаем аккорд в средней части: ${selectedId}`);
+      }
+    } else {
+      if (selectedId === "empty") {
+        middleSegment.patternId = undefined;
+        middleSegment.backgroundColor = undefined;
+        console.log(`    Очищаем паттерн в средней части`);
+      } else {
+        const pattern = patterns.find((p) => p.patternId === selectedId);
+        middleSegment.patternId = selectedId;
+        middleSegment.backgroundColor = pattern?.color;
+        console.log(`    Устанавливаем паттерн в средней части: ${selectedId}`);
+      }
+    }
+
+    resultSegments.push(middleSegment);
+
+    if (segmentEnd > end) {
+      const afterSegment: UISegment = {
+        ...segment,
+        id: `${segment.id}-after-${Date.now()}`,
+        startIndex: end,
+        length: segmentEnd - end,
+        text: segment.text.substring(end - segment.startIndex),
+      };
+      console.log(
+        `    Правая часть: "${afterSegment.text}" (${afterSegment.startIndex}-${
+          afterSegment.startIndex + afterSegment.length
+        })`
+      );
+      resultSegments.push(afterSegment);
+    }
+  }
+
+  const merged = mergeAdjacentSegments(
+    resultSegments.sort((a, b) => a.startIndex - b.startIndex)
+  );
+
+  console.log("=== РЕЗУЛЬТАТ ===");
+  debugSegments(merged, text);
+
+  return merged;
 }
 
 export function clearToolFromSelection(
   segments: UISegment[],
+  text: string,
   start: number,
   end: number,
-  tool: 'chord' | 'pattern'
+  tool: "chord" | "pattern",
+  chords: SongChordDto[],
+  patterns: SongPatternDto[]
 ): UISegment[] {
-  let newSegments = splitSegmentsAtBoundary(segments, start, end);
-  
-  newSegments = newSegments.map(segment => {
-    if (segment.startIndex < end && segment.startIndex + segment.length > start) {
-      if (tool === 'chord') {
-        return { 
-          ...segment, 
-          chordId: undefined, 
-          color: undefined 
-        };
-      } else {
-        return { 
-          ...segment, 
-          patternId: undefined, 
-          backgroundColor: undefined 
-        };
-      }
-    }
-    return segment;
-  });
-  
-  return mergeAdjacentSegments(newSegments);
+  return applyToolToSelection(
+    segments,
+    text,
+    start,
+    end,
+    tool,
+    "empty",
+    chords,
+    patterns
+  );
 }
 
 export function replaceToolForAllSegments(
   segments: UISegment[],
-  tool: 'chord' | 'pattern',
+  tool: "chord" | "pattern",
   oldId: string,
   newId: string,
   chords: SongChordDto[],
   patterns: SongPatternDto[]
 ): UISegment[] {
-  return segments.map(segment => {
-    if (tool === 'chord' && segment.chordId === oldId) {
-      const chord = chords.find(c => c.chordId === newId);
+  return segments.map((segment) => {
+    if (tool === "chord" && segment.chordId === oldId) {
+      const chord = chords.find((c) => c.chordId === newId);
       return { ...segment, chordId: newId, color: chord?.color };
-    } else if (tool === 'pattern' && segment.patternId === oldId) {
-      const pattern = patterns.find(p => p.patternId === newId);
+    } else if (tool === "pattern" && segment.patternId === oldId) {
+      const pattern = patterns.find((p) => p.patternId === newId);
       return { ...segment, patternId: newId, backgroundColor: pattern?.color };
     }
     return segment;
@@ -272,8 +439,8 @@ export function findDuplicateSegment(
   chordId?: string,
   patternId?: string
 ): UISegment | undefined {
-  return segments.find(s =>
-    s.text === text && s.chordId === chordId && s.patternId === patternId
+  return segments.find(
+    (s) => s.text === text && s.chordId === chordId && s.patternId === patternId
   );
 }
 
@@ -281,24 +448,29 @@ export function prepareSegmentsForBackend(
   segments: UISegment[],
   text: string
 ): any[] {
-  const sortedSegments = [...segments].sort((a, b) => a.startIndex - b.startIndex);
+  const sortedSegments = [...segments].sort(
+    (a, b) => a.startIndex - b.startIndex
+  );
   const result: any[] = [];
-  
+
   let positionIndex = 0;
   for (const segment of sortedSegments) {
-    const segmentText = text.substring(segment.startIndex, segment.startIndex + segment.length);
-    
-    let segmentType = '0'; 
-    if (segmentText === '[SPACE]') {
-      segmentType = '2'; 
+    const segmentText = text.substring(
+      segment.startIndex,
+      segment.startIndex + segment.length
+    );
+
+    let segmentType = "0";
+    if (segmentText === "[SPACE]") {
+      segmentType = "2";
     } else if (segment.chordId || segment.patternId) {
-      segmentType = '1'; 
+      segmentType = "1";
     }
-    
+
     result.push({
       segmentData: {
         type: segmentType,
-        lyric: segmentText === '[SPACE]' ? '' : segmentText,
+        lyric: segmentText === "[SPACE]" ? "" : segmentText,
         chordId: segment.chordId,
         patternId: segment.patternId,
         color: segment.color,
@@ -307,7 +479,7 @@ export function prepareSegmentsForBackend(
       positionIndex: positionIndex++,
     });
   }
-  
+
   return result;
 }
 
@@ -316,9 +488,9 @@ export function prepareCommentsForBackend(
   segments: UISegment[]
 ): Record<number, any[]> {
   const result: Record<number, any[]> = {};
-  
-  comments.forEach(comment => {
-    const segmentIndex = segments.findIndex(s => s.id === comment.segmentId);
+
+  comments.forEach((comment) => {
+    const segmentIndex = segments.findIndex((s) => s.id === comment.segmentId);
     if (segmentIndex !== -1) {
       if (!result[segmentIndex]) {
         result[segmentIndex] = [];
@@ -328,22 +500,24 @@ export function prepareCommentsForBackend(
       });
     }
   });
-  
+
   return result;
 }
 
-export function groupSegmentsByProperties(segments: UISegment[]): UISegment[][] {
+export function groupSegmentsByProperties(
+  segments: UISegment[]
+): UISegment[][] {
   const groups: UISegment[][] = [];
   let currentGroup: UISegment[] = [];
-  
+
   const sorted = [...segments].sort((a, b) => a.startIndex - b.startIndex);
-  
+
   for (const segment of sorted) {
     if (currentGroup.length === 0) {
       currentGroup.push(segment);
     } else {
       const lastSegment = currentGroup[currentGroup.length - 1];
-      
+
       if (
         lastSegment.chordId === segment.chordId &&
         lastSegment.patternId === segment.patternId &&
@@ -357,11 +531,11 @@ export function groupSegmentsByProperties(segments: UISegment[]): UISegment[][] 
       }
     }
   }
-  
+
   if (currentGroup.length > 0) {
     groups.push(currentGroup);
   }
-  
+
   return groups;
 }
 
@@ -370,14 +544,66 @@ export function calculateContentHash(
   chordId?: string,
   patternId?: string
 ): string {
-  const content = `${text}-${chordId || ''}-${patternId || ''}`;
+  const content = `${text}-${chordId || ""}-${patternId || ""}`;
   let hash = 0;
-  
+
   for (let i = 0; i < content.length; i++) {
     const char = content.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash;
   }
-  
+
   return Math.abs(hash).toString(36);
+}
+
+export function debugSegments(segments: UISegment[], text: string) {
+  console.log("=== СОСТОЯНИЕ СЕГМЕНТОВ ===");
+  console.log(`Текст: "${text}" (${text.length} символов)`);
+  console.log(`Всего сегментов: ${segments.length}`);
+
+  const sorted = segments.sort((a, b) => a.startIndex - b.startIndex);
+  let lastIndex = 0;
+
+  sorted.forEach((seg, i) => {
+    const gap = seg.startIndex - lastIndex;
+    if (gap > 0) {
+      console.log(`  [GAP] ${gap} символов без сегмента`);
+    }
+
+    console.log(
+      `  [${i}] "${seg.text}" (${seg.startIndex}-${
+        seg.startIndex + seg.length
+      })`
+    );
+    console.log(
+      `      Аккорд: ${seg.chordId || "нет"}${
+        seg.color ? ` (цвет: ${seg.color})` : ""
+      }`
+    );
+    console.log(
+      `      Паттерн: ${seg.patternId || "нет"}${
+        seg.backgroundColor ? ` (цвет: ${seg.backgroundColor})` : ""
+      }`
+    );
+
+    lastIndex = seg.startIndex + seg.length;
+  });
+
+  if (lastIndex < text.length) {
+    console.log(
+      `  [GAP] ${text.length - lastIndex} символов в конце без сегмента`
+    );
+  }
+
+  let covered = 0;
+  sorted.forEach((seg) => {
+    covered += seg.length;
+  });
+
+  console.log(
+    `Покрыто: ${covered}/${text.length} символов (${Math.round(
+      (covered / text.length) * 100
+    )}%)`
+  );
+  console.log("========================");
 }

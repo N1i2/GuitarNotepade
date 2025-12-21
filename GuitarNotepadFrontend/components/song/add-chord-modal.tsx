@@ -1,17 +1,27 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { ChordsService } from '@/lib/api/chords-service';
-import { Chord } from '@/types/chords';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Search, X, Check } from 'lucide-react';
-import { CHORD_COLORS, getNextAvailableColor, isColorUnique } from '@/lib/song-segment-utils';
-import { useSongCreation } from '@/app/contexts/song-creation-context';
+import { useState, useEffect } from "react";
+import { ChordsService } from "@/lib/api/chords-service";
+import { Chord } from "@/types/chords";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Search, Check } from "lucide-react";
+import {
+  CHORD_COLORS,
+  isColorValidForType,
+  getNextAvailableColorForType,
+} from "@/lib/song-segment-utils";
+import { useSongCreation } from "@/app/contexts/song-creation-context";
 
 interface AddChordModalProps {
   open: boolean;
@@ -19,24 +29,34 @@ interface AddChordModalProps {
   existingChordIds: string[];
 }
 
-export function AddChordModal({ open, onClose, existingChordIds }: AddChordModalProps) {
+export function AddChordModal({
+  open,
+  onClose,
+  existingChordIds,
+}: AddChordModalProps) {
   const { state, dispatch } = useSongCreation();
   const [chords, setChords] = useState<Chord[]>([]);
   const [filteredChords, setFilteredChords] = useState<Chord[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedChordId, setSelectedChordId] = useState<string>('');
-  const [selectedColor, setSelectedColor] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedChordId, setSelectedChordId] = useState<string>("");
+  const [selectedColor, setSelectedColor] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
-  
-  const usedColors = state.selectedChords.map(c => c.color);
-  const availableColors = CHORD_COLORS.filter(color => 
-    isColorUnique(color, [...usedColors, ...state.selectedPatterns.map(p => p.color)])
+
+  const usedChordColors = state.selectedChords.map((c) => c.color);
+
+  const usedPatternColors = state.selectedPatterns.map((p) => p.color);
+
+  const allUsedColors = [...usedChordColors, ...usedPatternColors];
+
+  const availableColors = CHORD_COLORS.filter(
+    (color) =>
+      isColorValidForType(color, "chord") && !allUsedColors.includes(color)
   );
 
   useEffect(() => {
     if (open) {
       loadChords();
-      setSelectedColor(getNextAvailableColor([...usedColors, ...state.selectedPatterns.map(p => p.color)], CHORD_COLORS));
+      setSelectedColor(getNextAvailableColorForType(allUsedColors, "chord"));
     }
   }, [open, state.selectedChords, state.selectedPatterns]);
 
@@ -44,13 +64,16 @@ export function AddChordModal({ open, onClose, existingChordIds }: AddChordModal
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
       setFilteredChords(
-        chords.filter(chord => 
-          chord.name.toLowerCase().includes(searchLower) &&
-          !existingChordIds.includes(chord.id)
+        chords.filter(
+          (chord) =>
+            chord.name.toLowerCase().includes(searchLower) &&
+            !existingChordIds.includes(chord.id)
         )
       );
     } else {
-      setFilteredChords(chords.filter(chord => !existingChordIds.includes(chord.id)));
+      setFilteredChords(
+        chords.filter((chord) => !existingChordIds.includes(chord.id))
+      );
     }
   }, [searchTerm, chords, existingChordIds]);
 
@@ -60,12 +83,12 @@ export function AddChordModal({ open, onClose, existingChordIds }: AddChordModal
       const data = await ChordsService.getAllChords({
         page: 1,
         pageSize: 100,
-        sortBy: 'name',
-        sortOrder: 'asc'
+        sortBy: "name",
+        sortOrder: "asc",
       });
       setChords(data.items);
     } catch (error) {
-      console.error('Failed to load chords:', error);
+      console.error("Failed to load chords:", error);
     } finally {
       setIsLoading(false);
     }
@@ -74,7 +97,7 @@ export function AddChordModal({ open, onClose, existingChordIds }: AddChordModal
   const handleAddChord = () => {
     if (!selectedChordId || !selectedColor) return;
 
-    const chord = chords.find(c => c.id === selectedChordId);
+    const chord = chords.find((c) => c.id === selectedChordId);
     if (!chord) return;
 
     const newChord = {
@@ -83,18 +106,20 @@ export function AddChordModal({ open, onClose, existingChordIds }: AddChordModal
       color: selectedColor,
     };
 
-    dispatch({ type: 'ADD_CHORD', payload: newChord });
-    dispatch({ type: 'SELECT_CHORD', payload: chord.id });
-    dispatch({ type: 'SET_TOOL', payload: 'chord' });
-    
+    dispatch({ type: "ADD_CHORD", payload: newChord });
+    dispatch({ type: "SELECT_CHORD", payload: chord.id });
+    dispatch({ type: "SET_TOOL", payload: "chord" });
+
     onClose();
-    setSelectedChordId('');
-    setSelectedColor('');
-    setSearchTerm('');
+    setSelectedChordId("");
+    setSelectedColor("");
+    setSearchTerm("");
   };
 
   const handleColorSelect = (color: string) => {
-    setSelectedColor(color);
+    if (isColorValidForType(color, "chord") && !allUsedColors.includes(color)) {
+      setSelectedColor(color);
+    }
   };
 
   return (
@@ -166,17 +191,22 @@ export function AddChordModal({ open, onClose, existingChordIds }: AddChordModal
             <div className="space-y-3 border-t pt-4">
               <Label>Выберите цвет для подчеркивания</Label>
               <div className="grid grid-cols-5 gap-2">
-                {availableColors.map((color, index) => (
+                {availableColors.map((color) => (
                   <button
-                    key={`color-${color}-${index}`} 
+                    key={`color-${color}`}
                     className={`h-10 rounded-md border-2 transition-all ${
                       selectedColor === color
                         ? "ring-2 ring-offset-2 ring-primary"
+                        : ""
+                    } ${
+                      allUsedColors.includes(color)
+                        ? "opacity-50 cursor-not-allowed"
                         : ""
                     }`}
                     style={{ backgroundColor: color }}
                     onClick={() => handleColorSelect(color)}
                     title={color}
+                    disabled={allUsedColors.includes(color)}
                   />
                 ))}
               </div>
@@ -191,12 +221,13 @@ export function AddChordModal({ open, onClose, existingChordIds }: AddChordModal
                 </div>
               )}
 
-              {availableColors.length === 0 && (
-                <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
-                  Все цвета заняты. Удалите некоторые аккорды или паттерны,
-                  чтобы освободить цвета.
+              <div className="text-sm text-muted-foreground">
+                <div>• Аккорды могут использовать только первые 20 цветов</div>
+                <div>
+                  • Каждый цвет может использоваться только один раз (ни
+                  аккордами, ни паттернами)
                 </div>
-              )}
+              </div>
             </div>
           )}
 

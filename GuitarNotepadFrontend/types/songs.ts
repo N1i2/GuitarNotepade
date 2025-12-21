@@ -108,6 +108,30 @@ export interface SongStructureDto {
   segmentPositions: SongSegmentPositionDto[];
 }
 
+export interface SongCreationState {
+  title: string;
+  artist?: string;
+  genre?: string;
+  theme?: string;
+  description?: string;
+  isPublic: boolean;
+  key?: string;
+  difficulty?: string;
+  text: string;
+  selectedChords: SongChordDto[];
+  selectedPatterns: SongPatternDto[];
+  segments: UISegment[];
+  comments: UIComment[];
+  currentTool: ToolMode;
+  selectedChordId?: string;
+  selectedPatternId?: string;
+}
+
+export interface BrushState {
+  type: 'chord' | 'pattern' | null;
+  id: string | null; 
+}
+
 export interface SongSegmentDto {
   id: string;
   type: SegmentType;
@@ -260,25 +284,6 @@ export interface UIComment {
   authorName: string;
   text: string;
   createdAt: string;
-}
-
-export interface SongCreationState {
-  title: string;
-  artist?: string;
-  genre?: string;
-  theme?: string;
-  description?: string;
-  isPublic: boolean;
-  key?: string;
-  difficulty?: string;
-  text: string;
-  selectedChords: SongChordDto[];
-  selectedPatterns: SongPatternDto[];
-  segments: UISegment[];
-  comments: UIComment[];
-  currentTool: ToolMode;
-  selectedChordId?: string;
-  selectedPatternId?: string;
 }
 
 export type ToolMode = 'select' | 'chord' | 'pattern' | 'comment';

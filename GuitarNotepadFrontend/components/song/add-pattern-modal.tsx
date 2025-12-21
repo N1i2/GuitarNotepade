@@ -1,19 +1,29 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { PatternsService } from '@/lib/api/patterns-service';
-import { Pattern } from '@/types/patterns';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Search, X, Check, Music, ListMusic } from 'lucide-react';
-import { PATTERN_COLORS, getNextAvailableColor, isColorUnique } from '@/lib/song-segment-utils';
-import { useSongCreation } from '@/app/contexts/song-creation-context';
+import { useState, useEffect } from "react";
+import { PatternsService } from "@/lib/api/patterns-service";
+import { Pattern } from "@/types/patterns";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Search, Check, Music, ListMusic } from "lucide-react";
+import {
+  PATTERN_COLORS,
+  isColorValidForType,
+  getNextAvailableColorForType,
+} from "@/lib/song-segment-utils";
+import { useSongCreation } from "@/app/contexts/song-creation-context";
 
 interface AddPatternModalProps {
   open: boolean;
@@ -21,25 +31,37 @@ interface AddPatternModalProps {
   existingPatternIds: string[];
 }
 
-export function AddPatternModal({ open, onClose, existingPatternIds }: AddPatternModalProps) {
+export function AddPatternModal({
+  open,
+  onClose,
+  existingPatternIds,
+}: AddPatternModalProps) {
   const { state, dispatch } = useSongCreation();
   const [patterns, setPatterns] = useState<Pattern[]>([]);
   const [filteredPatterns, setFilteredPatterns] = useState<Pattern[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPatternId, setSelectedPatternId] = useState<string>("");
   const [selectedColor, setSelectedColor] = useState<string>("");
-  const [patternType, setPatternType] = useState<"all" | "strumming" | "fingerstyle">("all");
+  const [patternType, setPatternType] = useState<
+    "all" | "strumming" | "fingerstyle"
+  >("all");
   const [isLoading, setIsLoading] = useState(true);
-  
-  const usedColors = state.selectedPatterns.map(p => p.color);
-  const availableColors = PATTERN_COLORS.filter(color => 
-    isColorUnique(color, [...usedColors, ...state.selectedChords.map(c => c.color)])
+
+  const usedPatternColors = state.selectedPatterns.map((p) => p.color);
+
+  const usedChordColors = state.selectedChords.map((c) => c.color);
+
+  const allUsedColors = [...usedChordColors, ...usedPatternColors];
+
+  const availableColors = PATTERN_COLORS.filter(
+    (color) =>
+      isColorValidForType(color, "pattern") && !allUsedColors.includes(color)
   );
 
   useEffect(() => {
     if (open) {
       loadPatterns();
-      setSelectedColor(getNextAvailableColor([...usedColors, ...state.selectedChords.map(c => c.color)], PATTERN_COLORS));
+      setSelectedColor(getNextAvailableColorForType(allUsedColors, "pattern"));
     }
   }, [open, state.selectedPatterns, state.selectedChords]);
 
@@ -110,7 +132,12 @@ export function AddPatternModal({ open, onClose, existingPatternIds }: AddPatter
   };
 
   const handleColorSelect = (color: string) => {
-    setSelectedColor(color);
+    if (
+      isColorValidForType(color, "pattern") &&
+      !allUsedColors.includes(color)
+    ) {
+      setSelectedColor(color);
+    }
   };
 
   return (
@@ -170,7 +197,9 @@ export function AddPatternModal({ open, onClose, existingPatternIds }: AddPatter
                   {filteredPatterns.map((pattern) => (
                     <Button
                       key={pattern.id}
-                      variant={selectedPatternId === pattern.id ? "default" : "outline"}
+                      variant={
+                        selectedPatternId === pattern.id ? "default" : "outline"
+                      }
                       className="justify-start h-auto py-3 px-4 text-left"
                       onClick={() => setSelectedPatternId(pattern.id)}
                     >
@@ -181,7 +210,9 @@ export function AddPatternModal({ open, onClose, existingPatternIds }: AddPatter
                             {pattern.description || "Без описания"}
                           </div>
                           <Badge variant="outline" className="mt-2 text-xs">
-                            {pattern.isFingerStyle ? "Fingerstyle" : "Strumming"}
+                            {pattern.isFingerStyle
+                              ? "Fingerstyle"
+                              : "Strumming"}
                           </Badge>
                         </div>
                         {selectedPatternId === pattern.id && (
@@ -214,14 +245,19 @@ export function AddPatternModal({ open, onClose, existingPatternIds }: AddPatter
                       selectedColor === color
                         ? "ring-2 ring-offset-2 ring-primary"
                         : ""
+                    } ${
+                      allUsedColors.includes(color)
+                        ? "opacity-50 cursor-not-allowed"
+                        : ""
                     }`}
                     style={{ backgroundColor: color }}
                     onClick={() => handleColorSelect(color)}
                     title={color}
+                    disabled={allUsedColors.includes(color)}
                   />
                 ))}
               </div>
-              
+
               {selectedColor && (
                 <div className="flex items-center gap-2 text-sm">
                   <div
@@ -231,12 +267,16 @@ export function AddPatternModal({ open, onClose, existingPatternIds }: AddPatter
                   <span>Так будет выглядеть фон текста</span>
                 </div>
               )}
-              
-              {availableColors.length === 0 && (
-                <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
-                  Все цвета заняты. Удалите некоторые аккорды или паттерны, чтобы освободить цвета.
+
+              <div className="text-sm text-muted-foreground">
+                <div>
+                  • Паттерны могут использовать только последние 10 цветов
                 </div>
-              )}
+                <div>
+                  • Каждый цвет может использоваться только один раз (ни
+                  аккордами, ни паттернами)
+                </div>
+              </div>
             </div>
           )}
 
