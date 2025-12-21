@@ -43,7 +43,6 @@ public class GetSongReviewsQueryHandler : IRequestHandler<GetSongReviewsQuery, P
         var reviewIds = reviews.Select(r => r.Id).ToList();
         var fullReviews = await _unitOfWork.SongReviews.GetQueryable()
             .Include(r => r.User)
-            .Include(r => r.Likes)
             .Where(r => reviewIds.Contains(r.Id))
             .ToListAsync(cancellationToken);
 

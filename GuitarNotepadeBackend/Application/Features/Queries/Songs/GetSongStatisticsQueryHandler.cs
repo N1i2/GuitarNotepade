@@ -49,8 +49,6 @@ public class GetSongStatisticsQueryHandler : IRequestHandler<GetSongStatisticsQu
             ReviewCount = song.ReviewCount,
             AverageBeautifulRating = song.AverageBeautifulRating,
             AverageDifficultyRating = song.AverageDifficultyRating,
-            TotalLikes = song.TotalLikes,
-            TotalDislikes = song.TotalDislikes,
             CommentsCount = commentsCount,
             ChordsCount = song.SongChords.Count,
             PatternsCount = song.SongPatterns.Count,

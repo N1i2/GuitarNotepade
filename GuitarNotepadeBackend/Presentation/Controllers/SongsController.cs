@@ -26,6 +26,7 @@ public class SongsController : ControllerBase
 
     [HttpGet]
     public async Task<ActionResult<SongSearchResultDto>> SearchSongs(
+        [FromQuery] Guid userId,
         [FromQuery] string? searchTerm = null,
         [FromQuery] Guid? ownerId = null,
         [FromQuery] bool? isPublic = null,
@@ -45,6 +46,7 @@ public class SongsController : ControllerBase
         {
             var filters = new SongSearchFilters
             {
+                UserId = userId,
                 SearchTerm = searchTerm,
                 OwnerId = ownerId,
                 IsPublic = isPublic,
@@ -73,8 +75,9 @@ public class SongsController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<SongDto>> GetSongById(
+    public async Task<ActionResult<FullSongDto>> GetSongById(
         Guid id,
+        [FromQuery] Guid userId,
         [FromQuery] bool includeStructure = false,
         [FromQuery] bool includeChords = false,
         [FromQuery] bool includePatterns = false,
@@ -85,6 +88,7 @@ public class SongsController : ControllerBase
         {
             var query = new GetSongByIdQuery(
                 id,
+                userId,
                 includeStructure,
                 includeChords,
                 includePatterns,

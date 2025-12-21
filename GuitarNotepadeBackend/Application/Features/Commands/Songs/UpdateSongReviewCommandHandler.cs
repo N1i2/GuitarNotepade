@@ -50,16 +50,9 @@ public class UpdateSongReviewCommandHandler : IRequestHandler<UpdateSongReviewCo
 
         var fullReview = await _unitOfWork.SongReviews.GetQueryable()
             .Include(r => r.User)
-            .Include(r => r.Likes)
             .FirstOrDefaultAsync(r => r.Id == updatedReview.Id, cancellationToken);
 
         var dto = _mapper.Map<SongReviewDto>(fullReview);
-
-        var userLike = fullReview?.Likes.FirstOrDefault(l => l.UserId == request.UserId);
-        if (userLike != null)
-        {
-            dto.CurrentUserLike = userLike.IsLike;
-        }
 
         return dto;
     }

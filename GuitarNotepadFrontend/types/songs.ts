@@ -1,10 +1,10 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export enum SegmentType {
   Text = 0,
   Playback = 1,
   Space = 2,
-  Section = 3
+  Section = 3,
 }
 
 export interface CreateSongDto {
@@ -20,7 +20,7 @@ export interface CreateSongDto {
 }
 
 export interface SongSegmentDataDto {
-  type: string; 
+  type: string;
   lyric?: string;
   chordId?: string;
   patternId?: string;
@@ -75,26 +75,41 @@ export interface SongDto {
   artist?: string;
   description?: string;
   ownerId: string;
-  ownerNickname: string;
+  ownerName: string; 
   isPublic: boolean;
   parentSongId?: string;
+  parentSongTitle?: string;
   key?: string;
   difficulty?: string;
   genre?: string;
   theme?: string;
-  fullText: string;
+  fullText?: string; 
   averageBeautifulRating?: number;
   averageDifficultyRating?: number;
   reviewCount: number;
-  likeCount: number;
-  viewCount: number;
-  copyCount: number;
+  likeCount?: number; 
+  viewCount?: number; 
+  copyCount?: number; 
   createdAt: string;
   updatedAt: string;
-  chordIds: string[];
-  patternIds: string[];
-  structure: SongStructureDto;
-  sections?: SongSectionDto[];
+  chords: Array<{
+    id: string;
+    name: string;
+    fingering: string;
+    description?: string;
+  }>;
+  patterns: Array<{
+    id: string;
+    name: string;
+    pattern: string;
+    isFingerStyle: boolean;
+    description?: string;
+  }>;
+  commentsCount: number;
+  segmentsCount: number;
+  structure?: SongStructureDto;
+  chordIds?: string[]; 
+  patternIds?: string[]; 
 }
 
 export interface SongSectionDto {
@@ -128,8 +143,8 @@ export interface SongCreationState {
 }
 
 export interface BrushState {
-  type: 'chord' | 'pattern' | null;
-  id: string | null; 
+  type: "chord" | "pattern" | null;
+  id: string | null;
 }
 
 export interface SongSegmentDto {
@@ -199,6 +214,7 @@ export interface SongLabelDto {
 }
 
 export interface SongSearchFilters {
+  userId: string;
   searchTerm?: string;
   ownerId?: string;
   isPublic?: boolean;
@@ -212,13 +228,13 @@ export interface SongSearchFilters {
   createdFrom?: Date;
   createdTo?: Date;
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: "asc" | "desc";
   page?: number;
   pageSize?: number;
 }
 
 export interface SongSearchResultDto {
-  songs: SongDto[]; 
+  songs: SongDto[];
   totalCount: number;
   page: number;
   pageSize: number;
@@ -286,7 +302,7 @@ export interface UIComment {
   createdAt: string;
 }
 
-export type ToolMode = 'select' | 'chord' | 'pattern' | 'comment';
+export type ToolMode = "select" | "chord" | "pattern" | "comment";
 
 export interface SongMetadataDto {
   comments: Array<{ text: string; segmentId: string }>;
@@ -308,7 +324,7 @@ export interface SongSearchFilters {
   createdFrom?: Date;
   createdTo?: Date;
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: "asc" | "desc";
   page?: number;
   pageSize?: number;
 }
@@ -325,10 +341,50 @@ export const createSongSchema = z.object({
 });
 
 export const segmentSchema = z.object({
-  type: z.enum(['0', '1', '2', '3']),
+  type: z.enum(["0", "1", "2", "3"]),
   lyric: z.string().optional(),
   chordId: z.string().optional(),
   patternId: z.string().optional(),
   color: z.string().optional(),
   backgroundColor: z.string().optional(),
 });
+
+export interface SongViewData {
+  song: any; 
+  reviews: any[];
+  currentUserReview: any | null;
+  stats: {
+    totalSegments: number;
+    chordsCount: number;
+    patternsCount: number;
+    reviewsCount: number;
+    averageRating: number;
+  };
+}
+
+export interface ReviewStats {
+  total: number;
+  averageBeauty: number;
+  averageDifficulty: number;
+  totalLikes: number;
+  totalDislikes: number;
+}
+
+export interface SegmentGroup {
+  id: string;
+  text: string;
+  chord?: {
+    id: string;
+    name: string;
+    color?: string;
+  };
+  pattern?: {
+    id: string;
+    name: string;
+    color?: string;
+    isFingerStyle?: boolean;
+  };
+  positions: number[];
+  count: number;
+  commentCount: number;
+}

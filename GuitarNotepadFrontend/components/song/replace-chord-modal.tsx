@@ -1,38 +1,44 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { ChordsService } from '@/lib/api/chords-service';
-import { Chord } from '@/types/chords';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Search, Check } from 'lucide-react';
-import { useSongCreation } from '@/app/contexts/song-creation-context';
+import { useState, useEffect } from "react";
+import { ChordsService } from "@/lib/api/chords-service";
+import { Chord } from "@/types/chords";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Search, Check } from "lucide-react";
+import { useSongCreation } from "@/app/contexts/song-creation-context";
 
 interface ReplaceChordModalProps {
   open: boolean;
   onClose: () => void;
   chordId: string;
-  existingChordIds: string[]; 
+  existingChordIds: string[];
 }
 
-export function ReplaceChordModal({ 
-  open, 
-  onClose, 
-  chordId, 
-  existingChordIds 
+export function ReplaceChordModal({
+  open,
+  onClose,
+  chordId,
+  existingChordIds,
 }: ReplaceChordModalProps) {
   const { state, dispatch } = useSongCreation();
   const [chords, setChords] = useState<Chord[]>([]);
   const [filteredChords, setFilteredChords] = useState<Chord[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedChordId, setSelectedChordId] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedChordId, setSelectedChordId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
-  
-  const currentChord = state.selectedChords.find(c => c.chordId === chordId);
+
+  const currentChord = state.selectedChords.find((c) => c.chordId === chordId);
 
   useEffect(() => {
     if (open) {
@@ -40,23 +46,26 @@ export function ReplaceChordModal({
     }
   }, [open]);
 
-useEffect(() => {
-  if (searchTerm.trim()) {
-    const searchLower = searchTerm.toLowerCase();
-    setFilteredChords(
-      chords.filter(chord => 
-        chord.name.toLowerCase().includes(searchLower) &&
-        chord.id !== chordId &&
-        !existingChordIds.includes(chord.id) 
-      )
-    );
-  } else {
-    setFilteredChords(chords.filter(chord => 
-      chord.id !== chordId &&
-      !existingChordIds.includes(chord.id)
-    ));
-  }
-}, [searchTerm, chords, chordId, existingChordIds]);
+  useEffect(() => {
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      setFilteredChords(
+        chords.filter(
+          (chord) =>
+            chord.name.toLowerCase().includes(searchLower) &&
+            chord.id !== chordId &&
+            !existingChordIds.includes(chord.id)
+        )
+      );
+    } else {
+      setFilteredChords(
+        chords.filter(
+          (chord) =>
+            chord.id !== chordId && !existingChordIds.includes(chord.id)
+        )
+      );
+    }
+  }, [searchTerm, chords, chordId, existingChordIds]);
 
   const loadChords = async () => {
     try {
@@ -64,12 +73,12 @@ useEffect(() => {
       const data = await ChordsService.getAllChords({
         page: 1,
         pageSize: 100,
-        sortBy: 'name',
-        sortOrder: 'asc'
+        sortBy: "name",
+        sortOrder: "asc",
       });
       setChords(data.items);
     } catch (error) {
-      console.error('Failed to load chords:', error);
+      console.error("Failed to load chords:", error);
     } finally {
       setIsLoading(false);
     }
@@ -78,24 +87,24 @@ useEffect(() => {
   const handleReplaceChord = () => {
     if (!selectedChordId || !currentChord) return;
 
-    const newChord = chords.find(c => c.id === selectedChordId);
+    const newChord = chords.find((c) => c.id === selectedChordId);
     if (!newChord) return;
 
     const newChordDto = {
       chordId: newChord.id,
       chordName: newChord.name,
-      color: currentChord.color, 
+      color: currentChord.color,
     };
 
-    dispatch({ 
-      type: 'REPLACE_CHORD', 
-      payload: { 
-        oldId: chordId, 
+    dispatch({
+      type: "REPLACE_CHORD",
+      payload: {
+        oldId: chordId,
         newId: newChord.id,
-        chord: newChordDto
-      } 
+        chord: newChordDto,
+      },
     });
-    
+
     onClose();
   };
 
@@ -137,7 +146,9 @@ useEffect(() => {
                   {filteredChords.map((chord) => (
                     <Button
                       key={chord.id}
-                      variant={selectedChordId === chord.id ? 'default' : 'outline'}
+                      variant={
+                        selectedChordId === chord.id ? "default" : "outline"
+                      }
                       className="justify-start h-auto py-3"
                       onClick={() => setSelectedChordId(chord.id)}
                     >
@@ -153,8 +164,8 @@ useEffect(() => {
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   {searchTerm
-                    ? 'Аккорды не найдены'
-                    : 'Нет доступных аккордов для замены'}
+                    ? "Аккорды не найдены"
+                    : "Нет доступных аккордов для замены"}
                 </div>
               )}
             </ScrollArea>
@@ -172,7 +183,8 @@ useEffect(() => {
                   )}
                   <div>
                     <div className="font-medium">
-                      Замена: {currentChord?.chordName} → {chords.find(c => c.id === selectedChordId)?.name}
+                      Замена: {currentChord?.chordName} →{" "}
+                      {chords.find((c) => c.id === selectedChordId)?.name}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       Цвет аккорда останется прежним
@@ -187,10 +199,7 @@ useEffect(() => {
             <Button variant="outline" onClick={onClose}>
               Отмена
             </Button>
-            <Button
-              onClick={handleReplaceChord}
-              disabled={!selectedChordId}
-            >
+            <Button onClick={handleReplaceChord} disabled={!selectedChordId}>
               Заменить аккорд
             </Button>
           </div>

@@ -19,7 +19,6 @@ public class UnitOfWork : IUnitOfWork
         StrummingPatterns = new StrummingPatternRepository(context);
         Songs = new SongRepository(context);
         SongReviews = new SongReviewRepository(context);
-        ReviewLikes = new ReviewLikeRepository(context);
         SongSegments = new SongSegmentRepository(context);
         SongStructures = new SongStructureRepository(context);
         SongSegmentPositions = new SongSegmentPositionRepository(context);
@@ -35,7 +34,6 @@ public class UnitOfWork : IUnitOfWork
     public IStrummingPatternRepository StrummingPatterns { get; }
     public ISongRepository Songs { get; }
     public ISongReviewRepository SongReviews { get; }
-    public IReviewLikeRepository ReviewLikes { get; }
     public ISongSegmentRepository SongSegments { get; }
     public ISongStructureRepository SongStructures { get; }
     public ISongSegmentPositionRepository SongSegmentPositions { get; }

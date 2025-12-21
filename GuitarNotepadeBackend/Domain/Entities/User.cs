@@ -24,7 +24,6 @@ public class User : BaseEntityWithId
     public virtual ICollection<Chord> Chords { get; private set; } = new List<Chord>();
     public virtual ICollection<StrummingPattern> StrummingPatterns { get; private set; } = new List<StrummingPattern>();
     public virtual ICollection<SongReview> Reviews { get; private set; } = new List<SongReview>();
-    public virtual ICollection<ReviewLike> ReviewLikes { get; private set; } = new List<ReviewLike>();
 
     private User()
     {
@@ -121,8 +120,6 @@ public class User : BaseEntityWithId
     public void MakeAdminRole() => Role = Constants.Roles.Admin;
     public void RemoveAdminRole() => Role = Constants.Roles.User;
     public void UpdateUrl(string? url) => AvatarUrl = url;
-    public int GetLikesGivenCount() => ReviewLikes.Count(rl => rl.IsLike);
-    public int GetDislikesGivenCount() => ReviewLikes.Count(rl => !rl.IsLike);
     
     public (bool IsBlocked, string? Message) GetBlockStatus()
     {

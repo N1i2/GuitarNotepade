@@ -22,7 +22,6 @@ public class GetSongReviewByIdQueryHandler : IRequestHandler<GetSongReviewByIdQu
         var review = await _unitOfWork.SongReviews.GetQueryable()
             .Include(r => r.User)
             .Include(r => r.Song)
-            .Include(r => r.Likes)
             .FirstOrDefaultAsync(r => r.Id == request.ReviewId, cancellationToken);
 
         if (review == null)

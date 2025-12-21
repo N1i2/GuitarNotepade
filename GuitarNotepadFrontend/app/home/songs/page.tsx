@@ -6,38 +6,42 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
 import { SongDto, SongSearchResultDto } from "@/types/songs";
 import { SongsService } from "@/lib/api/song-service";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  Search, 
-  Plus, 
-  Music, 
-  Grid3x3, 
-  User, 
-  Eye, 
-  EyeOff, 
-  Filter, 
-  Music2, 
-  Globe, 
-  Lock, 
-  GitFork,
+import {
+  Search,
+  Plus,
+  Grid3x3,
+  User,
+  Eye,
+  EyeOff,
+  Filter,
+  Music2,
+  Lock,
   Star,
   MessageSquare,
   GitBranch,
-  Heart
+  Tag,
+  Hash,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Pagination } from "@/components/user-management/pagination";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 
@@ -64,9 +68,47 @@ interface SongGridItem {
   difficulty?: string;
 }
 
+const genres = [
+  "Rock",
+  "Pop",
+  "Jazz",
+  "Blues",
+  "Folk",
+  "Country",
+  "Classical",
+  "Metal",
+  "Punk",
+  "Reggae",
+  "Hip-Hop",
+  "Electronic",
+  "R&B",
+  "Soul",
+  "Funk",
+  "Disco",
+];
+
+const themes = [
+  "Love",
+  "Life",
+  "Nature",
+  "Travel",
+  "Friendship",
+  "Family",
+  "Work",
+  "Party",
+  "Sadness",
+  "Joy",
+  "Hope",
+  "Dream",
+  "Social",
+  "Political",
+  "Religious",
+  "Philosophical",
+];
+
 export default function SongsPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const toast = useToast();
 
   const [allSongs, setAllSongs] = useState<SongDto[]>([]);
@@ -78,70 +120,106 @@ export default function SongsPage() {
   const [visibilityFilter, setVisibilityFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("createdAt");
   const [sortOrder, setSortOrder] = useState<string>("desc");
-  
+  const [selectedGenre, setSelectedGenre] = useState<string>("all");
+  const [selectedTheme, setSelectedTheme] = useState<string>("all");
+
   const [useBeautyFilter, setUseBeautyFilter] = useState(false);
   const [useDifficultyFilter, setUseDifficultyFilter] = useState(false);
-  
+
   const [beautyRange, setBeautyRange] = useState<[number, number]>([1, 5]);
-  const [difficultyRange, setDifficultyRange] = useState<[number, number]>([1, 5]);
-  
+  const [difficultyRange, setDifficultyRange] = useState<[number, number]>([
+    1, 5,
+  ]);
+
   const [searchInText, setSearchInText] = useState(false);
-  
+
   const pageSize = 12;
+
+  const [isReadyToLoad, setIsReadyToLoad] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading) {
+      setIsReadyToLoad(true);
+    }
+  }, [authLoading]);
 
   const filteredSongs = useMemo(() => {
     let songsArray = [...allSongs];
-    
+
     if (showOnlyMySongs && user) {
-      songsArray = songsArray.filter(song => song.ownerId === user.id);
+      songsArray = songsArray.filter((song) => song.ownerId === user.id);
     }
-    
+
     if (visibilityFilter === "public") {
-      songsArray = songsArray.filter(song => song.isPublic);
+      songsArray = songsArray.filter((song) => song.isPublic);
     } else if (visibilityFilter === "private") {
-      songsArray = songsArray.filter(song => !song.isPublic);
+      songsArray = songsArray.filter((song) => !song.isPublic);
     }
-    
+
+    if (selectedGenre !== "all") {
+      songsArray = songsArray.filter((song) => {
+        if (!song.genre) return false;
+        if (selectedGenre === "Empty") {
+          return !song.genre || song.genre.trim() === "";
+        }
+        return song.genre.toLowerCase() === selectedGenre.toLowerCase();
+      });
+    }
+
+    if (selectedTheme !== "all") {
+      songsArray = songsArray.filter((song) => {
+        if (!song.theme) return false;
+        if (selectedTheme === "Empty") {
+          return !song.theme || song.theme.trim() === "";
+        }
+        return song.theme.toLowerCase() === selectedTheme.toLowerCase();
+      });
+    }
+
     if (useBeautyFilter) {
-      songsArray = songsArray.filter(song => {
-        if (!song.averageBeautifulRating) return false; 
-        return song.averageBeautifulRating >= beautyRange[0] && 
-               song.averageBeautifulRating <= beautyRange[1];
+      songsArray = songsArray.filter((song) => {
+        if (!song.averageBeautifulRating) return false;
+        return (
+          song.averageBeautifulRating >= beautyRange[0] &&
+          song.averageBeautifulRating <= beautyRange[1]
+        );
       });
     }
-    
+
     if (useDifficultyFilter) {
-      songsArray = songsArray.filter(song => {
-        if (!song.averageDifficultyRating) return false; 
-        return song.averageDifficultyRating >= difficultyRange[0] && 
-               song.averageDifficultyRating <= difficultyRange[1];
+      songsArray = songsArray.filter((song) => {
+        if (!song.averageDifficultyRating) return false;
+        return (
+          song.averageDifficultyRating >= difficultyRange[0] &&
+          song.averageDifficultyRating <= difficultyRange[1]
+        );
       });
     }
-    
+
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
-      songsArray = songsArray.filter(song => {
+      songsArray = songsArray.filter((song) => {
         if (
           song.title.toLowerCase().includes(searchLower) ||
           (song.artist && song.artist.toLowerCase().includes(searchLower)) ||
-          (song.ownerNickname && song.ownerNickname.toLowerCase().includes(searchLower)) ||
+          (song.ownerName && song.ownerName.toLowerCase().includes(searchLower)) ||
           (song.genre && song.genre.toLowerCase().includes(searchLower)) ||
           (song.theme && song.theme.toLowerCase().includes(searchLower))
         ) {
           return true;
         }
-        
+
         if (searchInText && song.fullText) {
           return song.fullText.toLowerCase().includes(searchLower);
         }
-        
+
         return false;
       });
     }
-    
+
     songsArray.sort((a, b) => {
       let aValue: any, bValue: any;
-      
+
       switch (sortBy) {
         case "title":
           aValue = a.title.toLowerCase();
@@ -175,79 +253,112 @@ export default function SongsPage() {
           aValue = new Date(a.createdAt);
           bValue = new Date(b.createdAt);
       }
-      
+
       if (sortOrder === "asc") {
         return aValue > bValue ? 1 : -1;
       } else {
         return aValue < bValue ? 1 : -1;
       }
     });
-    
+
     const startIndex = (currentPage - 1) * pageSize;
     const paginated = songsArray.slice(startIndex, startIndex + pageSize);
-    
+
     return {
       items: paginated,
       totalCount: songsArray.length,
       currentPage,
       totalPages: Math.ceil(songsArray.length / pageSize),
       hasPreviousPage: currentPage > 1,
-      hasNextPage: startIndex + pageSize < songsArray.length
+      hasNextPage: startIndex + pageSize < songsArray.length,
     };
   }, [
-    allSongs, 
-    searchTerm, 
-    currentPage, 
-    showOnlyMySongs, 
-    visibilityFilter, 
-    sortBy, 
-    sortOrder, 
+    allSongs,
+    searchTerm,
+    currentPage,
+    showOnlyMySongs,
+    visibilityFilter,
+    selectedGenre,
+    selectedTheme,
+    sortBy,
+    sortOrder,
     useBeautyFilter,
     beautyRange,
     useDifficultyFilter,
     difficultyRange,
-    searchInText, 
-    user
+    searchInText,
+    user,
   ]);
 
   const loadAllSongs = async () => {
     setIsLoading(true);
     try {
+      console.log("Loading songs with user:", user?.id);
+      
       let allSongsData: SongDto[] = [];
       let currentPageNum = 1;
       let hasMore = true;
       const loadPageSize = 100;
 
+      const userId = user?.id ? `${user.id}` : "";
+
       while (hasMore) {
         const data: SongSearchResultDto = await SongsService.searchSongs({
+          userId: userId,
           page: currentPageNum,
           pageSize: loadPageSize,
           sortBy: "createdAt",
-          sortOrder: "desc"
+          sortOrder: "desc",
         });
 
         allSongsData = [...allSongsData, ...data.songs];
-        
-        if (data.songs.length < loadPageSize || currentPageNum === data.totalPages) {
+
+        if (
+          data.songs.length < loadPageSize ||
+          currentPageNum === data.totalPages
+        ) {
           hasMore = false;
           setTotalSongsCount(data.totalCount);
         } else {
           currentPageNum++;
         }
       }
-      
+
       setAllSongs(allSongsData);
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error("Failed to load songs:", error);
-      toast.error("Failed to load songs. Please try again.");
+      
+      if (error.status === 400) {
+        toast.error("Invalid request. Please try again.");
+      } else if (error.status === 401 || error.status === 403) {
+        try {
+          const publicData: SongSearchResultDto = await SongsService.searchSongs({
+            userId: `${user?.id}`,
+            isPublic: true,
+            page: 1,
+            pageSize: 50,
+            sortBy: "createdAt",
+            sortOrder: "desc",
+          });
+          
+          setAllSongs(publicData.songs);
+          setTotalSongsCount(publicData.totalCount);
+        } catch (publicError: any) {
+          toast.error("Failed to load public songs");
+        }
+      } else {
+        toast.error("Failed to load songs. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadAllSongs();
-  }, []);
+    if (isReadyToLoad) {
+      loadAllSongs();
+    }
+  }, [isReadyToLoad]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -256,14 +367,16 @@ export default function SongsPage() {
 
     return () => clearTimeout(timer);
   }, [
-    searchTerm, 
-    showOnlyMySongs, 
-    visibilityFilter, 
+    searchTerm,
+    showOnlyMySongs,
+    visibilityFilter,
+    selectedGenre,
+    selectedTheme,
     useBeautyFilter,
     beautyRange,
     useDifficultyFilter,
     difficultyRange,
-    searchInText
+    searchInText,
   ]);
 
   const handlePageChange = (page: number) => {
@@ -289,43 +402,49 @@ export default function SongsPage() {
     router.push(`/home/songs/fork/${songId}`);
   };
 
-  const handleToggleVisibility = async (songId: string, e: React.MouseEvent) => {
+  const handleToggleVisibility = async (
+    songId: string,
+    e: React.MouseEvent
+  ) => {
     e.stopPropagation();
     try {
-      const song = allSongs.find(s => s.id === songId);
+      const song = allSongs.find((s) => s.id === songId);
       if (!song) return;
-      
-      const updatedSong = await SongsService.toggleSongVisibility(songId, !song.isPublic);
-      setAllSongs(prev => prev.map(song => 
-        song.id === songId ? updatedSong : song
-      ));
-      toast.success(`Song is now ${updatedSong.isPublic ? 'public' : 'private'}`);
+
+      const updatedSong = await SongsService.toggleSongVisibility(
+        songId,
+        !song.isPublic
+      );
+      setAllSongs((prev) =>
+        prev.map((song) => (song.id === songId ? updatedSong : song))
+      );
+      toast.success(
+        `Song is now ${updatedSong.isPublic ? "public" : "private"}`
+      );
     } catch (error: any) {
       toast.error(error.message || "Failed to toggle visibility");
     }
   };
 
   const getSongItemsForGrid = (): SongGridItem[] => {
-    return filteredSongs.items.map(song => {
-      const canEdit = user ? (user.id === song.ownerId || user.role === "Admin") : false;
+    return filteredSongs.items.map((song) => {
+      const canEdit = user
+        ? user.id === song.ownerId || user.role === "Admin"
+        : false;
+
+      const chordCount = Array.isArray(song.chords) ? song.chords.length : 0;
       
-      let commentCount = 0;
-      if (song.structure?.segmentPositions) {
-        commentCount = song.structure.segmentPositions.reduce(
-          (acc, pos) => acc + (pos.segment?.comments?.length || 0), 
-          0
-        );
-      }
-      
+      const patternCount = Array.isArray(song.patterns) ? song.patterns.length : 0;
+
       return {
         id: song.id,
         title: song.title,
         artist: song.artist,
         isPublic: song.isPublic,
         ownerId: song.ownerId,
-        ownerNickname: song.ownerNickname,
-        chordCount: song.chordIds?.length || 0,
-        patternCount: song.patternIds?.length || 0,
+        ownerNickname: song.ownerName || "Unknown",
+        chordCount,
+        patternCount,
         createdAt: song.createdAt,
         updatedAt: song.updatedAt,
         canEdit,
@@ -333,7 +452,7 @@ export default function SongsPage() {
         averageBeautifulRating: song.averageBeautifulRating,
         averageDifficultyRating: song.averageDifficultyRating,
         reviewCount: song.reviewCount || 0,
-        commentCount,
+        commentCount: song.commentsCount || 0,
         genre: song.genre,
         theme: song.theme,
         key: song.key,
@@ -352,28 +471,34 @@ export default function SongsPage() {
       "bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/20 border-emerald-200 dark:border-emerald-800",
     ];
 
-    const hash = title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const hash = title
+      .split("")
+      .reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return colors[hash % colors.length];
   };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
   const renderRatingStars = (rating?: number) => {
     if (!rating) return null;
-    
+
     return (
       <div className="flex items-center gap-1">
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
-            className={`h-3 w-3 ${star <= Math.round(rating) ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`}
+            className={`h-3 w-3 ${
+              star <= Math.round(rating)
+                ? "text-yellow-500 fill-yellow-500"
+                : "text-gray-300"
+            }`}
           />
         ))}
         <span className="text-xs font-medium ml-1">{rating.toFixed(1)}</span>
@@ -384,9 +509,11 @@ export default function SongsPage() {
   const clearAllFilters = () => {
     setShowOnlyMySongs(false);
     setVisibilityFilter("all");
+    setSelectedGenre("all");
+    setSelectedTheme("all");
     setSearchTerm("");
     setSearchInText(false);
-    
+
     setUseBeautyFilter(false);
     setUseDifficultyFilter(false);
     setBeautyRange([1, 5]);
@@ -397,14 +524,34 @@ export default function SongsPage() {
     return (
       showOnlyMySongs ||
       visibilityFilter !== "all" ||
+      selectedGenre !== "all" ||
+      selectedTheme !== "all" ||
       searchTerm ||
       searchInText ||
       useBeautyFilter ||
       useDifficultyFilter ||
       (useBeautyFilter && (beautyRange[0] > 1 || beautyRange[1] < 5)) ||
-      (useDifficultyFilter && (difficultyRange[0] > 1 || difficultyRange[1] < 5))
+      (useDifficultyFilter &&
+        (difficultyRange[0] > 1 || difficultyRange[1] < 5))
     );
   };
+
+  if (authLoading) {
+    return (
+      <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-64 mt-2" />
+            </div>
+            <Skeleton className="h-20 w-40" />
+          </div>
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
@@ -413,7 +560,8 @@ export default function SongsPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Songs Library</h1>
             <p className="text-muted-foreground mt-2">
-              Browse and manage guitar songs. Click any song to view its details.
+              Browse and manage guitar songs. Click any song to view its
+              details.
             </p>
           </div>
           <div className="hidden md:block">
@@ -424,11 +572,9 @@ export default function SongsPage() {
                   <span className="text-sm font-medium">Song Database</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {isLoading ? (
-                    "Loading songs..."
-                  ) : (
-                    `${totalSongsCount} total songs`
-                  )}
+                  {isLoading
+                    ? "Loading songs..."
+                    : `${totalSongsCount} total songs`}
                 </p>
               </CardContent>
             </Card>
@@ -449,32 +595,38 @@ export default function SongsPage() {
                   />
                 </div>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="searchInText" 
+                  <Checkbox
+                    id="searchInText"
                     checked={searchInText}
-                    onCheckedChange={(checked) => setSearchInText(checked as boolean)}
+                    onCheckedChange={(checked) =>
+                      setSearchInText(checked as boolean)
+                    }
                   />
-                  <Label 
-                    htmlFor="searchInText" 
+                  <Label
+                    htmlFor="searchInText"
                     className="text-sm font-medium cursor-pointer"
                   >
                     Search in text
                   </Label>
                 </div>
-                
+
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="showOnlyMySongs" 
+                  <Checkbox
+                    id="showOnlyMySongs"
                     checked={showOnlyMySongs}
-                    onCheckedChange={(checked) => setShowOnlyMySongs(checked as boolean)}
+                    onCheckedChange={(checked) =>
+                      setShowOnlyMySongs(checked as boolean)
+                    }
                     disabled={!user}
                   />
-                  <Label 
-                    htmlFor="showOnlyMySongs" 
-                    className={`text-sm font-medium cursor-pointer ${!user ? 'text-muted-foreground' : ''}`}
+                  <Label
+                    htmlFor="showOnlyMySongs"
+                    className={`text-sm font-medium cursor-pointer ${
+                      !user ? "text-muted-foreground" : ""
+                    }`}
                   >
                     <div className="flex items-center gap-2">
                       {showOnlyMySongs ? (
@@ -486,29 +638,39 @@ export default function SongsPage() {
                     </div>
                   </Label>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="hidden md:flex">
                     <Music2 className="h-3 w-3 mr-1" />
                     {isLoading ? "..." : filteredSongs.totalCount} songs
                   </Badge>
-                  <Button onClick={handleCreateNew} variant="default" className="w-full sm:w-auto">
+                  <Button
+                    onClick={handleCreateNew}
+                    variant="default"
+                    className="w-full sm:w-auto"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Create New Song
                   </Button>
                 </div>
               </div>
             </div>
-            
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-6 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="visibilityFilter" className="text-sm font-medium">
+                <Label
+                  htmlFor="visibilityFilter"
+                  className="text-sm font-medium"
+                >
                   <div className="flex items-center gap-2">
                     <Filter className="h-4 w-4" />
                     Visibility
                   </div>
                 </Label>
-                <Select value={visibilityFilter} onValueChange={setVisibilityFilter}>
+                <Select
+                  value={visibilityFilter}
+                  onValueChange={setVisibilityFilter}
+                >
                   <SelectTrigger id="visibilityFilter">
                     <SelectValue placeholder="Filter by visibility" />
                   </SelectTrigger>
@@ -519,21 +681,77 @@ export default function SongsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
+              <div className="space-y-2">
+                <Label
+                  htmlFor="genreFilter"
+                  className="text-sm font-medium"
+                >
+                  <div className="flex items-center gap-2">
+                    <Tag className="h-4 w-4" />
+                    Genre
+                  </div>
+                </Label>
+                <Select
+                  value={selectedGenre}
+                  onValueChange={setSelectedGenre}
+                >
+                  <SelectTrigger id="genreFilter">
+                    <SelectValue placeholder="Filter by genre" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Genres</SelectItem>
+                    {genres.map((genre) => (
+                      <SelectItem key={genre} value={genre}>
+                        {genre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label
+                  htmlFor="themeFilter"
+                  className="text-sm font-medium"
+                >
+                  <div className="flex items-center gap-2">
+                    <Hash className="h-4 w-4" />
+                    Theme
+                  </div>
+                </Label>
+                <Select
+                  value={selectedTheme}
+                  onValueChange={setSelectedTheme}
+                >
+                  <SelectTrigger id="themeFilter">
+                    <SelectValue placeholder="Filter by theme" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Themes</SelectItem>
+                    {themes.map((theme) => (
+                      <SelectItem key={theme} value={theme}>
+                        {theme}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="useBeautyFilter" 
+                  <Checkbox
+                    id="useBeautyFilter"
                     checked={useBeautyFilter}
                     onCheckedChange={(checked) => {
                       setUseBeautyFilter(checked as boolean);
                       if (checked) {
-                        setBeautyRange([1, 5]); 
+                        setBeautyRange([1, 5]);
                       }
                     }}
                   />
-                  <Label 
-                    htmlFor="useBeautyFilter" 
+                  <Label
+                    htmlFor="useBeautyFilter"
                     className="text-sm font-medium cursor-pointer"
                   >
                     Filter by Beauty Rating
@@ -555,21 +773,21 @@ export default function SongsPage() {
                   </div>
                 )}
               </div>
-              
+
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="useDifficultyFilter" 
+                  <Checkbox
+                    id="useDifficultyFilter"
                     checked={useDifficultyFilter}
                     onCheckedChange={(checked) => {
                       setUseDifficultyFilter(checked as boolean);
                       if (checked) {
-                        setDifficultyRange([1, 5]); 
+                        setDifficultyRange([1, 5]);
                       }
                     }}
                   />
-                  <Label 
-                    htmlFor="useDifficultyFilter" 
+                  <Label
+                    htmlFor="useDifficultyFilter"
                     className="text-sm font-medium cursor-pointer"
                   >
                     Filter by Difficulty Rating
@@ -591,7 +809,7 @@ export default function SongsPage() {
                   </div>
                 )}
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="sortBy" className="text-sm font-medium">
                   Sort By
@@ -606,13 +824,15 @@ export default function SongsPage() {
                     <SelectItem value="title">Title</SelectItem>
                     <SelectItem value="artist">Artist</SelectItem>
                     <SelectItem value="averageBeautiful">Beauty</SelectItem>
-                    <SelectItem value="averageDifficulty">Difficulty</SelectItem>
+                    <SelectItem value="averageDifficulty">
+                      Difficulty
+                    </SelectItem>
                     <SelectItem value="reviewCount">Reviews</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
-            
+
             <div className="mt-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Select value={sortOrder} onValueChange={setSortOrder}>
@@ -625,18 +845,14 @@ export default function SongsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               {hasActiveFilters() && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={clearAllFilters}
-                >
+                <Button variant="outline" size="sm" onClick={clearAllFilters}>
                   Clear All Filters
                 </Button>
               )}
             </div>
-            
+
             {user && showOnlyMySongs && (
               <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
                 <div className="flex items-center gap-2 text-sm">
@@ -647,7 +863,7 @@ export default function SongsPage() {
                 </div>
               </div>
             )}
-            
+
             {!user && (
               <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-md border border-amber-200 dark:border-amber-800">
                 <div className="flex items-center gap-2 text-sm">
@@ -658,8 +874,20 @@ export default function SongsPage() {
                 </div>
               </div>
             )}
-            
+
             <div className="mt-3 flex flex-wrap gap-2">
+              {selectedGenre !== "all" && (
+                <Badge variant="secondary" className="text-xs">
+                  <Tag className="h-3 w-3 mr-1" />
+                  Genre: {selectedGenre}
+                </Badge>
+              )}
+              {selectedTheme !== "all" && (
+                <Badge variant="secondary" className="text-xs">
+                  <Hash className="h-3 w-3 mr-1" />
+                  Theme: {selectedTheme}
+                </Badge>
+              )}
               {useBeautyFilter && (
                 <Badge variant="secondary" className="text-xs">
                   Beauty: {beautyRange[0]}-{beautyRange[1]}
@@ -707,7 +935,7 @@ export default function SongsPage() {
               )}
             </div>
             <CardDescription>
-              {showOnlyMySongs 
+              {showOnlyMySongs
                 ? "Songs that you own. Click edit icon to modify."
                 : "Click any song to view its structure, chords, and patterns."}
             </CardDescription>
@@ -729,32 +957,50 @@ export default function SongsPage() {
                   {getSongItemsForGrid().map((song) => (
                     <Card
                       key={song.id}
-                      className={`cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg border-2 ${getSongColor(song.title)} relative group overflow-hidden`}
+                      className={`cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg border-2 ${getSongColor(
+                        song.title
+                      )} relative group overflow-hidden`}
                       onClick={() => handleSongClick(song.id)}
                     >
                       <CardContent className="p-6 h-full flex flex-col">
                         <div className="flex flex-wrap gap-2 mb-3">
                           {!song.isPublic && (
-                            <Badge variant="outline" className="flex items-center gap-1">
+                            <Badge
+                              variant="outline"
+                              className="flex items-center gap-1"
+                            >
                               <Lock className="h-3 w-3" />
                               Private
                             </Badge>
                           )}
                           {song.isForked && (
-                            <Badge variant="outline" className="flex items-center gap-1">
+                            <Badge
+                              variant="outline"
+                              className="flex items-center gap-1"
+                            >
                               <GitBranch className="h-3 w-3" />
                               Forked
                             </Badge>
                           )}
                           {song.canEdit && (
-                            <Badge variant="secondary" className="flex items-center gap-1">
+                            <Badge
+                              variant="secondary"
+                              className="flex items-center gap-1"
+                            >
                               <User className="h-3 w-3" />
                               Owner
                             </Badge>
                           )}
-                          {song.genre && (
+                          {song.genre && song.genre !== "Empty" && (
                             <Badge variant="outline">
+                              <Tag className="h-3 w-3 mr-1" />
                               {song.genre}
+                            </Badge>
+                          )}
+                          {song.theme && song.theme !== "Empty" && (
+                            <Badge variant="outline">
+                              <Hash className="h-3 w-3 mr-1" />
+                              {song.theme}
                             </Badge>
                           )}
                         </div>
@@ -762,59 +1008,73 @@ export default function SongsPage() {
                         <h3 className="text-xl font-bold mb-1 line-clamp-1">
                           {song.title}
                         </h3>
-                        
+
                         <p className="text-muted-foreground mb-3 line-clamp-1">
                           {song.artist || "No artist"}
                         </p>
-                        
+
                         <div className="mb-4 space-y-2">
                           {song.averageBeautifulRating && (
                             <div className="flex items-center justify-between">
-                              <span className="text-sm text-muted-foreground">Beauty:</span>
+                              <span className="text-sm text-muted-foreground">
+                                Beauty:
+                              </span>
                               {renderRatingStars(song.averageBeautifulRating)}
                             </div>
                           )}
                           {song.averageDifficultyRating && (
                             <div className="flex items-center justify-between">
-                              <span className="text-sm text-muted-foreground">Difficulty:</span>
+                              <span className="text-sm text-muted-foreground">
+                                Difficulty:
+                              </span>
                               {renderRatingStars(song.averageDifficultyRating)}
                             </div>
                           )}
                         </div>
-                        
+
                         <div className="grid grid-cols-3 gap-2 mb-4">
                           <div className="text-center p-2 bg-white/50 dark:bg-gray-800/50 rounded-md">
-                            <div className="text-lg font-bold">{song.chordCount}</div>
-                            <div className="text-xs text-muted-foreground">Chords</div>
+                            <div className="text-lg font-bold">
+                              {song.chordCount}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              Chords
+                            </div>
                           </div>
                           <div className="text-center p-2 bg-white/50 dark:bg-gray-800/50 rounded-md">
-                            <div className="text-lg font-bold">{song.patternCount}</div>
-                            <div className="text-xs text-muted-foreground">Patterns</div>
+                            <div className="text-lg font-bold">
+                              {song.patternCount}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              Patterns
+                            </div>
                           </div>
                           <div className="text-center p-2 bg-white/50 dark:bg-gray-800/50 rounded-md">
-                            <div className="text-lg font-bold">{song.commentCount}</div>
+                            <div className="text-lg font-bold">
+                              {song.reviewCount}
+                            </div>
                             <div className="text-xs text-muted-foreground">
                               <MessageSquare className="h-3 w-3 inline mr-1" />
-                              Comments
+                              Reviews
                             </div>
                           </div>
                         </div>
-                        
+
                         {(song.key || song.difficulty) && (
                           <div className="mb-4 flex flex-wrap gap-2">
                             {song.key && (
                               <div className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
-                                {song.key}
+                                Key: {song.key}
                               </div>
                             )}
                             {song.difficulty && (
                               <div className="text-xs px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded">
-                                {song.difficulty}
+                                Difficulty: {song.difficulty}
                               </div>
                             )}
                           </div>
                         )}
-                        
+
                         <div className="mt-auto pt-3 border-t">
                           <div className="flex items-center justify-between">
                             <div className="text-sm">
@@ -825,7 +1085,7 @@ export default function SongsPage() {
                                 {formatDate(song.createdAt)}
                               </div>
                             </div>
-                            
+
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               {song.canEdit && (
                                 <>
@@ -836,11 +1096,20 @@ export default function SongsPage() {
                                     onClick={(e) => handleEditSong(song.id, e)}
                                     title="Edit song"
                                   >
-                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    <svg
+                                      className="h-4 w-4"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                      />
                                     </svg>
                                   </Button>
-
                                 </>
                               )}
                             </div>
@@ -850,7 +1119,7 @@ export default function SongsPage() {
                     </Card>
                   ))}
                 </div>
-                
+
                 {filteredSongs.totalPages > 1 && (
                   <div className="mt-8">
                     <Pagination
@@ -876,13 +1145,15 @@ export default function SongsPage() {
                     ? "You haven't created any songs yet. Create your first one!"
                     : "No songs available yet. Create the first one!"}
                 </p>
-                {(searchTerm || showOnlyMySongs || visibilityFilter !== "all" || 
-                  useBeautyFilter || useDifficultyFilter) && (
+                {(searchTerm ||
+                  showOnlyMySongs ||
+                  visibilityFilter !== "all" ||
+                  selectedGenre !== "all" ||
+                  selectedTheme !== "all" ||
+                  useBeautyFilter ||
+                  useDifficultyFilter) && (
                   <div className="flex gap-2 justify-center mt-4 flex-wrap">
-                    <Button
-                      variant="default"
-                      onClick={handleCreateNew}
-                    >
+                    <Button variant="default" onClick={handleCreateNew}>
                       <Plus className="h-4 w-4 mr-2" />
                       Create New Song
                     </Button>

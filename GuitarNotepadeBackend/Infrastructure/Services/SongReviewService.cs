@@ -42,8 +42,6 @@ public class SongReviewService : ISongReviewService
         var review = SongReview.Create(songId, userId, reviewText, beautifulLevel, difficultyLevel);
         review = await _unitOfWork.SongReviews.CreateAsync(review, cancellationToken);
 
-        await UpdateSongStatisticsAsync(songId, cancellationToken);
-
         _logger.LogInformation("Review created: {ReviewId} for song {SongId} by user {UserId}",
             review.Id, songId, userId);
         return review;
@@ -63,10 +61,8 @@ public class SongReviewService : ISongReviewService
         review.Update(reviewText, beautifulLevel, difficultyLevel);
         review = await _unitOfWork.SongReviews.UpdateAsync(review, cancellationToken);
 
-        await UpdateSongStatisticsAsync(review!.SongId, cancellationToken);
-
         _logger.LogInformation("Review updated: {ReviewId}", reviewId);
-        return review;
+        return review!;
     }
 
     public async Task DeleteReviewAsync(
@@ -78,109 +74,8 @@ public class SongReviewService : ISongReviewService
             throw new ArgumentException("Review not found", nameof(reviewId));
 
         await _unitOfWork.SongReviews.DeleteAsync(reviewId, cancellationToken);
-        await UpdateSongStatisticsAsync(review.SongId, cancellationToken);
 
         _logger.LogInformation("Review deleted: {ReviewId}", reviewId);
-    }
-
-    public async Task<ReviewLike> ToggleReviewLikeAsync(
-        Guid reviewId,
-        Guid userId,
-        bool isLike,
-        CancellationToken cancellationToken = default)
-    {
-        var review = await _unitOfWork.SongReviews.GetByIdAsync(reviewId, cancellationToken);
-        if (review == null)
-            throw new ArgumentException("Review not found", nameof(reviewId));
-
-        var user = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken);
-        if (user == null)
-            throw new ArgumentException("User not found", nameof(userId));
-
-        var existingLike = await _unitOfWork.ReviewLikes.GetByReviewAndUserAsync(reviewId, userId, cancellationToken);
-
-        if (existingLike != null)
-        {
-            if (existingLike.IsLike == isLike)
-            {
-                await _unitOfWork.ReviewLikes.DeleteAsync(existingLike.Id, cancellationToken);
-                review.RemoveLike(existingLike);
-                await _unitOfWork.SongReviews.UpdateAsync(review, cancellationToken);
-
-                _logger.LogInformation("Review like removed: {ReviewId} by user {UserId}", reviewId, userId);
-                return existingLike;
-            }
-            else
-            {
-                existingLike.Toggle();
-                review.RemoveLike(existingLike);
-                review.AddLike(existingLike);
-                await _unitOfWork.ReviewLikes.UpdateAsync(existingLike, cancellationToken);
-                await _unitOfWork.SongReviews.UpdateAsync(review, cancellationToken);
-
-                _logger.LogInformation("Review like toggled: {ReviewId} by user {UserId} to {IsLike}",
-                    reviewId, userId, isLike);
-                return existingLike;
-            }
-        }
-        else
-        {
-            var like = ReviewLike.Create(reviewId, userId, isLike);
-            like = await _unitOfWork.ReviewLikes.CreateAsync(like, cancellationToken);
-
-            review.AddLike(like);
-            await _unitOfWork.SongReviews.UpdateAsync(review, cancellationToken);
-
-            _logger.LogInformation("Review like added: {ReviewId} by user {UserId} as {IsLike}",
-                reviewId, userId, isLike);
-            return like;
-        }
-    }
-
-    public async Task<ReviewLike> UpdateReviewLikeAsync(
-        Guid reviewId,
-        Guid userId,
-        bool isLike,
-        CancellationToken cancellationToken = default)
-    {
-        var existingLike = await _unitOfWork.ReviewLikes.GetByReviewAndUserAsync(reviewId, userId, cancellationToken);
-        if (existingLike == null)
-            throw new ArgumentException("Like not found");
-
-        var review = await _unitOfWork.SongReviews.GetByIdAsync(reviewId, cancellationToken);
-        if (review == null)
-            throw new ArgumentException("Review not found");
-
-        review.RemoveLike(existingLike);
-        existingLike = ReviewLike.Create(reviewId, userId, isLike);
-        review.AddLike(existingLike);
-
-        await _unitOfWork.ReviewLikes.UpdateAsync(existingLike, cancellationToken);
-        await _unitOfWork.SongReviews.UpdateAsync(review, cancellationToken);
-
-        _logger.LogInformation("Review like updated: {ReviewId} by user {UserId} to {IsLike}",
-            reviewId, userId, isLike);
-        return existingLike;
-    }
-
-    public async Task RemoveReviewLikeAsync(
-        Guid reviewId,
-        Guid userId,
-        CancellationToken cancellationToken = default)
-    {
-        var like = await _unitOfWork.ReviewLikes.GetByReviewAndUserAsync(reviewId, userId, cancellationToken);
-        if (like == null)
-            throw new ArgumentException("Like not found");
-
-        var review = await _unitOfWork.SongReviews.GetByIdAsync(reviewId, cancellationToken);
-        if (review == null)
-            throw new ArgumentException("Review not found");
-
-        review.RemoveLike(like);
-        await _unitOfWork.ReviewLikes.DeleteAsync(like.Id, cancellationToken);
-        await _unitOfWork.SongReviews.UpdateAsync(review, cancellationToken);
-
-        _logger.LogInformation("Review like removed: {ReviewId} by user {UserId}", reviewId, userId);
     }
 
     public async Task<List<SongReview>> GetSongReviewsAsync(
@@ -201,8 +96,6 @@ public class SongReviewService : ISongReviewService
             ("beautiful", true) => reviews.OrderByDescending(r => r.BeautifulLevel ?? 0).ToList(),
             ("difficulty", false) => reviews.OrderBy(r => r.DifficultyLevel ?? 0).ToList(),
             ("difficulty", true) => reviews.OrderByDescending(r => r.DifficultyLevel ?? 0).ToList(),
-            ("likes", false) => reviews.OrderBy(r => r.LikesCount).ToList(),
-            ("likes", true) => reviews.OrderByDescending(r => r.LikesCount).ToList(),
             _ => reviews.OrderByDescending(r => r.CreatedAt).ToList()
         };
 
@@ -241,40 +134,5 @@ public class SongReviewService : ISongReviewService
     {
         await Task.CompletedTask;
         return SongReview.CanUserReviewSong(user, song);
-    }
-
-    public async Task<(int total, int likes, int dislikes)> GetReviewStatsAsync(
-        Guid reviewId,
-        CancellationToken cancellationToken = default)
-    {
-        var likes = await _unitOfWork.ReviewLikes.CountLikesByReviewIdAsync(reviewId, cancellationToken);
-        var dislikes = await _unitOfWork.ReviewLikes.CountDislikesByReviewIdAsync(reviewId, cancellationToken);
-
-        return (likes + dislikes, likes, dislikes);
-    }
-
-    public async Task<Dictionary<Guid, (int likes, int dislikes)>> GetReviewsStatsBatchAsync(
-        List<Guid> reviewIds,
-        CancellationToken cancellationToken = default)
-    {
-        var result = new Dictionary<Guid, (int likes, int dislikes)>();
-
-        foreach (var reviewId in reviewIds)
-        {
-            var stats = await GetReviewStatsAsync(reviewId, cancellationToken);
-            result[reviewId] = (stats.likes, stats.dislikes);
-        }
-
-        return result;
-    }
-
-    private async Task UpdateSongStatisticsAsync(Guid songId, CancellationToken cancellationToken)
-    {
-        var song = await _unitOfWork.Songs.GetByIdAsync(songId, cancellationToken);
-        if (song != null)
-        {
-            song.UpdateStatistics();
-            await _unitOfWork.Songs.UpdateAsync(song, cancellationToken);
-        }
     }
 }

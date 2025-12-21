@@ -14,17 +14,12 @@ public class SongReview : BaseEntityWithId
     public int? BeautifulLevel { get; private set; }
     public int? DifficultyLevel { get; private set; }
 
-    public int LikesCount { get; private set; }
-    public int DislikesCount { get; private set; }
-
     public virtual Song Song { get; private set; } = null!;
     public virtual User User { get; private set; } = null!;
-    public virtual ICollection<ReviewLike> Likes { get; private set; }
 
     protected SongReview()
     {
         ReviewText = string.Empty;
-        Likes = new List<ReviewLike>();
     }
 
     public static SongReview Create(
@@ -92,32 +87,6 @@ public class SongReview : BaseEntityWithId
         }
 
         UpdatedAt = DateTime.UtcNow;
-    }
-
-    public void AddLike(ReviewLike like)
-    {
-        if (like.IsLike)
-        {
-            LikesCount++;
-        }
-        else
-        {
-            DislikesCount++;
-        }
-        Likes.Add(like);
-    }
-
-    public void RemoveLike(ReviewLike like)
-    {
-        if (like.IsLike)
-        {
-            LikesCount = Math.Max(0, LikesCount - 1);
-        }
-        else
-        {
-            DislikesCount = Math.Max(0, DislikesCount - 1);
-        }
-        Likes.Remove(like);
     }
 
     public static bool CanUserReviewSong(User user, Song song)

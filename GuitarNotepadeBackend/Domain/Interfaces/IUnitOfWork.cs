@@ -9,7 +9,6 @@ public interface IUnitOfWork : IDisposable
     IStrummingPatternRepository StrummingPatterns { get; }
     ISongRepository Songs { get; }
     ISongReviewRepository SongReviews { get; }
-    IReviewLikeRepository ReviewLikes { get; }
     ISongSegmentRepository SongSegments { get; }
     ISongStructureRepository SongStructures { get; }
     ISongSegmentPositionRepository SongSegmentPositions { get; }

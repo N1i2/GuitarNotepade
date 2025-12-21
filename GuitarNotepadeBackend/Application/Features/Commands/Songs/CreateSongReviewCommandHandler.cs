@@ -35,16 +35,9 @@ public class CreateSongReviewCommandHandler : IRequestHandler<CreateSongReviewCo
         var fullReview = await _unitOfWork.SongReviews.GetQueryable()
             .Include(r => r.User)
             .Include(r => r.Song)
-            .Include(r => r.Likes)
             .FirstOrDefaultAsync(r => r.Id == review.Id, cancellationToken);
 
         var dto = _mapper.Map<SongReviewDto>(fullReview);
-
-        var userLike = fullReview?.Likes.FirstOrDefault(l => l.UserId == request.UserId);
-        if (userLike != null)
-        {
-            dto.CurrentUserLike = userLike.IsLike;
-        }
 
         return dto;
     }

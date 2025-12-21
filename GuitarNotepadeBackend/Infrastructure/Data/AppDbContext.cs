@@ -16,7 +16,6 @@ namespace Infrastructure.Data
         public DbSet<Chord> Chords { get; set; }
         public DbSet<StrummingPattern> StrummingPatterns { get; set; }
         public DbSet<SongReview> SongReviews { get; set; }
-        public DbSet<ReviewLike> ReviewLikes { get; set; }
         public DbSet<SongSegment> SongSegments { get; set; }
         public DbSet<SongSegmentPosition> SongSegmentPositions { get; set; }
         public DbSet<SongStructure> SongStructures { get; set; }
@@ -78,11 +77,6 @@ namespace Infrastructure.Data
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasMany(e => e.Reviews)
-                    .WithOne(e => e.User)
-                    .HasForeignKey(e => e.UserId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasMany(e => e.ReviewLikes)
                     .WithOne(e => e.User)
                     .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.Restrict);
@@ -280,22 +274,6 @@ namespace Infrastructure.Data
 
                 entity.Property(e => e.CreatedAt)
                     .IsRequired();
-
-                entity.HasMany(e => e.Likes)
-                    .WithOne(e => e.Review)
-                    .HasForeignKey(e => e.ReviewId)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            modelBuilder.Entity<ReviewLike>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-
-                entity.Property(e => e.CreatedAt)
-                    .IsRequired();
-
-                entity.HasIndex(e => new { e.ReviewId, e.UserId })
-                    .IsUnique();
             });
 
             modelBuilder.Entity<SongPattern>(entity =>

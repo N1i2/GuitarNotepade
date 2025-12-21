@@ -1,13 +1,13 @@
 ﻿namespace Application.DTOs.Song;
 
-public class SongDto
+public class FullSongDto
 {
     public Guid Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Artist { get; set; }
-    public string? Description { get; set; }
     public string Genre { get; set; } = string.Empty;
     public string Theme { get; set; } = string.Empty;
+    public string? Description { get; set; }
     public bool IsPublic { get; set; }
     public Guid OwnerId { get; set; }
     public string? OwnerName { get; set; }
@@ -22,6 +22,6 @@ public class SongDto
 
     public List<SongChordDto> Chords { get; set; } = new();
     public List<SongPatternDto> Patterns { get; set; } = new();
-    public int CommentsCount { get; set; }
-    public int SegmentsCount { get; set; }
+    public List<SongCommentDto> Comments { get; set; } = new();
+    public List<SegmentDataWithPositionDto> Segments { get; set; } = new();
 }

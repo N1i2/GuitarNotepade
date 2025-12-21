@@ -35,7 +35,6 @@ public static class DependencyInjection
         services.AddScoped<IStrummingPatternRepository, StrummingPatternRepository>();
         services.AddScoped<ISongRepository, SongRepository>();
         services.AddScoped<ISongReviewRepository, SongReviewRepository>();
-        services.AddScoped<IReviewLikeRepository, ReviewLikeRepository>();
         services.AddScoped<ISongSegmentRepository, SongSegmentRepository>();
         services.AddScoped<ISongStructureRepository, SongStructureRepository>();
         services.AddScoped<ISongSegmentPositionRepository, SongSegmentPositionRepository>();

@@ -11,14 +11,6 @@ public class CreateSongWithSegmentsDto
     public Guid? ParentSongId { get; set; }
 
     public List<SegmentDataWithPositionDto> Segments { get; set; } = new();
-
     public Dictionary<int, List<CreateSongCommentDto>> SegmentComments { get; set; } = new();
-}
-
-public class SegmentDataWithPositionDto
-{
-    public SegmentDataDto SegmentData { get; set; } = null!;
-    public int PositionIndex { get; set; }
-    public string? RepeatGroup { get; set; }
 }
 

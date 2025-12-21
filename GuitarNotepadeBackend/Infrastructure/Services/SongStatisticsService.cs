@@ -44,8 +44,6 @@ public class SongStatisticsService : ISongStatisticsService
             ["reviewCount"] = reviewsCount,
             ["averageBeautifulRating"] = song.AverageBeautifulRating!,
             ["averageDifficultyRating"] = song.AverageDifficultyRating!,
-            ["totalLikes"] = song.TotalLikes,
-            ["totalDislikes"] = song.TotalDislikes,
             ["commentsCount"] = commentsCount,
             ["chordsCount"] = chordIds.Count,
             ["patternsCount"] = patternIds.Count,
@@ -85,8 +83,6 @@ public class SongStatisticsService : ISongStatisticsService
             ["averageDifficultyRatingGiven"] = averageDifficultyRating!,
             ["totalChordsUsed"] = totalChords,
             ["totalPatternsUsed"] = totalPatterns,
-            ["totalLikesReceived"] = songs.Sum(s => s.TotalLikes),
-            ["totalDislikesReceived"] = songs.Sum(s => s.TotalDislikes),
             ["mostRecentSong"] = songs.OrderByDescending(s => s.CreatedAt).FirstOrDefault()?.Title!,
             ["mostReviewedSong"] = songs.OrderByDescending(s => s.ReviewCount).FirstOrDefault()?.Title!
         };
@@ -202,29 +198,5 @@ public class SongStatisticsService : ISongStatisticsService
             ["beautifulRatingsCount"] = beautifulReviews.Count,
             ["difficultyRatingsCount"] = difficultyReviews.Count
         };
-    }
-
-    public async Task<List<(Guid songId, string title, int views, int likes)>> GetTopSongsAsync(
-        int limit = 10,
-        TimeSpan? period = null,
-        CancellationToken cancellationToken = default)
-    {
-        var query = _unitOfWork.Songs.GetQueryable()
-            .Where(s => s.IsPublic);
-
-        if (period.HasValue)
-        {
-            var cutoffDate = DateTime.UtcNow - period.Value;
-            query = query.Where(s => s.CreatedAt >= cutoffDate);
-        }
-
-        var orderedQuery = query.OrderByDescending(s => s.TotalLikes);
-
-        var songs = await orderedQuery
-            .Take(limit)
-            .Select(s => new { s.Id, s.Title, s.TotalLikes, s.ReviewCount })
-            .ToListAsync(cancellationToken);
-
-        return songs.Select(s => (s.Id, s.Title, s.ReviewCount, s.TotalLikes)).ToList();
     }
 }

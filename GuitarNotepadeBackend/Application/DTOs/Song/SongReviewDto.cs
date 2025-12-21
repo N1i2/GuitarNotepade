@@ -10,7 +10,4 @@
     public int? DifficultyLevel { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
-    public int LikesCount { get; set; }
-    public int DislikesCount { get; set; }
-    public bool? CurrentUserLike { get; set; } 
 }

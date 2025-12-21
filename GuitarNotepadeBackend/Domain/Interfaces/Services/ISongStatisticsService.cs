@@ -29,9 +29,4 @@ public interface ISongStatisticsService
     Task<Dictionary<string, decimal>> GetAverageRatingsStatsAsync(
         Guid? userId = null,
         CancellationToken cancellationToken = default);
-
-    Task<List<(Guid songId, string title, int views, int likes)>> GetTopSongsAsync(
-        int limit = 10,
-        TimeSpan? period = null,
-        CancellationToken cancellationToken = default);
 }

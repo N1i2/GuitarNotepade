@@ -23,23 +23,6 @@ public interface ISongReviewService
         Guid reviewId,
         CancellationToken cancellationToken = default);
 
-    Task<ReviewLike> ToggleReviewLikeAsync(
-        Guid reviewId,
-        Guid userId,
-        bool isLike,
-        CancellationToken cancellationToken = default);
-
-    Task<ReviewLike> UpdateReviewLikeAsync(
-        Guid reviewId,
-        Guid userId,
-        bool isLike,
-        CancellationToken cancellationToken = default);
-
-    Task RemoveReviewLikeAsync(
-        Guid reviewId,
-        Guid userId,
-        CancellationToken cancellationToken = default);
-
     Task<List<SongReview>> GetSongReviewsAsync(
         Guid songId,
         int page = 1,
@@ -62,13 +45,5 @@ public interface ISongReviewService
     Task<bool> CanUserReviewSongAsync(
         User user,
         Song song,
-        CancellationToken cancellationToken = default);
-
-    Task<(int total, int likes, int dislikes)> GetReviewStatsAsync(
-        Guid reviewId,
-        CancellationToken cancellationToken = default);
-
-    Task<Dictionary<Guid, (int likes, int dislikes)>> GetReviewsStatsBatchAsync(
-        List<Guid> reviewIds,
         CancellationToken cancellationToken = default);
 }

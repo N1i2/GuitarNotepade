@@ -2,8 +2,8 @@
 
 public static class ReviewTextRule
 {
-    private const int MinLength = 500;
-    private const int MaxLength = 5000;
+    private const int MinLength = 0;
+    private const int MaxLength = 500;
 
     public static void IsValid(string reviewText)
     {

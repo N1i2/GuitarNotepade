@@ -5,8 +5,6 @@
     public int ReviewCount { get; set; }
     public decimal? AverageBeautifulRating { get; set; }
     public decimal? AverageDifficultyRating { get; set; }
-    public int TotalLikes { get; set; }
-    public int TotalDislikes { get; set; }
     public int CommentsCount { get; set; }
     public int ChordsCount { get; set; }
     public int PatternsCount { get; set; }

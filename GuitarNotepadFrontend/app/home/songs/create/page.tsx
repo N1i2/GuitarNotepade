@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
 import { SongsService } from "@/lib/api/song-service";
-import { convertStateToBackendFormat } from "@/lib/song-converter";
 import {
   Card,
   CardContent,
@@ -40,6 +39,7 @@ import {
   SongCreationProvider,
   useSongCreation,
 } from "@/app/contexts/song-creation-context";
+import { convertStateToBackendFormat } from "@/lib/song-converter";
 
 function SongDetails() {
   const { state, dispatch } = useSongCreation();

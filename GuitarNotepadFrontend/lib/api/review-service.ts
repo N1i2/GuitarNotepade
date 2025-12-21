@@ -1,23 +1,23 @@
-import { CreateReviewLikeDto, CreateSongReviewDto, ReviewLikeDto, SongReviewDto, UpdateSongReviewDto } from "@/types/reviews";
+import { CreateSongReviewDto, SongReviewDto, UpdateSongReviewDto } from "@/types/reviews";
 import { apiClient } from "./client";
 import { PaginatedDto } from "@/types/songs";
 
 export class ReviewsService {
   private static readonly DEFAULT_PAGE_SIZE = 20;
-  private static readonly DEFAULT_PATH = "Reviews";
+  private static readonly BASE_PATH = "/Reviews";
 
   static async createReview(
     songId: string,
     data: CreateSongReviewDto
   ): Promise<SongReviewDto> {
     return await apiClient.post<CreateSongReviewDto, SongReviewDto>(
-      `/${this.DEFAULT_PATH}/songs/${songId}`,
+      `${this.BASE_PATH}/songs/${songId}`,
       data
     );
   }
 
   static async getReview(id: string): Promise<SongReviewDto> {
-    return await apiClient.get<SongReviewDto>(`/${this.DEFAULT_PATH}/${id}`);
+    return await apiClient.get<SongReviewDto>(`${this.BASE_PATH}/${id}`);
   }
 
   static async getSongReviews(
@@ -34,7 +34,7 @@ export class ReviewsService {
     params.append("descending", descending.toString());
 
     return await apiClient.get<PaginatedDto<SongReviewDto>>(
-      `/${this.DEFAULT_PATH}/songs/${songId}?${params.toString()}`
+      `${this.BASE_PATH}/songs/${songId}?${params.toString()}`
     );
   }
 
@@ -43,39 +43,12 @@ export class ReviewsService {
     data: UpdateSongReviewDto
   ): Promise<SongReviewDto> {
     return await apiClient.put<UpdateSongReviewDto, SongReviewDto>(
-      `/${this.DEFAULT_PATH}/${id}`,
+      `${this.BASE_PATH}/${id}`,
       data
     );
   }
 
   static async deleteReview(id: string): Promise<void> {
-    await apiClient.delete<void>(`/${this.DEFAULT_PATH}/${id}`);
-  }
-
-  static async createLike(data: CreateReviewLikeDto): Promise<ReviewLikeDto> {
-    return await apiClient.post<CreateReviewLikeDto, ReviewLikeDto>(
-      `/${this.DEFAULT_PATH}/likes`,
-      data
-    );
-  }
-
-  static async getLike(id: string): Promise<ReviewLikeDto> {
-    return await apiClient.get<ReviewLikeDto>(`/${this.DEFAULT_PATH}/likes/${id}`);
-  }
-
-  static async toggleLike(reviewId: string): Promise<ReviewLikeDto> {
-    const dto: CreateReviewLikeDto = {
-      reviewId,
-      isLike: true 
-    };
-    
-    return await apiClient.post<CreateReviewLikeDto, ReviewLikeDto>(
-      `/${this.DEFAULT_PATH}/likes/toggle`,
-      dto
-    );
-  }
-
-  static async deleteLike(id: string): Promise<void> {
-    await apiClient.delete<void>(`/${this.DEFAULT_PATH}/likes/${id}`);
+    await apiClient.delete<void>(`${this.BASE_PATH}/${id}`);
   }
 }

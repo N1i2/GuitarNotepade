@@ -23,8 +23,6 @@ public class Song : BaseEntityWithId
     public int ReviewCount { get; private set; }
     public decimal? AverageBeautifulRating { get; private set; }
     public decimal? AverageDifficultyRating { get; private set; }
-    public int TotalLikes { get; private set; }
-    public int TotalDislikes { get; private set; }
 
     public virtual User Owner { get; private set; } = null!;
     public virtual Song? ParentSong { get; private set; }
@@ -179,9 +177,6 @@ public class Song : BaseEntityWithId
         AverageDifficultyRating = difficultyReviews.Any()
             ? (decimal)difficultyReviews.Average(r => r.DifficultyLevel!.Value)
             : null;
-
-        TotalLikes = Reviews.Sum(r => r.LikesCount);
-        TotalDislikes = Reviews.Sum(r => r.DislikesCount);
 
         UpdatedAt = DateTime.UtcNow;
     }

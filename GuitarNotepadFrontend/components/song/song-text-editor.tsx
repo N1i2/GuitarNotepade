@@ -20,6 +20,7 @@ import {
 import { SegmentsList } from "./segments-list";
 import { AddCommentModal } from "./add-comment-modal";
 import { toast } from "sonner";
+import { SegmentsListForCreation } from "./segments-list-for-creation";
 
 export function SongTextEditor() {
   const { state, dispatch } = useSongCreation();
@@ -474,7 +475,7 @@ export function SongTextEditor() {
             ({state.segments.length} сегментов)
           </span>
         </div>
-        <SegmentsList onSegmentClick={handleSegmentClick} />
+        <SegmentsListForCreation onSegmentClick={handleSegmentClick} />
       </div>
 
       {showAddComment && (

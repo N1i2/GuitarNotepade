@@ -1,13 +1,10 @@
 ﻿namespace Application.DTOs.Song;
 
-public class SongDto
+public record GrudeSongDto
 {
     public Guid Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Artist { get; set; }
-    public string? Description { get; set; }
-    public string Genre { get; set; } = string.Empty;
-    public string Theme { get; set; } = string.Empty;
     public bool IsPublic { get; set; }
     public Guid OwnerId { get; set; }
     public string? OwnerName { get; set; }
@@ -20,8 +17,8 @@ public class SongDto
     public double? AverageBeautifulRating { get; set; }
     public double? AverageDifficultyRating { get; set; }
 
-    public List<SongChordDto> Chords { get; set; } = new();
-    public List<SongPatternDto> Patterns { get; set; } = new();
+    public int ChordsCount { get; set; } = new();
+    public int PatternsCount { get; set; } = new();
     public int CommentsCount { get; set; }
     public int SegmentsCount { get; set; }
 }

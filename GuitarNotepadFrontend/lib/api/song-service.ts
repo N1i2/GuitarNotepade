@@ -1,61 +1,72 @@
-import { 
-  CreateSongDto, 
-  CreateSongWithSegmentsDto, 
-  SongDto, 
-  SongSearchFilters, 
-  SongSearchResultDto, 
-  UpdateSongDto, 
+import {
+  CreateSongDto,
+  CreateSongWithSegmentsDto,
+  SongDto,
+  SongSearchFilters,
+  SongSearchResultDto,
+  UpdateSongDto,
   ToggleSongVisibilityDto,
   PaginatedDto,
   SongStructureDto,
   SongStatisticsDto,
-  ApiSongSearchResult
-} from '@/types/songs';
-import { apiClient } from './client';
+  ApiSongSearchResult,
+} from "@/types/songs";
+import { apiClient } from "./client";
 
 export class SongsService {
   private static readonly DEFAULT_PAGE_SIZE = 20;
-  private static readonly BASE_PATH = '/Songs'; 
+  private static readonly BASE_PATH = "/Songs";
 
-  static async searchSongs(filters: SongSearchFilters): Promise<SongSearchResultDto> {
+  static async searchSongs(
+    filters: SongSearchFilters
+  ): Promise<SongSearchResultDto> {
     const params = new URLSearchParams();
 
-    if (filters.searchTerm) params.append('searchTerm', filters.searchTerm);
-    if (filters.ownerId) params.append('ownerId', filters.ownerId);
-    if (filters.isPublic !== undefined && filters.isPublic !== null) 
-      params.append('isPublic', filters.isPublic.toString());
-    if (filters.chordId) params.append('chordId', filters.chordId);
-    if (filters.patternId) params.append('patternId', filters.patternId);
-    if (filters.key) params.append('key', filters.key);
-    if (filters.difficulty) params.append('difficulty', filters.difficulty);
-    if (filters.parentSongId) params.append('parentSongId', filters.parentSongId);
-    if (filters.minRating !== undefined && filters.minRating !== null) 
-      params.append('minRating', filters.minRating.toString());
-    if (filters.maxRating !== undefined && filters.maxRating !== null) 
-      params.append('maxRating', filters.maxRating.toString());
-    if (filters.createdFrom) params.append('createdFrom', filters.createdFrom.toISOString());
-    if (filters.createdTo) params.append('createdTo', filters.createdTo.toISOString());
-    
-    params.append('sortBy', filters.sortBy || 'createdAt');
-    params.append('sortOrder', filters.sortOrder || 'desc');
-    params.append('page', (filters.page || 1).toString());
-    params.append('pageSize', (filters.pageSize || this.DEFAULT_PAGE_SIZE).toString());
+    params.append("userId", filters.userId);
 
-    console.log(`serch path = ${this.BASE_PATH}?${params.toString()}`)
+    if (filters.searchTerm) params.append("searchTerm", filters.searchTerm);
+    if (filters.ownerId) params.append("ownerId", filters.ownerId);
+    if (filters.isPublic !== undefined && filters.isPublic !== null)
+      params.append("isPublic", filters.isPublic.toString());
+    if (filters.chordId) params.append("chordId", filters.chordId);
+    if (filters.patternId) params.append("patternId", filters.patternId);
+    if (filters.key) params.append("key", filters.key);
+    if (filters.difficulty) params.append("difficulty", filters.difficulty);
+    if (filters.parentSongId)
+      params.append("parentSongId", filters.parentSongId);
+    if (filters.minRating !== undefined && filters.minRating !== null)
+      params.append("minRating", filters.minRating.toString());
+    if (filters.maxRating !== undefined && filters.maxRating !== null)
+      params.append("maxRating", filters.maxRating.toString());
+    if (filters.createdFrom)
+      params.append("createdFrom", filters.createdFrom.toISOString());
+    if (filters.createdTo)
+      params.append("createdTo", filters.createdTo.toISOString());
 
-    const result = await apiClient.get<ApiSongSearchResult>(`${this.BASE_PATH}?${params.toString()}`);
+    params.append("sortBy", filters.sortBy || "createdAt");
+    params.append("sortOrder", filters.sortOrder || "desc");
+    params.append("page", (filters.page || 1).toString());
+    params.append(
+      "pageSize",
+      (filters.pageSize || this.DEFAULT_PAGE_SIZE).toString()
+    );
 
-      return {
+    const result = await apiClient.get<ApiSongSearchResult>(
+      `${this.BASE_PATH}?${params.toString()}`
+    );
+
+    return {
       songs: result.songs,
       totalCount: result.totalCount,
       page: result.page,
       pageSize: result.pageSize,
-      totalPages: result.totalPages
+      totalPages: result.totalPages,
     };
-}
+  }
 
   static async getSongById(
     id: string,
+    userId: string,
     includeStructure: boolean = false,
     includeChords: boolean = false,
     includePatterns: boolean = false,
@@ -63,16 +74,25 @@ export class SongsService {
     includeComments: boolean = false
   ): Promise<SongDto> {
     const params = new URLSearchParams();
-    if (includeStructure) params.append('includeStructure', 'true');
-    if (includeChords) params.append('includeChords', 'true');
-    if (includePatterns) params.append('includePatterns', 'true');
-    if (includeReviews) params.append('includeReviews', 'true');
-    if (includeComments) params.append('includeComments', 'true');
+    
+    params.append("userId", userId);
+
+    if (includeStructure) params.append("includeStructure", "true");
+    if (includeChords) params.append("includeChords", "true");
+    if (includePatterns) params.append("includePatterns", "true");
+    if (includeReviews) params.append("includeReviews", "true");
+    if (includeComments) params.append("includeComments", "true");
 
     const queryString = params.toString();
-    const url = `${this.BASE_PATH}/${id}${queryString ? `?${queryString}` : ''}`;
+    const url = `${this.BASE_PATH}/${id}${
+      queryString ? `?${queryString}` : ""
+    }`;
 
-    return await apiClient.get<SongDto>(url);
+    const result = await apiClient.get<SongDto>(url);
+
+    console.log(result)
+
+    return result;
   }
 
   static async getUserSongs(
@@ -82,9 +102,9 @@ export class SongsService {
     pageSize: number = this.DEFAULT_PAGE_SIZE
   ): Promise<PaginatedDto<SongDto>> {
     const params = new URLSearchParams();
-    if (includePrivate) params.append('includePrivate', 'true');
-    params.append('page', page.toString());
-    params.append('pageSize', pageSize.toString());
+    if (includePrivate) params.append("includePrivate", "true");
+    params.append("page", page.toString());
+    params.append("pageSize", pageSize.toString());
 
     return await apiClient.get<PaginatedDto<SongDto>>(
       `${this.BASE_PATH}/user/${userId}?${params.toString()}`
@@ -97,9 +117,9 @@ export class SongsService {
     pageSize: number = this.DEFAULT_PAGE_SIZE
   ): Promise<PaginatedDto<SongDto>> {
     const params = new URLSearchParams();
-    if (includePrivate) params.append('includePrivate', 'true');
-    params.append('page', page.toString());
-    params.append('pageSize', pageSize.toString());
+    if (includePrivate) params.append("includePrivate", "true");
+    params.append("page", page.toString());
+    params.append("pageSize", pageSize.toString());
 
     return await apiClient.get<PaginatedDto<SongDto>>(
       `${this.BASE_PATH}/my-songs?${params.toString()}`
@@ -134,7 +154,9 @@ export class SongsService {
     );
   }
 
-  static async createSongWithSegments(data: CreateSongWithSegmentsDto): Promise<SongDto> {
+  static async createSongWithSegments(
+    data: CreateSongWithSegmentsDto
+  ): Promise<SongDto> {
     return await apiClient.post<CreateSongWithSegmentsDto, SongDto>(
       `${this.BASE_PATH}/with-segments`,
       data
