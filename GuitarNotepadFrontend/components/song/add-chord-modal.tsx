@@ -42,9 +42,13 @@ export function AddChordModal({
   const [selectedColor, setSelectedColor] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
 
-  const usedChordColors = state.selectedChords.map((c) => c.color);
+  const usedChordColors = state.selectedChords
+    .map((c) => c.color)
+    .filter((color): color is string => color !== undefined);
 
-  const usedPatternColors = state.selectedPatterns.map((p) => p.color);
+  const usedPatternColors = state.selectedPatterns
+    .map((p) => p.color)
+    .filter((color): color is string => color !== undefined);
 
   const allUsedColors = [...usedChordColors, ...usedPatternColors];
 
@@ -86,7 +90,16 @@ export function AddChordModal({
         sortBy: "name",
         sortOrder: "asc",
       });
-      setChords(data.items);
+
+      const result = new Map<string, Chord>();
+
+      data.items.forEach((item) => {
+        if (!result.has(item.name)) {
+          result.set(item.name, item);
+        }
+      });
+
+      setChords(Array.from(result.values()));
     } catch (error) {
       console.error("Failed to load chords:", error);
     } finally {
@@ -100,13 +113,15 @@ export function AddChordModal({
     const chord = chords.find((c) => c.id === selectedChordId);
     if (!chord) return;
 
-    const newChord = {
-      chordId: chord.id,
-      chordName: chord.name,
+    const newChordDto = {
+      id: chord.id,
+      name: chord.name,
+      fingering: chord.fingering,
+      description: chord.description,
       color: selectedColor,
     };
 
-    dispatch({ type: "ADD_CHORD", payload: newChord });
+    dispatch({ type: "ADD_CHORD", payload: newChordDto });
     dispatch({ type: "SELECT_CHORD", payload: chord.id });
     dispatch({ type: "SET_TOOL", payload: "chord" });
 

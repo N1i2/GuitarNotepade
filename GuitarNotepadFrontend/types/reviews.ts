@@ -26,8 +26,8 @@ export interface SongReviewDto {
   userName: string;
   userAvatar?: string;
   reviewText: string;
-  beautifulLevel?: number;  
-  difficultyLevel?: number; 
+  beautifulLevel?: number;
+  difficultyLevel?: number;
   createdAt: string;
   updatedAt?: string;
 }
@@ -46,7 +46,11 @@ export interface UpdateSongReviewDto {
 
 export async function submitReview(
   songId: string,
-  reviewData: { reviewText: string; beautifulLevel?: number; difficultyLevel?: number }
+  reviewData: {
+    reviewText: string;
+    beautifulLevel?: number;
+    difficultyLevel?: number;
+  }
 ) {
   try {
     return await ReviewsService.createReview(songId, reviewData);
@@ -58,7 +62,11 @@ export async function submitReview(
 
 export async function updateReview(
   reviewId: string,
-  reviewData: { reviewText?: string; beautifulLevel?: number; difficultyLevel?: number }
+  reviewData: {
+    reviewText?: string;
+    beautifulLevel?: number;
+    difficultyLevel?: number;
+  }
 ) {
   try {
     return await ReviewsService.updateReview(reviewId, reviewData);

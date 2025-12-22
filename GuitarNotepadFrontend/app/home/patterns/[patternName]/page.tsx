@@ -80,7 +80,7 @@ export default function PatternDetailPage() {
 
   const handleDeleteSuccess = () => {
     toast.success(`Pattern "${pattern?.name}" deleted successfully`);
-    router.push("/home/patterns");
+    router.push('/home/patterns');
   };
 
   const canEdit = pattern && user?.id === pattern.createdByUserId;
@@ -111,10 +111,10 @@ export default function PatternDetailPage() {
             <Button
               variant="outline"
               className="mt-4"
-              onClick={() => router.push("/home/patterns")}
+              onClick={() => router.push('/home/patterns')}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Patterns
+              Go Back
             </Button>
           </CardContent>
         </Card>
@@ -130,11 +130,11 @@ export default function PatternDetailPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => router.push("/home/patterns")}
+              onClick={() => router.push('/home/patterns')}
               className="mb-2"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Patterns
+              Go Back
             </Button>
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-3xl font-bold tracking-tight">

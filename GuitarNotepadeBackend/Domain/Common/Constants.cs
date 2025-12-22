@@ -60,4 +60,10 @@ public static class Constants
         public static readonly TimeSpan DefaultCacheDuration = TimeSpan.FromMinutes(5);
         public static readonly TimeSpan AvatarCacheDuration = TimeSpan.FromHours(1);
     }
+
+    public static class AudioTypes
+    {
+        public static readonly string FileType = "File";
+        public static readonly string UrlType = "Url";
+    }
 }

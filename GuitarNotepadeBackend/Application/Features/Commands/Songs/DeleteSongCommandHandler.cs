@@ -1,37 +1,60 @@
+using Application.DTOs.Song;
 using Domain.Interfaces;
+using Domain.Interfaces.Services;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Features.Commands.Songs;
 
 public class DeleteSongCommandHandler : IRequestHandler<DeleteSongCommand, bool>
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly ISongDeletionService _songDeletionService;
+    private readonly ILogger<DeleteSongCommandHandler> _logger;
 
-    public DeleteSongCommandHandler(IUnitOfWork unitOfWork)
+    public DeleteSongCommandHandler(
+        ISongDeletionService songDeletionService,
+        ILogger<DeleteSongCommandHandler> logger)
     {
-        _unitOfWork = unitOfWork;
+        _songDeletionService = songDeletionService;
+        _logger = logger;
     }
 
     public async Task<bool> Handle(DeleteSongCommand request, CancellationToken cancellationToken)
     {
-        var song = await _unitOfWork.Songs.GetQueryable()
-            .Include(s => s.Reviews)
-            .Include(s => s.Comments)
-            .Include(s => s.SongChords)
-            .Include(s => s.SongPatterns)
-            .FirstOrDefaultAsync(s => s.Id == request.SongId, cancellationToken);
+        try
+        {
+            _logger.LogInformation("Deleting song {SongId} by user {UserId}",
+                request.SongId, request.UserId);
 
-        if (song == null)
-            throw new ArgumentException("Song not found", nameof(request.SongId));
+            var result = await _songDeletionService.DeleteSongWithAudioAsync(
+                request.SongId,
+                request.UserId,
+                cancellationToken);
 
-        if (song.OwnerId != request.UserId)
-            throw new UnauthorizedAccessException("You don't have permission to delete this song");
+            if (result)
+            {
+                _logger.LogInformation("Song {SongId} deleted successfully by user {UserId}",
+                    request.SongId, request.UserId);
+            }
+            else
+            {
+                _logger.LogWarning("Failed to delete song {SongId} by user {UserId}",
+                    request.SongId, request.UserId);
+            }
 
-        await _unitOfWork.Songs.DeleteAsync(song.Id, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return true;
+            return result;
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "User {UserId} is not authorized to delete song {SongId}",
+                request.UserId, request.SongId);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting song {SongId} by user {UserId}",
+                request.SongId, request.UserId);
+            throw;
+        }
     }
 }
-

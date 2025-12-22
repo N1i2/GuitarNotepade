@@ -19,6 +19,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Check, Music, ListMusic } from "lucide-react";
 import { useSongCreation } from "@/app/contexts/song-creation-context";
+import { SongPatternDto } from "@/types/songs";
 
 interface ReplacePatternModalProps {
   open: boolean;
@@ -42,7 +43,7 @@ export function ReplacePatternModal({
   const [isLoading, setIsLoading] = useState(true);
 
   const currentPattern = state.selectedPatterns.find(
-    (p) => p.patternId === patternId
+    (p) => p.id === patternId
   );
 
   useEffect(() => {
@@ -92,38 +93,39 @@ export function ReplacePatternModal({
     }
   };
 
-  const handleReplacePattern = () => {
-    if (!selectedPatternId || !currentPattern) return;
+const handleReplacePattern = () => {
+  if (!selectedPatternId || !currentPattern) return;
 
-    const newPattern = patterns.find((p) => p.id === selectedPatternId);
-    if (!newPattern) return;
+  const newPattern = patterns.find((p) => p.id === selectedPatternId);
+  if (!newPattern) return;
 
-    const newPatternDto = {
-      patternId: newPattern.id,
-      patternName: newPattern.name,
-      isFingerStyle: newPattern.isFingerStyle,
-      color: currentPattern.color,
-    };
-
-    dispatch({
-      type: "REPLACE_PATTERN",
-      payload: {
-        oldId: patternId,
-        newId: newPattern.id,
-        pattern: newPatternDto,
-      },
-    });
-
-    onClose();
+  const newPatternDto: SongPatternDto = {
+    id: newPattern.id,
+    name: newPattern.name,
+    pattern: newPattern.pattern, 
+    isFingerStyle: newPattern.isFingerStyle,
+    color: currentPattern.color,
+    description: newPattern.description, 
   };
 
+  dispatch({
+    type: "REPLACE_PATTERN",
+    payload: {
+      oldId: patternId,
+      newId: newPattern.id,
+      pattern: newPatternDto,
+    },
+  });
+
+  onClose();
+};
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Заменить паттерн</DialogTitle>
           <DialogDescription>
-            Выберите новый паттерн для замены "{currentPattern?.patternName}"
+            Выберите новый паттерн для замены "{currentPattern?.name}"
           </DialogDescription>
         </DialogHeader>
 
@@ -221,7 +223,7 @@ export function ReplacePatternModal({
                   )}
                   <div>
                     <div className="font-medium">
-                      Замена: {currentPattern?.patternName} →{" "}
+                      Замена: {currentPattern?.name} →{" "}
                       {patterns.find((p) => p.id === selectedPatternId)?.name}
                     </div>
                     <div className="text-xs text-muted-foreground">

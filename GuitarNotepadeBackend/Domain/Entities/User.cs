@@ -24,6 +24,7 @@ public class User : BaseEntityWithId
     public virtual ICollection<Chord> Chords { get; private set; } = new List<Chord>();
     public virtual ICollection<StrummingPattern> StrummingPatterns { get; private set; } = new List<StrummingPattern>();
     public virtual ICollection<SongReview> Reviews { get; private set; } = new List<SongReview>();
+    public virtual ICollection<SongComment> Comments { get; private set; } = new LinkedList<SongComment>();
 
     private User()
     {

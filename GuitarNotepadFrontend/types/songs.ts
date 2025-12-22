@@ -28,6 +28,10 @@ export interface SongSegmentDataDto {
   description?: string;
   color?: string;
   backgroundColor?: string;
+
+  chord?: SongChordDto;
+  pattern?: SongPatternDto;
+  labels?: SegmentLabelDto[];
 }
 
 export interface SongSegmentPositionDto {
@@ -74,42 +78,60 @@ export interface SongDto {
   title: string;
   artist?: string;
   description?: string;
+  genre: string;
+  theme: string;
   ownerId: string;
-  ownerName: string; 
+  ownerName?: string;
   isPublic: boolean;
   parentSongId?: string;
   parentSongTitle?: string;
-  key?: string;
-  difficulty?: string;
-  genre?: string;
-  theme?: string;
-  fullText?: string; 
+  customAudioUrl?: string;
+  customAudioType?: string;
+  createdAt: string;
+  updatedAt?: string;
+  reviewCount: number;
   averageBeautifulRating?: number;
   averageDifficultyRating?: number;
-  reviewCount: number;
-  likeCount?: number; 
-  viewCount?: number; 
-  copyCount?: number; 
-  createdAt: string;
-  updatedAt: string;
-  chords: Array<{
-    id: string;
-    name: string;
-    fingering: string;
-    description?: string;
-  }>;
-  patterns: Array<{
-    id: string;
-    name: string;
-    pattern: string;
-    isFingerStyle: boolean;
-    description?: string;
-  }>;
+  chords: SongChordDto[];
+  patterns: SongPatternDto[];
   commentsCount: number;
   segmentsCount: number;
+
+  key?: string;
+  difficulty?: string;
+  fullText?: string;
+  likeCount?: number;
+  viewCount?: number;
+  copyCount?: number;
+  chordIds?: string[];
+  patternIds?: string[];
   structure?: SongStructureDto;
-  chordIds?: string[]; 
-  patternIds?: string[]; 
+}
+
+export interface FullSongDto {
+  id: string;
+  title: string;
+  artist?: string;
+  genre: string;
+  theme: string;
+  description?: string;
+  isPublic: boolean;
+  ownerId: string;
+  ownerName?: string;
+  customAudioUrl?: string;
+  customAudioType?: string;
+  parentSongId?: string;
+  parentSongTitle?: string;
+  createdAt: string;
+  updatedAt?: string;
+  reviewCount: number;
+  averageBeautifulRating?: number;
+  averageDifficultyRating?: number;
+  chords: SongChordDto[];
+  patterns: SongPatternDto[];
+  comments: SongCommentDto[];
+  segments: SegmentDataWithPositionDto[];
+  reviews: SongReviewDto[];
 }
 
 export interface SongSectionDto {
@@ -192,19 +214,56 @@ export interface PatternDto {
   createdAt: string;
 }
 
+export interface SongChordDto {
+  id: string;
+  name: string;
+  fingering: string;
+  description?: string;
+  color?: string;
+}
+
+export interface SongPatternDto {
+  id: string;
+  name: string;
+  pattern: string;
+  isFingerStyle: boolean;
+  description?: string;
+  color?: string;
+}
+
 export interface SongCommentDto {
   id: string;
   songId: string;
   segmentId?: string;
   text: string;
   createdAt: string;
+  userId?: string;
+  userName?: string;
+}
+
+export interface SegmentDataWithPositionDto {
+  segmentData: SongSegmentDataDto;
+  positionIndex: number;
+  repeatGroup?: string;
+}
+
+export interface SongReviewDto {
+  id: string;
+  songId: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  reviewText: string;
+  beautifulLevel?: number;
+  difficultyLevel?: number;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface SegmentLabelDto {
   id: string;
-  labelId: string;
-  segmentId: string;
-  label: SongLabelDto;
+  name: string;
+  color?: string;
 }
 
 export interface SongLabelDto {
@@ -266,13 +325,13 @@ export interface SongStatisticsDto {
   sectionCount: number;
 }
 
-export interface SongChordDto {
+export interface SongChordStatsDto {
   chordId: string;
   chordName: string;
   color: string;
 }
 
-export interface SongPatternDto {
+export interface SongPatternStatsDto {
   patternId: string;
   patternName: string;
   color: string;
@@ -350,9 +409,9 @@ export const segmentSchema = z.object({
 });
 
 export interface SongViewData {
-  song: any; 
-  reviews: any[];
-  currentUserReview: any | null;
+  song: FullSongDto;
+  reviews: SongReviewDto[];
+  currentUserReview: SongReviewDto | null;
   stats: {
     totalSegments: number;
     chordsCount: number;
@@ -387,4 +446,21 @@ export interface SegmentGroup {
   positions: number[];
   count: number;
   commentCount: number;
+}
+
+export function convertSongCommentToUI(comment: SongCommentDto): UIComment {
+  return {
+    id: comment.id,
+    segmentId: comment.segmentId || "",
+    authorId: comment.userId || "unknown",
+    authorName: comment.userName || "Anonymous",
+    text: comment.text,
+    createdAt: comment.createdAt,
+  };
+}
+
+export function convertSongCommentsToUI(
+  comments: SongCommentDto[]
+): UIComment[] {
+  return comments.map(convertSongCommentToUI);
 }

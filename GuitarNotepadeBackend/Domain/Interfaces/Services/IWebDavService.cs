@@ -9,5 +9,12 @@ public interface IWebDavService
     Task<bool> AvatarExistsAsync(string fileName);
     Task<Stream> GetAvatarStreamAsync(string fileName);
     Task<byte[]> GetAvatarBytesAsync(string fileName);
-    Task<bool> TestConnectionAsync(); 
+    Task<bool> TestConnectionAsync();
+
+    Task<string> UploadAudioAsync(Stream fileStream, string fileName, Guid songId);
+    Task<string> GetAudioUrlAsync(string fileName);
+    Task<bool> DeleteAudioAsync(string fileName);
+    Task<bool> AudioExistsAsync(string fileName);
+    Task<Stream> GetAudioStreamAsync(string fileName);
+    Task<byte[]> GetAudioBytesAsync(string fileName);
 }

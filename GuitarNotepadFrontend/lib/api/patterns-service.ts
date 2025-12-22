@@ -35,7 +35,9 @@ export class PatternsService {
   }
 
   static async getPatternByName(patternName: string): Promise<Pattern> {
-    return await apiClient.get<Pattern>(`/${this.DEFAULT_PATH}/by-name/${patternName}`);
+    return await apiClient.get<Pattern>(
+      `/${this.DEFAULT_PATH}/by-name/${patternName}`
+    );
   }
 
   static async getPatternById(id: string): Promise<Pattern> {

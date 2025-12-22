@@ -238,6 +238,8 @@ public class SongsController : ControllerBase
                 dto.Title,
                 dto.Genre,
                 dto.Theme,
+                dto.AudioBase64,
+                dto.AudioType,
                 dto.Artist,
                 dto.Description,
                 dto.IsPublic,
@@ -287,13 +289,15 @@ public class SongsController : ControllerBase
             var userId = GetCurrentUserId();
 
             var command = new UpdateSongCommand(
-                id,
                 userId,
+                id,
                 dto.Title,
                 dto.Artist,
                 dto.Genre,
                 dto.Theme,
                 dto.Description,
+                dto.AudioBase64,
+                dto.AudioType,
                 dto.IsPublic);
 
             var result = await _mediator.Send(command);

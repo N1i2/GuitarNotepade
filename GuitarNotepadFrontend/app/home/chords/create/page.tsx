@@ -110,7 +110,7 @@ export default function CreateChordPage() {
       });
 
       toast.success(`Chord ${createdChord.name} created successfully!`);
-      router.push(`/home/chords/${encodeURIComponent(createdChord.name)}`);
+      router.push(`/home/chords/${createdChord.name}`);
     } catch (error: unknown) {
       console.error("Failed to create chord:", error);
 

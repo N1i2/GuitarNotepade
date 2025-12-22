@@ -8,6 +8,8 @@ public record CreateSongCommand(
     string Title,
     string Gener,
     string Theme,
+    string? AudioBase64,
+    string? AudioType,
     string? Artist,
     string? Description,
     bool IsPublic,

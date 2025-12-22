@@ -13,6 +13,8 @@ public class SongDto
     public string? OwnerName { get; set; }
     public Guid? ParentSongId { get; set; }
     public string? ParentSongTitle { get; set; }
+    public string? CustomAudioUrl { get; set; }
+    public string? CustomAudioType { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 

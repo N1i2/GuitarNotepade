@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Plus,
-  Eraser,
   MessageSquare,
   ChevronRight,
   Music,
@@ -17,10 +16,10 @@ import {
   applyToolToSelection,
   findSegmentAtPosition,
 } from "@/lib/song-segment-utils";
-import { SegmentsList } from "./segments-list";
 import { AddCommentModal } from "./add-comment-modal";
 import { toast } from "sonner";
 import { SegmentsListForCreation } from "./segments-list-for-creation";
+import { SegmentsList } from "./segments-list";
 
 export function SongTextEditor() {
   const { state, dispatch } = useSongCreation();
@@ -331,15 +330,13 @@ export function SongTextEditor() {
           title={`${segmentText}\n${
             segment.chordId
               ? "Аккорд: " +
-                state.selectedChords.find((c) => c.chordId === segment.chordId)
-                  ?.chordName
+                state.selectedChords.find((c) => c.id === segment.chordId)?.name
               : ""
           }\n${
             segment.patternId
               ? "Паттерн: " +
-                state.selectedPatterns.find(
-                  (p) => p.patternId === segment.patternId
-                )?.patternName
+                state.selectedPatterns.find((p) => p.id === segment.patternId)
+                  ?.name
               : ""
           }`}
         >
@@ -360,8 +357,8 @@ export function SongTextEditor() {
                       <span>
                         {
                           state.selectedChords.find(
-                            (c) => c.chordId === segment.chordId
-                          )?.chordName
+                            (c) => c.id === segment.chordId
+                          )?.name
                         }
                       </span>
                     </>
@@ -372,8 +369,8 @@ export function SongTextEditor() {
                       <span>
                         {
                           state.selectedPatterns.find(
-                            (p) => p.patternId === segment.patternId
-                          )?.patternName
+                            (p) => p.id === segment.patternId
+                          )?.name
                         }
                       </span>
                     </>
@@ -475,7 +472,13 @@ export function SongTextEditor() {
             ({state.segments.length} сегментов)
           </span>
         </div>
-        <SegmentsListForCreation onSegmentClick={handleSegmentClick} />
+        <SegmentsList
+          onSegmentClick={handleSegmentClick}
+          segments={state.segments}
+          chords={state.selectedChords}
+          patterns={state.selectedPatterns}
+          comments={state.comments}
+        />
       </div>
 
       {showAddComment && (

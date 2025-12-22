@@ -2,12 +2,20 @@
 using Domain.Interfaces.Repositories;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Repositories;
 
 public class SongRepository : BaseRepository<Song>, ISongRepository
 {
-    public SongRepository(AppDbContext context) : base(context) { }
+    private readonly ILogger<SongRepository> _logger;
+
+    public SongRepository(
+        AppDbContext context,
+        ILogger<SongRepository> logger) : base(context)
+    {
+        _logger = logger;
+    }
 
     public async Task<List<Song>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
@@ -132,5 +140,72 @@ public class SongRepository : BaseRepository<Song>, ISongRepository
             ("reviews", true) => query.OrderByDescending(s => s.ReviewCount),
             _ => query.OrderByDescending(s => s.CreatedAt)
         };
+    }
+
+    public override async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var song = await _dbSet
+                .Include(s => s.SongChords)
+                .Include(s => s.SongPatterns)
+                .Include(s => s.Comments)
+                .Include(s => s.Reviews)
+                .Include(s => s.ChildSongs)
+                .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+
+            if (song == null)
+            {
+                return false;
+            }
+
+            foreach (var songChord in song.SongChords.ToList())
+            {
+                _context.SongChords.Remove(songChord);
+            }
+
+            foreach (var songPattern in song.SongPatterns.ToList())
+            {
+                _context.SongPatterns.Remove(songPattern);
+            }
+
+            foreach (var comment in song.Comments.ToList())
+            {
+                _context.SongComments.Remove(comment);
+            }
+
+            foreach (var review in song.Reviews.ToList())
+            {
+                _context.SongReviews.Remove(review);
+            }
+
+            if (song.ParentSongId.HasValue)
+            {
+                var parentSong = await _dbSet
+                    .Include(s => s.ChildSongs)
+                    .FirstOrDefaultAsync(s => s.Id == song.ParentSongId.Value, cancellationToken);
+
+                if (parentSong != null)
+                {
+                    parentSong.ChildSongs.Remove(song);
+                }
+            }
+
+            _dbSet.Remove(song);
+
+            var result = await _context.SaveChangesAsync(cancellationToken) > 0;
+
+            if (result)
+            {
+                _logger.LogInformation("Song deleted from database: {SongId}", id);
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting song from database: {SongId}", id);
+            throw;
+        }
     }
 }

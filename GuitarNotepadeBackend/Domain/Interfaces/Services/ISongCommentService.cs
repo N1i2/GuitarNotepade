@@ -5,6 +5,7 @@ namespace Domain.Interfaces.Services;
 public interface ISongCommentService
 {
     Task<SongComment> CreateCommentAsync(
+        Guid userId,
         Guid songId,
         string text,
         Guid? segmentId = null,

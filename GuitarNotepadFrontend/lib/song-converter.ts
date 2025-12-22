@@ -1,110 +1,152 @@
 import { SongDetailDto } from "@/types/song-detail";
 import {
-  SongDto,
   UISegment,
+  SongCreationState,
   SongChordDto,
   SongPatternDto,
+  convertSongCommentToUI,
   SongCommentDto,
+  SegmentDataWithPositionDto,
+  FullSongDto,
 } from "@/types/songs";
-import { SongCreationState } from "@/types/songs";
 
-export function convertSegmentsToUI(song: SongDetailDto): {
+export function convertSegmentsToUI(data: FullSongDto): {
   segments: UISegment[];
   chords: SongChordDto[];
   patterns: SongPatternDto[];
   text: string;
+  comments: any[];
 } {
+  console.log("=== convertSegmentsToUI DEBUG ===");
+  console.log("Data received:", data);
+  console.log("Comments from data:", data.comments);
+  console.log("Segments from data:", data.segments);
+
   const segments: UISegment[] = [];
-  const chordsMap = new Map<string, SongChordDto>();
-  const patternsMap = new Map<string, SongPatternDto>();
+
   let fullText = "";
+  let position = 0;
 
-  if (!song.segments || song.segments.length === 0) {
-    return {
-      segments: [],
-      chords: [],
-      patterns: [],
-      text: "",
-    };
-  }
-
-  const sortedSegments = [...song.segments].sort(
+  const sortedSegments = [...(data.segments || [])].sort(
     (a, b) => a.positionIndex - b.positionIndex
   );
 
-  sortedSegments.forEach((segment) => {
-    if (segment.segmentData?.lyric !== undefined) {
-      fullText += segment.segmentData.lyric;
+  const positionToDbSegmentId = new Map<number, string>();
+
+  const commentsByDbSegmentId = new Map<string, SongCommentDto[]>();
+
+  sortedSegments.forEach((segmentData: SegmentDataWithPositionDto, index) => {
+    if ((segmentData as any).id) {
+      positionToDbSegmentId.set(
+        segmentData.positionIndex,
+        (segmentData as any).id
+      );
+    } else if (segmentData.segmentData && (segmentData.segmentData as any).id) {
+      positionToDbSegmentId.set(
+        segmentData.positionIndex,
+        (segmentData.segmentData as any).id
+      );
     }
   });
 
-  let currentPosition = 0;
-  sortedSegments.forEach((segment) => {
-    const lyric = segment.segmentData?.lyric || "";
-    
-    const segmentId = `${song.id}-${segment.positionIndex}-${Date.now()}`;
-    
+  (data.comments || []).forEach((comment) => {
+    if (comment.segmentId) {
+      if (!commentsByDbSegmentId.has(comment.segmentId)) {
+        commentsByDbSegmentId.set(comment.segmentId, []);
+      }
+      commentsByDbSegmentId.get(comment.segmentId)!.push(comment);
+      console.log(
+        `Comment ${comment.id} belongs to DB segment ${comment.segmentId}`
+      );
+    }
+  });
+
+  console.log(
+    "Position to DB SegmentId mapping:",
+    Array.from(positionToDbSegmentId.entries())
+  );
+  console.log(
+    "Comments by DB SegmentId:",
+    Array.from(commentsByDbSegmentId.entries())
+  );
+
+  sortedSegments.forEach((segmentData: SegmentDataWithPositionDto, index) => {
+    const segment = segmentData.segmentData;
+
+    if (segment.lyric) {
+      fullText += segment.lyric;
+    }
+
+    const dbSegmentId = positionToDbSegmentId.get(segmentData.positionIndex);
+    console.log(
+      `Segment at position ${segmentData.positionIndex} -> DB SegmentId: ${dbSegmentId}`
+    );
+
+    const segmentComments: SongCommentDto[] = dbSegmentId
+      ? commentsByDbSegmentId.get(dbSegmentId) || []
+      : [];
+
+    console.log(
+      `Segment ${index} (DB ID: ${dbSegmentId}) has ${segmentComments.length} comments`
+    );
+
+    const uiSegmentId = `ui-segment-${
+      segmentData.positionIndex
+    }-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
     const uiSegment: UISegment = {
-      id: segmentId,
-      order: segment.positionIndex,
-      startIndex: currentPosition,
-      length: lyric.length,
-      text: lyric,
-      chordId: segment.segmentData?.chordId,
-      patternId: segment.segmentData?.patternId,
-      color: segment.segmentData?.color,
-      backgroundColor: segment.segmentData?.backgroundColor,
-      comments: [],
+      id: uiSegmentId,
+      order: index,
+      startIndex: position,
+      length: segment.lyric?.length || 0,
+      text: segment.lyric || "",
+      chordId: segment.chordId,
+      patternId: segment.patternId,
+      color: segment.color,
+      backgroundColor: segment.backgroundColor,
+      commentIds: segmentComments.map((c) => c.id),
+      comments: segmentComments.map(convertSongCommentToUI).map((comment) => ({
+        ...comment,
+        segmentId: dbSegmentId || comment.segmentId,
+      })),
     };
 
-    if (song.comments && segment.segmentData?.chordId) {
-      const segmentComments = song.comments
-        .filter(comment => comment.segmentId === segment.segmentData?.chordId)
-        .map(comment => ({
-          id: comment.id,
-          segmentId: uiSegment.id,
-          authorId: comment.userId || "",
-          authorName: comment.userName || "Anonymous",
-          text: comment.text,
-          createdAt: comment.createdAt,
-        }));
-
-      if (segmentComments.length > 0) {
-        uiSegment.comments = segmentComments;
-      }
-    }
-
     segments.push(uiSegment);
+    position += uiSegment.length;
+  });
 
-    if (segment.segmentData?.chordId && segment.segmentData?.chord) {
-      if (!chordsMap.has(segment.segmentData.chordId)) {
-        chordsMap.set(segment.segmentData.chordId, {
-          chordId: segment.segmentData.chordId,
-          chordName: segment.segmentData.chord.name,
-          color: segment.segmentData.color || getRandomColor(),
-        });
-      }
-    }
+  const chords: SongChordDto[] = Array.from(
+    new Map(data.chords?.map((chord) => [chord.id, chord]) || []).values()
+  );
 
-    if (segment.segmentData?.patternId && segment.segmentData?.pattern) {
-      if (!patternsMap.has(segment.segmentData.patternId)) {
-        patternsMap.set(segment.segmentData.patternId, {
-          patternId: segment.segmentData.patternId,
-          patternName: segment.segmentData.pattern.name,
-          color: segment.segmentData.backgroundColor || getRandomColor(),
-          isFingerStyle: segment.segmentData.pattern.isFingerStyle,
-        });
-      }
-    }
+  const patterns: SongPatternDto[] = Array.from(
+    new Map(
+      data.patterns?.map((pattern) => [pattern.id, pattern]) || []
+    ).values()
+  );
 
-    currentPosition += lyric.length;
+  const allComments = (data.comments || []).map(convertSongCommentToUI);
+
+  console.log("Conversion result:", {
+    segmentsCount: segments.length,
+    chordsCount: chords.length,
+    patternsCount: patterns.length,
+    textLength: fullText.length,
+    commentsCount: allComments.length,
+    segmentsWithComments: segments.filter(
+      (s) => s.comments && s.comments.length > 0
+    ).length,
+    segmentsWithCommentsDetails: segments
+      .filter((s) => s.comments && s.comments.length > 0)
+      .map((s) => ({ id: s.id, comments: s.comments?.length })),
   });
 
   return {
     segments,
-    chords: Array.from(chordsMap.values()),
-    patterns: Array.from(patternsMap.values()),
+    chords,
+    patterns,
     text: fullText,
+    comments: allComments,
   };
 }
 

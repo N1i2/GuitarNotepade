@@ -43,6 +43,7 @@ public static class DependencyInjection
         services.AddScoped<ISongCommentRepository, SongCommentRepository>();
         services.AddScoped<ISongChordRepository, SongChordRepository>();
         services.AddScoped<ISongPatternRepository, SongPatternRepository>();
+        services.AddScoped<ISongRepository, SongRepository>();
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IFileStorageService, FileStorageService>();
@@ -53,6 +54,7 @@ public static class DependencyInjection
         services.AddScoped<ISongLabelService, SongLabelService>();
         services.AddScoped<ISongCommentService, SongCommentService>();
         services.AddScoped<ISongStatisticsService, SongStatisticsService>();
+        services.AddScoped<ISongDeletionService, SongDeletionService>();
 
         services.AddHttpClient<IWebDavService, WebDavService>((serviceProvider, client) =>
         {

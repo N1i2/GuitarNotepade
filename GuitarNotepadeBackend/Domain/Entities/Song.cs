@@ -15,6 +15,9 @@ public class Song : BaseEntityWithId
     public Guid? ParentSongId { get; private set; }
     public string Genre { get; set; }
     public string Theme { get; set; }
+    public string? MyProperty { get; set; }
+    public string? CustomAudioUrl { get; set; }
+    public string? CustomAudioType { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 
@@ -54,6 +57,8 @@ public class Song : BaseEntityWithId
         string theme,
         string? artist = null,
         string? description = null,
+        string? customAudioUrl = null,
+        string? customAudioType = null,
         Guid? parentSongId = null)
     {
         TitleRule.IsValid(title);
@@ -74,6 +79,8 @@ public class Song : BaseEntityWithId
             Description = description?.Trim(),
             IsPublic = isPublic,
             ParentSongId = parentSongId,
+            CustomAudioUrl = customAudioUrl,
+            CustomAudioType = customAudioType,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -88,6 +95,8 @@ public class Song : BaseEntityWithId
         string? genre = null, 
         string? theme = null,
         string? description = null,
+        string? customAudioUrl = null,
+        string? customAudioType = null,
         bool? isPublic = null)
     {
         if (title != null)
@@ -124,6 +133,12 @@ public class Song : BaseEntityWithId
             Description = description.Trim();
         }
 
+        if (customAudioType != null && customAudioUrl != null)
+        {
+            CustomAudioUrl = customAudioUrl;
+            CustomAudioType = customAudioType;
+        }
+
         if (isPublic.HasValue)
         {
             IsPublic = isPublic.Value;
@@ -137,6 +152,8 @@ public class Song : BaseEntityWithId
     {
         FullText = fullText;
     }
+
+    public string? GetAudioUrl() => CustomAudioUrl;
 
     public void UpdateFullText()
     {

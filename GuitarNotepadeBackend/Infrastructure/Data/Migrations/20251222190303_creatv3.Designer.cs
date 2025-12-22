@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251221194156_createv3")]
-    partial class createv3
+    [Migration("20251222190303_creatv3")]
+    partial class creatv3
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -102,6 +102,14 @@ namespace Infrastructure.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("CustomAudioType")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("CustomAudioUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
                     b.Property<string>("Description")
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
@@ -117,6 +125,9 @@ namespace Infrastructure.Data.Migrations
 
                     b.Property<bool>("IsPublic")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("MyProperty")
+                        .HasColumnType("text");
 
                     b.Property<Guid>("OwnerId")
                         .HasColumnType("uuid");
@@ -141,6 +152,8 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("IsPublic");
 
                     b.HasIndex("OwnerId");
 
@@ -191,11 +204,16 @@ namespace Infrastructure.Data.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("SegmentId");
 
                     b.HasIndex("SongId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("SongComments");
                 });
@@ -536,7 +554,7 @@ namespace Infrastructure.Data.Migrations
                     b.HasOne("Domain.Entities.SongSegment", "Segment")
                         .WithMany("Comments")
                         .HasForeignKey("SegmentId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Domain.Entities.Song", "Song")
                         .WithMany("Comments")
@@ -544,9 +562,17 @@ namespace Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Domain.Entities.User", "User")
+                        .WithMany("Comments")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Segment");
 
                     b.Navigation("Song");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Domain.Entities.SongPattern", b =>
@@ -615,8 +641,7 @@ namespace Infrastructure.Data.Migrations
                     b.HasOne("Domain.Entities.Song", "Song")
                         .WithMany()
                         .HasForeignKey("SongId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Domain.Entities.SongStructure", "SongStructure")
                         .WithMany("SegmentPositions")
@@ -702,6 +727,8 @@ namespace Infrastructure.Data.Migrations
             modelBuilder.Entity("Domain.Entities.User", b =>
                 {
                     b.Navigation("Chords");
+
+                    b.Navigation("Comments");
 
                     b.Navigation("Reviews");
 

@@ -11,4 +11,6 @@ public record UpdateSongCommand(
     string? Genre,
     string? Theme,
     string? Description,
+    string? AudioBase64,
+    string? AudioType,
     bool? IsPublic) : IRequest<SongDto>;

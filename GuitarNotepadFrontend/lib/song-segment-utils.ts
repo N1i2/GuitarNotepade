@@ -228,13 +228,13 @@ export function applyToolToSelection(
     };
 
     if (tool === "chord" && selectedId !== "empty") {
-      const chord = chords.find((c) => c.chordId === selectedId);
+      const chord = chords.find((c) => c.id === selectedId);
       if (chord) {
         newSegment.chordId = selectedId;
         newSegment.color = chord.color;
       }
     } else if (tool === "pattern" && selectedId !== "empty") {
-      const pattern = patterns.find((p) => p.patternId === selectedId);
+      const pattern = patterns.find((p) => p.id === selectedId);
       if (pattern) {
         newSegment.patternId = selectedId;
         newSegment.backgroundColor = pattern.color;
@@ -281,7 +281,7 @@ export function applyToolToSelection(
           updatedSegment.color = undefined;
           console.log(`    Очищаем аккорд`);
         } else {
-          const chord = chords.find((c) => c.chordId === selectedId);
+          const chord = chords.find((c) => c.id === selectedId);
           updatedSegment.chordId = selectedId;
           updatedSegment.color = chord?.color;
           console.log(`    Устанавливаем аккорд: ${selectedId}`);
@@ -292,7 +292,7 @@ export function applyToolToSelection(
           updatedSegment.backgroundColor = undefined;
           console.log(`    Очищаем паттерн`);
         } else {
-          const pattern = patterns.find((p) => p.patternId === selectedId);
+          const pattern = patterns.find((p) => p.id === selectedId);
           updatedSegment.patternId = selectedId;
           updatedSegment.backgroundColor = pattern?.color;
           console.log(`    Устанавливаем паттерн: ${selectedId}`);
@@ -345,7 +345,7 @@ export function applyToolToSelection(
         middleSegment.color = undefined;
         console.log(`    Очищаем аккорд в средней части`);
       } else {
-        const chord = chords.find((c) => c.chordId === selectedId);
+        const chord = chords.find((c) => c.id === selectedId);
         middleSegment.chordId = selectedId;
         middleSegment.color = chord?.color;
         console.log(`    Устанавливаем аккорд в средней части: ${selectedId}`);
@@ -356,7 +356,7 @@ export function applyToolToSelection(
         middleSegment.backgroundColor = undefined;
         console.log(`    Очищаем паттерн в средней части`);
       } else {
-        const pattern = patterns.find((p) => p.patternId === selectedId);
+        const pattern = patterns.find((p) => p.id === selectedId);
         middleSegment.patternId = selectedId;
         middleSegment.backgroundColor = pattern?.color;
         console.log(`    Устанавливаем паттерн в средней части: ${selectedId}`);
@@ -423,10 +423,10 @@ export function replaceToolForAllSegments(
 ): UISegment[] {
   return segments.map((segment) => {
     if (tool === "chord" && segment.chordId === oldId) {
-      const chord = chords.find((c) => c.chordId === newId);
+      const chord = chords.find((c) => c.id === newId);
       return { ...segment, chordId: newId, color: chord?.color };
     } else if (tool === "pattern" && segment.patternId === oldId) {
-      const pattern = patterns.find((p) => p.patternId === newId);
+      const pattern = patterns.find((p) => p.id === newId);
       return { ...segment, patternId: newId, backgroundColor: pattern?.color };
     }
     return segment;

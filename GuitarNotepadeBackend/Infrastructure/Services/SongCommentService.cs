@@ -17,6 +17,7 @@ public class SongCommentService : ISongCommentService
     }
 
     public async Task<SongComment> CreateCommentAsync(
+        Guid userId,
         Guid songId,
         string text,
         Guid? segmentId = null,
@@ -36,7 +37,7 @@ public class SongCommentService : ISongCommentService
                 throw new ArgumentException("Segment not found", nameof(segmentId));
         }
 
-        var comment = SongComment.Create(songId, text, segmentId);
+        var comment = SongComment.Create(userId, songId, text, segmentId);
         comment = await _unitOfWork.SongComments.CreateAsync(comment, cancellationToken);
 
         _logger.LogInformation("Comment created: {CommentId} for song {SongId}", comment.Id, songId);

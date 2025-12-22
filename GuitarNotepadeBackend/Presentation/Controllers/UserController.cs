@@ -51,6 +51,7 @@ public class UserController : ControllerBase
     {
         try
         {
+            
             var userId = GetCurrentUserId();
 
             var dtoWithUserId = new UpdateUserProfileWithIdDto(

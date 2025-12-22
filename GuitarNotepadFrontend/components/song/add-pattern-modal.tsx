@@ -47,9 +47,13 @@ export function AddPatternModal({
   >("all");
   const [isLoading, setIsLoading] = useState(true);
 
-  const usedPatternColors = state.selectedPatterns.map((p) => p.color);
+  const usedPatternColors = state.selectedPatterns
+    .map((p) => p.color)
+    .filter((color): color is string => color !== undefined);
 
-  const usedChordColors = state.selectedChords.map((c) => c.color);
+  const usedChordColors = state.selectedChords
+    .map((c) => c.color)
+    .filter((color): color is string => color !== undefined);
 
   const allUsedColors = [...usedChordColors, ...usedPatternColors];
 
@@ -114,14 +118,16 @@ export function AddPatternModal({
     const pattern = patterns.find((p) => p.id === selectedPatternId);
     if (!pattern) return;
 
-    const newPattern = {
-      patternId: pattern.id,
-      patternName: pattern.name,
+    const newPatternDto = {
+      id: pattern.id,
+      name: pattern.name,
+      pattern: pattern.pattern,
       isFingerStyle: pattern.isFingerStyle,
+      description: pattern.description,
       color: selectedColor,
     };
 
-    dispatch({ type: "ADD_PATTERN", payload: newPattern });
+    dispatch({ type: "ADD_PATTERN", payload: newPatternDto });
     dispatch({ type: "SELECT_PATTERN", payload: pattern.id });
     dispatch({ type: "SET_TOOL", payload: "pattern" });
 

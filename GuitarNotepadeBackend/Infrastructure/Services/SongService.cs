@@ -39,7 +39,7 @@ public class SongService : ISongService
                 throw new ArgumentException("Parent song not found or not public", nameof(parentSongId));
         }
 
-        var song = Song.Create(ownerId, title, isPublic, genre, theme, artist, description, parentSongId);
+        var song = Song.Create(ownerId, title, isPublic, genre, theme, artist, description, null, null, parentSongId);
         song = await _unitOfWork.Songs.CreateAsync(song, cancellationToken);
 
         _logger.LogInformation("Song created: {SongId} by user {UserId}", song.Id, ownerId);
@@ -60,7 +60,7 @@ public class SongService : ISongService
         if (song == null)
             throw new ArgumentException("Song not found", nameof(songId));
 
-        song.Update(title, artist, genre, theme, description, isPublic);
+        song.Update(title, artist, genre, theme, description, null, null, isPublic);
         await _unitOfWork.Songs.UpdateAsync(song, cancellationToken);
 
         _logger.LogInformation("Song updated: {SongId}", songId);

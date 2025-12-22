@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class createv3 : Migration
+    public partial class creatv3 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -80,6 +80,9 @@ namespace Infrastructure.Data.Migrations
                     ParentSongId = table.Column<Guid>(type: "uuid", nullable: true),
                     Genre = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Theme = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    MyProperty = table.Column<string>(type: "text", nullable: true),
+                    CustomAudioUrl = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    CustomAudioType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     FullText = table.Column<string>(type: "text", nullable: false),
@@ -289,6 +292,7 @@ namespace Infrastructure.Data.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     SongId = table.Column<Guid>(type: "uuid", nullable: false),
                     SegmentId = table.Column<Guid>(type: "uuid", nullable: true),
                     Text = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
@@ -302,13 +306,19 @@ namespace Infrastructure.Data.Migrations
                         column: x => x.SegmentId,
                         principalTable: "SongSegments",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_SongComments_Songs_SongId",
                         column: x => x.SongId,
                         principalTable: "Songs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_SongComments_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -341,7 +351,7 @@ namespace Infrastructure.Data.Migrations
                         column: x => x.SongId,
                         principalTable: "Songs",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
@@ -382,6 +392,11 @@ namespace Infrastructure.Data.Migrations
                 column: "SongId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_SongComments_UserId",
+                table: "SongComments",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_SongPatterns_SongId_StrummingPatternId",
                 table: "SongPatterns",
                 columns: new[] { "SongId", "StrummingPatternId" },
@@ -401,6 +416,11 @@ namespace Infrastructure.Data.Migrations
                 name: "IX_SongReviews_UserId",
                 table: "SongReviews",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Songs_IsPublic",
+                table: "Songs",
+                column: "IsPublic");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Songs_OwnerId",

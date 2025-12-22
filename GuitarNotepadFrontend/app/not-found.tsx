@@ -31,7 +31,7 @@ export default function NotFound() {
                 Go Back
               </Button>
               <Button 
-                onClick={() => router.push("/")}
+                onClick={() => router.push("/home")}
                 className="gap-2"
               >
                 <Home className="h-4 w-4" />

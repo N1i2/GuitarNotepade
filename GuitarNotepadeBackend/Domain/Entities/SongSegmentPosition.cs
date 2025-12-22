@@ -4,7 +4,7 @@ namespace Domain.Entities;
 
 public class SongSegmentPosition : BaseEntityWithId
 {
-    public Guid SongId { get; private set; }
+    public Guid SongId { get; private set; }          
     public Guid SegmentId { get; private set; }
     public int PositionIndex { get; private set; }
     public string? RepeatGroup { get; private set; }

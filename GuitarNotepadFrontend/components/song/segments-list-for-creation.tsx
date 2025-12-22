@@ -7,9 +7,11 @@ interface SegmentsListForCreationProps {
   onSegmentClick: (segmentId: string) => void;
 }
 
-export function SegmentsListForCreation({ onSegmentClick }: SegmentsListForCreationProps) {
+export function SegmentsListForCreation({
+  onSegmentClick,
+}: SegmentsListForCreationProps) {
   const { state } = useSongCreation();
-  
+
   return (
     <SegmentsList
       onSegmentClick={onSegmentClick}

@@ -12,6 +12,7 @@ import {
   ApiSongSearchResult,
 } from "@/types/songs";
 import { apiClient } from "./client";
+import { SongDetailDto } from "@/types/song-detail";
 
 export class SongsService {
   private static readonly DEFAULT_PAGE_SIZE = 20;
@@ -72,9 +73,9 @@ export class SongsService {
     includePatterns: boolean = false,
     includeReviews: boolean = false,
     includeComments: boolean = false
-  ): Promise<SongDto> {
+  ): Promise<SongDetailDto> {
     const params = new URLSearchParams();
-    
+
     params.append("userId", userId);
 
     if (includeStructure) params.append("includeStructure", "true");
@@ -88,9 +89,7 @@ export class SongsService {
       queryString ? `?${queryString}` : ""
     }`;
 
-    const result = await apiClient.get<SongDto>(url);
-
-    console.log(result)
+    const result = await apiClient.get<SongDetailDto>(url);
 
     return result;
   }

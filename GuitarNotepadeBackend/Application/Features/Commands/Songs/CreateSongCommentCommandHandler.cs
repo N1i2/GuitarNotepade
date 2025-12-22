@@ -25,6 +25,7 @@ public class CreateSongCommentCommandHandler : IRequestHandler<CreateSongComment
     public async Task<SongCommentDto> Handle(CreateSongCommentCommand request, CancellationToken cancellationToken)
     {
         var comment = await _songCommentService.CreateCommentAsync(
+            request.UserId,
             request.SongId,
             request.Text,
             request.SegmentId,

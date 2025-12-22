@@ -1,23 +1,29 @@
 ﻿using Domain.Interfaces;
 using Domain.Interfaces.Repositories;
+using Domain.Interfaces.Services;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Data;
 
 public class UnitOfWork : IUnitOfWork
 {
     private readonly AppDbContext _context;
+    private readonly ILoggerFactory _loggerFactory;
     private IDbContextTransaction? _transaction;
 
-    public UnitOfWork(AppDbContext context)
+    public UnitOfWork(AppDbContext context, ILoggerFactory loggerFactory)
     {
         _context = context;
+        _loggerFactory = loggerFactory;
 
         Users = new UserRepository(context);
         Chords = new ChordRepository(context);
         StrummingPatterns = new StrummingPatternRepository(context);
-        Songs = new SongRepository(context);
+
+        Songs = new SongRepository(context, _loggerFactory.CreateLogger<SongRepository>());
+
         SongReviews = new SongReviewRepository(context);
         SongSegments = new SongSegmentRepository(context);
         SongStructures = new SongStructureRepository(context);

@@ -11,8 +11,11 @@ public class FullSongDto
     public bool IsPublic { get; set; }
     public Guid OwnerId { get; set; }
     public string? OwnerName { get; set; }
+    public string? CustomAudioUrl { get; set; }
+    public string? CustomAudioType { get; set; }
     public Guid? ParentSongId { get; set; }
     public string? ParentSongTitle { get; set; }
+
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 
@@ -24,4 +27,5 @@ public class FullSongDto
     public List<SongPatternDto> Patterns { get; set; } = new();
     public List<SongCommentDto> Comments { get; set; } = new();
     public List<SegmentDataWithPositionDto> Segments { get; set; } = new();
+    public List<SongReviewDto> Reviews { get; set; } = new();
 }

@@ -111,7 +111,7 @@ export default function ChordVariationsPage() {
         setCurrentIndex(newIndex);
         setCurrentVariation(updatedItems[newIndex]);
       } else {
-        router.push("/home/chords");
+        router.push('/home/chords');
       }
     }
     toast.success("Chord deleted successfully");
@@ -175,10 +175,10 @@ export default function ChordVariationsPage() {
             <Button 
               variant="outline" 
               className="mt-4"
-              onClick={() => router.push("/home/chords")}
+              onClick={() => router.push('/home/chords')}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Chords
+              Go Back
             </Button>
           </CardContent>
         </Card>
@@ -194,11 +194,11 @@ export default function ChordVariationsPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => router.push("/home/chords")}
+              onClick={() => router.push('/home/chords')}
               className="mb-2"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Chords
+              Go Back 
             </Button>
             <h1 className="text-3xl font-bold tracking-tight">
               {chordName} Variations

@@ -38,7 +38,7 @@ export function ReplaceChordModal({
   const [selectedChordId, setSelectedChordId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
 
-  const currentChord = state.selectedChords.find((c) => c.chordId === chordId);
+  const currentChord = state.selectedChords.find((c) => c.id === chordId);
 
   useEffect(() => {
     if (open) {
@@ -91,8 +91,10 @@ export function ReplaceChordModal({
     if (!newChord) return;
 
     const newChordDto = {
-      chordId: newChord.id,
-      chordName: newChord.name,
+      id: newChord.id,
+      name: newChord.name,
+      fingering: newChord.fingering,
+      description: newChord.description,
       color: currentChord.color,
     };
 
@@ -114,7 +116,7 @@ export function ReplaceChordModal({
         <DialogHeader>
           <DialogTitle>Заменить аккорд</DialogTitle>
           <DialogDescription>
-            Выберите новый аккорд для замены "{currentChord?.chordName}"
+            Выберите новый аккорд для замены "{currentChord?.name}"
           </DialogDescription>
         </DialogHeader>
 
@@ -183,7 +185,7 @@ export function ReplaceChordModal({
                   )}
                   <div>
                     <div className="font-medium">
-                      Замена: {currentChord?.chordName} →{" "}
+                      Замена: {currentChord?.name} →{" "}
                       {chords.find((c) => c.id === selectedChordId)?.name}
                     </div>
                     <div className="text-xs text-muted-foreground">
