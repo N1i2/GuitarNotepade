@@ -10,6 +10,7 @@ import React, {
 import { AuthService } from "@/lib/api/auth-service";
 import { UserProfileResponse } from "@/types/profile";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface AuthContextType {
   user: UserProfileResponse | null;
@@ -46,7 +47,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setUser(userData);
         }
       } catch (error) {
-        console.error("Auth initialization error:", error);
+        toast.error('uncorrect token')
       } finally {
         setIsLoading(false);
       }
@@ -62,7 +63,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const userData = await AuthService.validateToken(true);
       setUser(userData);
     } catch (error) {
-      console.error("Login error:", error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -86,7 +86,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const userData = await AuthService.validateToken(true);
       setUser(userData);
     } catch (error) {
-      console.error("Register error:", error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -104,7 +103,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const userData = await AuthService.validateToken(true);
       setUser(userData);
     } catch (error) {
-      console.error("Refresh user error:", error);
       throw error;
     }
   };

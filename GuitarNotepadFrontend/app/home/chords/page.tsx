@@ -147,7 +147,6 @@ export default function ChordsPage() {
       setAllChords(allChordsData);
       setUniqueChordsCount(new Set(allChordsData.map(chord => chord.name)).size);
     } catch (error: unknown) {
-      console.error("Failed to load chords:", error);
       toast.error("Failed to load chords. Please try again.");
     } finally {
       setIsLoadingAll(false);

@@ -32,7 +32,6 @@ export function UserManagementTable() {
       const result = await ProfileService.getAllUsers(filters);
       setData(result);
     } catch (error) {
-      console.error("Failed to load users:", error);
 
       toast.error("Failed to load users. Please try again.");
       setData(null);
@@ -93,7 +92,6 @@ const handleToggleBlock = async (user: User, reason?: string, blockedUntil?: Dat
 
       await loadUsers();
     } catch (error: unknown) {
-      console.error("Failed to toggle role:", error);
       if (error instanceof Error) {
         toast.error(error.message, "destructive");
       } else {

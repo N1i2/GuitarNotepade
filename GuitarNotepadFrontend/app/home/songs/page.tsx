@@ -66,6 +66,8 @@ interface SongGridItem {
   theme?: string;
   key?: string;
   difficulty?: string;
+  hasAudio?: boolean;
+  customAudioType?: string;
 }
 
 const genres = [
@@ -122,6 +124,7 @@ export default function SongsPage() {
   const [sortOrder, setSortOrder] = useState<string>("desc");
   const [selectedGenre, setSelectedGenre] = useState<string>("all");
   const [selectedTheme, setSelectedTheme] = useState<string>("all");
+  const [hasAudioFilter, setHasAudioFilter] = useState<string>("all");
 
   const [useBeautyFilter, setUseBeautyFilter] = useState(false);
   const [useDifficultyFilter, setUseDifficultyFilter] = useState(false);
@@ -174,6 +177,16 @@ export default function SongsPage() {
         }
         return song.theme.toLowerCase() === selectedTheme.toLowerCase();
       });
+    }
+
+    if (hasAudioFilter === "yes") {
+      songsArray = songsArray.filter((song) => 
+        !!(song.customAudioUrl || song.customAudioType)
+      );
+    } else if (hasAudioFilter === "no") {
+      songsArray = songsArray.filter((song) => 
+        !song.customAudioUrl && !song.customAudioType
+      );
     }
 
     if (useBeautyFilter) {
@@ -280,6 +293,7 @@ export default function SongsPage() {
     visibilityFilter,
     selectedGenre,
     selectedTheme,
+    hasAudioFilter,
     sortBy,
     sortOrder,
     useBeautyFilter,
@@ -292,9 +306,7 @@ export default function SongsPage() {
 
   const loadAllSongs = async () => {
     setIsLoading(true);
-    try {
-      console.log("Loading songs with user:", user?.id);
-      
+    try {      
       let allSongsData: SongDto[] = [];
       let currentPageNum = 1;
       let hasMore = true;
@@ -325,9 +337,7 @@ export default function SongsPage() {
       }
 
       setAllSongs(allSongsData);
-    } catch (error: any) {
-      console.error("Failed to load songs:", error);
-      
+    } catch (error: any) {      
       if (error.status === 400) {
         toast.error("Invalid request. Please try again.");
       } else if (error.status === 401 || error.status === 403) {
@@ -372,6 +382,7 @@ export default function SongsPage() {
     visibilityFilter,
     selectedGenre,
     selectedTheme,
+    hasAudioFilter,
     useBeautyFilter,
     beautyRange,
     useDifficultyFilter,
@@ -457,6 +468,8 @@ export default function SongsPage() {
         theme: song.theme,
         key: song.key,
         difficulty: song.difficulty,
+        hasAudio: !!(song.customAudioUrl || song.customAudioType),
+        customAudioType: song.customAudioType,
       };
     });
   };
@@ -511,6 +524,7 @@ export default function SongsPage() {
     setVisibilityFilter("all");
     setSelectedGenre("all");
     setSelectedTheme("all");
+    setHasAudioFilter("all");
     setSearchTerm("");
     setSearchInText(false);
 
@@ -526,6 +540,7 @@ export default function SongsPage() {
       visibilityFilter !== "all" ||
       selectedGenre !== "all" ||
       selectedTheme !== "all" ||
+      hasAudioFilter !== "all" ||
       searchTerm ||
       searchInText ||
       useBeautyFilter ||
@@ -656,7 +671,7 @@ export default function SongsPage() {
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-6 gap-4">
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-7 gap-4">
               <div className="space-y-2">
                 <Label
                   htmlFor="visibilityFilter"
@@ -734,6 +749,30 @@ export default function SongsPage() {
                         {theme}
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="audioFilter" className="text-sm font-medium">
+                  <div className="flex items-center gap-2">
+                    <Music2 className="h-4 w-4" />
+                    Audio
+                  </div>
+                </Label>
+                <Select value={hasAudioFilter} onValueChange={setHasAudioFilter}>
+                  <SelectTrigger id="audioFilter">
+                    <SelectValue placeholder="Audio filter" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All songs</SelectItem>
+                    <SelectItem value="yes">
+                      <div className="flex items-center gap-2">
+                        <Music2 className="h-4 w-4" />
+                        With audio
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="no">Without audio</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -888,6 +927,12 @@ export default function SongsPage() {
                   Theme: {selectedTheme}
                 </Badge>
               )}
+              {hasAudioFilter !== "all" && (
+                <Badge variant="secondary" className="text-xs">
+                  <Music2 className="h-3 w-3 mr-1" />
+                  Audio: {hasAudioFilter === "yes" ? "With audio" : "Without audio"}
+                </Badge>
+              )}
               {useBeautyFilter && (
                 <Badge variant="secondary" className="text-xs">
                   Beauty: {beautyRange[0]}-{beautyRange[1]}
@@ -1003,11 +1048,38 @@ export default function SongsPage() {
                               {song.theme}
                             </Badge>
                           )}
+                          {song.hasAudio && (
+                            <Badge
+                              variant="outline"
+                              className="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/30"
+                              title={`Audio type: ${song.customAudioType || 'Unknown'}`}
+                            >
+                              <Music2 className="h-3 w-3" />
+                              Audio
+                            </Badge>
+                          )}
                         </div>
 
-                        <h3 className="text-xl font-bold mb-1 line-clamp-1">
-                          {song.title}
-                        </h3>
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-xl font-bold line-clamp-1">
+                              {song.title}
+                            </h3>
+                            {song.hasAudio && (
+                              <div className="group relative inline-flex">
+                                <Music2 className="h-4 w-4 text-blue-500 cursor-help" />
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                  Has audio
+                                  {song.customAudioType && (
+                                    <div className="text-gray-300 text-[10px]">
+                                      Type: {song.customAudioType}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
 
                         <p className="text-muted-foreground mb-3 line-clamp-1">
                           {song.artist || "No artist"}
@@ -1032,7 +1104,7 @@ export default function SongsPage() {
                           )}
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2 mb-4">
+                        <div className="grid grid-cols-4 gap-2 mb-4">
                           <div className="text-center p-2 bg-white/50 dark:bg-gray-800/50 rounded-md">
                             <div className="text-lg font-bold">
                               {song.chordCount}
@@ -1056,6 +1128,19 @@ export default function SongsPage() {
                             <div className="text-xs text-muted-foreground">
                               <MessageSquare className="h-3 w-3 inline mr-1" />
                               Reviews
+                            </div>
+                          </div>
+                          <div className="text-center p-2 bg-white/50 dark:bg-gray-800/50 rounded-md">
+                            <div className="text-lg font-bold">
+                              {song.hasAudio ? (
+                                <span className="text-green-600">Yes</span>
+                              ) : (
+                                <span className="text-gray-400">No</span>
+                              )}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              <Music2 className="h-3 w-3 inline mr-1" />
+                              Audio
                             </div>
                           </div>
                         </div>
@@ -1150,6 +1235,7 @@ export default function SongsPage() {
                   visibilityFilter !== "all" ||
                   selectedGenre !== "all" ||
                   selectedTheme !== "all" ||
+                  hasAudioFilter !== "all" ||
                   useBeautyFilter ||
                   useDifficultyFilter) && (
                   <div className="flex gap-2 justify-center mt-4 flex-wrap">

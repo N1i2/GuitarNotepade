@@ -40,6 +40,7 @@ import {
   useSongCreation,
 } from "@/app/contexts/song-creation-context";
 import { convertStateToBackendFormat } from "@/lib/song-converter";
+import AudioInputPanel from "@/components/song/audio-input-panel";
 
 function SongDetails() {
   const { state, dispatch } = useSongCreation();
@@ -321,7 +322,6 @@ function CreateSongContent() {
 
       router.push(`/home/songs/${createdSong.id}`);
     } catch (error: any) {
-      console.error("Error creating song:", error);
       toast.error(error.message || "Failed to create song");
     } finally {
       setIsLoading(false);
@@ -345,12 +345,13 @@ function CreateSongContent() {
           <p className="text-muted-foreground mt-2">
             Write a song, add chords and patterns, and add comments
           </p>
-        </div>
+        </div>    
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="space-y-6">
             <SongDetails />
             <ToolPanel />
+            <AudioInputPanel /> 
           </div>
 
           <div className="lg:col-span-2 space-y-6">

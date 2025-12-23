@@ -10,6 +10,7 @@ import {
   SongStructureDto,
   SongStatisticsDto,
   ApiSongSearchResult,
+  UpdateSongWithSegmentsDto,
 } from "@/types/songs";
 import { apiClient } from "./client";
 import { SongDetailDto } from "@/types/song-detail";
@@ -165,6 +166,15 @@ export class SongsService {
   static async updateSong(id: string, data: UpdateSongDto): Promise<SongDto> {
     return await apiClient.put<UpdateSongDto, SongDto>(
       `${this.BASE_PATH}/${id}`,
+      data
+    );
+  }
+
+  static async updateSongWithSegments(
+    data: UpdateSongWithSegmentsDto
+  ): Promise<SongDto> {
+    return await apiClient.put<UpdateSongWithSegmentsDto, SongDto>(
+      `${this.BASE_PATH}/with-segments`,
       data
     );
   }

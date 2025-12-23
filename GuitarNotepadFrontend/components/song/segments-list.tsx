@@ -11,9 +11,21 @@ import {
   ExternalLink,
   ChevronRight,
   Hash,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { UISegment, UIComment } from "@/types/songs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface ExtendedChord {
   id: string;
@@ -36,6 +48,7 @@ interface SegmentsListProps {
   chords: ExtendedChord[];
   patterns: ExtendedPattern[];
   comments?: UIComment[];
+  onDeleteComment?: (commentId: string) => void;
 }
 
 export function SegmentsList({
@@ -44,15 +57,8 @@ export function SegmentsList({
   chords,
   patterns,
   comments = [],
+  onDeleteComment,
 }: SegmentsListProps) {
-  console.log("=== SegmentsList DEBUG ===");
-  console.log("Segments received:", segments);
-  console.log("Comments received:", comments);
-  console.log(
-    "Segments with comments:",
-    segments.filter((s) => s.comments && s.comments.length > 0)
-  );
-
   const getSegmentComments = (segmentId: string): UIComment[] => {
     const passedComments = comments.filter(
       (comment) => comment.segmentId === segmentId
@@ -67,7 +73,6 @@ export function SegmentsList({
       new Map(allComments.map((comment) => [comment.id, comment])).values()
     );
 
-    console.log(`Comments for segment ${segmentId}:`, uniqueComments);
     return uniqueComments;
   };
 
@@ -81,10 +86,7 @@ export function SegmentsList({
     );
   }, [segments, comments]);
 
-  console.log("All comments:", allComments);
-
   const groupedSegments = useMemo(() => {
-    console.log("Grouping segments...");
     const groups: Array<{
       id: string;
       text: string;
@@ -116,9 +118,6 @@ export function SegmentsList({
       );
 
       const segmentComments = getSegmentComments(segment.id);
-      console.log(
-        `Segment ${segment.id} has ${segmentComments.length} comments`
-      );
 
       if (!group) {
         const chord = segment.chordId
@@ -159,7 +158,6 @@ export function SegmentsList({
           segmentsWithCommentsCount: hasComments ? 1 : 0,
         };
         groups.push(group);
-        console.log(`Created new group for segment ${segment.id}`);
       } else {
         group.segments.push(segment);
         group.segmentComments.set(segment.id, segmentComments);
@@ -170,21 +168,10 @@ export function SegmentsList({
         if (hasSegmentComments) {
           group.segmentsWithCommentsCount += 1;
         }
-        console.log(`Added segment ${segment.id} to existing group`);
       }
     });
 
     const sortedGroups = groups.sort((a, b) => a.startIndex - b.startIndex);
-    console.log(
-      "Created groups:",
-      sortedGroups.map((g) => ({
-        id: g.id,
-        text: g.text.substring(0, 30) + "...",
-        segments: g.segments.length,
-        comments: g.allComments.length,
-        hasComments: g.hasComments,
-      }))
-    );
 
     return sortedGroups;
   }, [segments, chords, patterns, comments]);
@@ -195,10 +182,14 @@ export function SegmentsList({
       (segment) => getSegmentComments(segment.id).length > 0
     ).length;
 
-    console.log("Comments stats:", { totalComments, segmentsWithComments });
-
     return { totalComments, segmentsWithComments };
   }, [segments, allComments]);
+
+  const handleDeleteComment = (commentId: string) => {
+    if (onDeleteComment) {
+      onDeleteComment(commentId);
+    }
+  };
 
   if (segments.length === 0) {
     return (
@@ -235,10 +226,6 @@ export function SegmentsList({
         <ScrollArea className="h-[400px] pr-4">
           <div className="space-y-4">
             {groupedSegments.map((group, index) => {
-              console.log(
-                `Rendering group ${group.id} with ${group.allComments.length} comments`
-              );
-
               return (
                 <div
                   key={group.id}
@@ -406,9 +393,48 @@ export function SegmentsList({
                         {group.allComments.map((comment) => (
                           <div
                             key={comment.id}
-                            className="text-sm bg-blue-50 dark:bg-blue-900/20 p-3 rounded border border-blue-200 dark:border-blue-800"
+                            className="text-sm bg-blue-50 dark:bg-blue-900/20 p-3 rounded border border-blue-200 dark:border-blue-800 group/comment relative"
                           >
-                            <div className="flex justify-between items-start mb-1">
+                            {onDeleteComment && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover/comment:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                      Удалить комментарий
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Вы уверены, что хотите удалить этот
+                                      комментарий? Это действие нельзя отменить.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>
+                                      Отмена
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() =>
+                                        handleDeleteComment(comment.id)
+                                      }
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Удалить
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+
+                            <div className="flex justify-between items-start mb-1 pr-8">
                               <span className="font-medium">
                                 {comment.authorName}
                               </span>

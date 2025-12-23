@@ -72,6 +72,8 @@ import { SVGChordDiagram } from "@/components/chords/svg-chord-diagram";
 import { PatternDiagram } from "@/components/patterns/pattern-diagram";
 import { FingerStyleDiagram } from "@/components/patterns/finger-style-diagram";
 import { SongDetailDto } from "@/types/song-detail";
+import { AudioInputType } from "@/types/audio";
+import { AudioPlayerPanel } from "@/components/song/audio-player-panel";
 
 function ChordModal({
   chordName,
@@ -100,7 +102,6 @@ function ChordModal({
         setCurrentIndex(0);
       }
     } catch (error: unknown) {
-      console.error("Failed to load chord variations:", error);
     } finally {
       setIsLoading(false);
     }
@@ -305,7 +306,6 @@ function PatternModal({
       const data = await PatternsService.getPatternByName(patternName);
       setPattern(data);
     } catch (error: unknown) {
-      console.error("Failed to load pattern:", error);
     } finally {
       setIsLoading(false);
     }
@@ -532,11 +532,6 @@ export default function SongDetailPage() {
         true
       );
 
-      console.log("=== Song Detail DEBUG ===");
-      console.log("Song data received:", data);
-      console.log("Song comments:", data.comments);
-      console.log("Song segments:", data.segments);
-
       setSong(data);
 
       const { segments, chords, patterns, text, comments } =
@@ -561,7 +556,6 @@ export default function SongDetailPage() {
 
       await loadReviews();
     } catch (error: any) {
-      console.error("Failed to load song:", error);
       toast.error(error.message || "Failed to load song");
       router.push("/home/songs");
     } finally {
@@ -579,8 +573,6 @@ export default function SongDetailPage() {
       const response = await ReviewsService.getSongReviews(songId);
       setReviews(response.items);
     } catch (error: any) {
-      console.error("Failed to load reviews:", error);
-
       toast.error(error.message || "Failed to load reviews");
     } finally {
       setIsLoadingReviews(false);
@@ -639,7 +631,6 @@ export default function SongDetailPage() {
       await loadReviews();
       await loadSong();
     } catch (error: any) {
-      console.error("Failed to submit review:", error);
       toast.error(error.message || "Failed to submit review");
     } finally {
       setIsSubmittingReview(false);
@@ -652,9 +643,7 @@ export default function SongDetailPage() {
       toast.success("Review deleted successfully");
       loadReviews();
       loadSong();
-    } catch (error: any) {
-      console.error(error.message || "Failed to delete review");
-    }
+    } catch (error: any) {}
   };
 
   const canEdit = song && user?.id === song.ownerId;
@@ -1071,11 +1060,6 @@ export default function SongDetailPage() {
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
-                                    {review.userId === user?.id && (
-                                      <DropdownMenuItem onClick={() => {}}>
-                                        Edit
-                                      </DropdownMenuItem>
-                                    )}
                                     <DropdownMenuItem
                                       className="text-destructive"
                                       onClick={() =>
@@ -1201,16 +1185,31 @@ export default function SongDetailPage() {
                     </div>
                     <div>
                       <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                        {song.reviewCount || 0}
+                        {song.comments.length}
                       </div>
                       <div className="text-xs text-green-700 dark:text-green-300">
-                        Reviews
+                        Comments
                       </div>
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
+
+            <AudioPlayerPanel
+              audioData={{
+                customAudioUrl: song.customAudioUrl,
+                customAudioType: song.customAudioType,
+                url: song.customAudioUrl,
+                type:
+                  song.customAudioType === "Url"
+                    ? AudioInputType.URL
+                    : song.customAudioType === "File"
+                    ? AudioInputType.FILE
+                    : AudioInputType.NONE,
+              }}
+              title="Song Audio"
+            />
 
             {uniqueChords.length > 0 && (
               <Card>

@@ -195,12 +195,6 @@ export function applyToolToSelection(
   chords: SongChordDto[],
   patterns: SongPatternDto[]
 ): UISegment[] {
-  console.log(`=== ПРИМЕНЕНИЕ ИНСТРУМЕНТА ===`);
-  console.log(`Инструмент: ${tool}, ID: ${selectedId}`);
-  console.log(
-    `Выделение: ${start}-${end}, Текст: "${text.substring(start, end)}"`
-  );
-
   if (start === end) return segments;
 
   const selectedText = text.substring(start, end);
@@ -210,10 +204,7 @@ export function applyToolToSelection(
     (s) => s.startIndex < end && s.startIndex + s.length > start
   );
 
-  console.log(`Пересекающихся сегментов: ${overlappingSegments.length}`);
-
   if (overlappingSegments.length === 0) {
-    console.log("Создаем новый сегмент");
 
     const newSegment: UISegment = {
       id: `segment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -250,8 +241,6 @@ export function applyToolToSelection(
     return result;
   }
 
-  console.log("Обрабатываем пересекающиеся сегменты");
-
   let resultSegments: UISegment[] = [];
   const sortedSegments = [...segments].sort(
     (a, b) => a.startIndex - b.startIndex
@@ -261,49 +250,37 @@ export function applyToolToSelection(
     const segment = sortedSegments[i];
     const segmentEnd = segment.startIndex + segment.length;
 
-    console.log(
-      `  Сегмент ${i}: "${segment.text}" (${segment.startIndex}-${segmentEnd})`
-    );
-
     if (segmentEnd <= start || segment.startIndex >= end) {
-      console.log(`    Не пересекается - добавляем как есть`);
       resultSegments.push(segment);
       continue;
     }
 
     if (segment.startIndex >= start && segmentEnd <= end) {
-      console.log(`    Полностью внутри выделения - обновляем`);
       const updatedSegment = { ...segment };
 
       if (tool === "chord") {
         if (selectedId === "empty") {
           updatedSegment.chordId = undefined;
           updatedSegment.color = undefined;
-          console.log(`    Очищаем аккорд`);
         } else {
           const chord = chords.find((c) => c.id === selectedId);
           updatedSegment.chordId = selectedId;
           updatedSegment.color = chord?.color;
-          console.log(`    Устанавливаем аккорд: ${selectedId}`);
         }
       } else {
         if (selectedId === "empty") {
           updatedSegment.patternId = undefined;
           updatedSegment.backgroundColor = undefined;
-          console.log(`    Очищаем паттерн`);
         } else {
           const pattern = patterns.find((p) => p.id === selectedId);
           updatedSegment.patternId = selectedId;
           updatedSegment.backgroundColor = pattern?.color;
-          console.log(`    Устанавливаем паттерн: ${selectedId}`);
         }
       }
 
       resultSegments.push(updatedSegment);
       continue;
     }
-
-    console.log(`    Частичное пересечение - разделяем`);
 
     if (segment.startIndex < start) {
       const beforeSegment: UISegment = {
@@ -312,11 +289,6 @@ export function applyToolToSelection(
         length: start - segment.startIndex,
         text: segment.text.substring(0, start - segment.startIndex),
       };
-      console.log(
-        `    Левая часть: "${beforeSegment.text}" (${
-          beforeSegment.startIndex
-        }-${beforeSegment.startIndex + beforeSegment.length})`
-      );
       resultSegments.push(beforeSegment);
     }
 
@@ -333,33 +305,23 @@ export function applyToolToSelection(
       text: middleText,
     };
 
-    console.log(
-      `    Средняя часть: "${middleSegment.text}" (${
-        middleSegment.startIndex
-      }-${middleSegment.startIndex + middleSegment.length})`
-    );
-
     if (tool === "chord") {
       if (selectedId === "empty") {
         middleSegment.chordId = undefined;
         middleSegment.color = undefined;
-        console.log(`    Очищаем аккорд в средней части`);
       } else {
         const chord = chords.find((c) => c.id === selectedId);
         middleSegment.chordId = selectedId;
         middleSegment.color = chord?.color;
-        console.log(`    Устанавливаем аккорд в средней части: ${selectedId}`);
       }
     } else {
       if (selectedId === "empty") {
         middleSegment.patternId = undefined;
         middleSegment.backgroundColor = undefined;
-        console.log(`    Очищаем паттерн в средней части`);
       } else {
         const pattern = patterns.find((p) => p.id === selectedId);
         middleSegment.patternId = selectedId;
         middleSegment.backgroundColor = pattern?.color;
-        console.log(`    Устанавливаем паттерн в средней части: ${selectedId}`);
       }
     }
 
@@ -373,11 +335,6 @@ export function applyToolToSelection(
         length: segmentEnd - end,
         text: segment.text.substring(end - segment.startIndex),
       };
-      console.log(
-        `    Правая часть: "${afterSegment.text}" (${afterSegment.startIndex}-${
-          afterSegment.startIndex + afterSegment.length
-        })`
-      );
       resultSegments.push(afterSegment);
     }
   }
@@ -386,7 +343,6 @@ export function applyToolToSelection(
     resultSegments.sort((a, b) => a.startIndex - b.startIndex)
   );
 
-  console.log("=== РЕЗУЛЬТАТ ===");
   debugSegments(merged, text);
 
   return merged;
@@ -557,53 +513,15 @@ export function calculateContentHash(
 }
 
 export function debugSegments(segments: UISegment[], text: string) {
-  console.log("=== СОСТОЯНИЕ СЕГМЕНТОВ ===");
-  console.log(`Текст: "${text}" (${text.length} символов)`);
-  console.log(`Всего сегментов: ${segments.length}`);
-
   const sorted = segments.sort((a, b) => a.startIndex - b.startIndex);
   let lastIndex = 0;
 
   sorted.forEach((seg, i) => {
-    const gap = seg.startIndex - lastIndex;
-    if (gap > 0) {
-      console.log(`  [GAP] ${gap} символов без сегмента`);
-    }
-
-    console.log(
-      `  [${i}] "${seg.text}" (${seg.startIndex}-${
-        seg.startIndex + seg.length
-      })`
-    );
-    console.log(
-      `      Аккорд: ${seg.chordId || "нет"}${
-        seg.color ? ` (цвет: ${seg.color})` : ""
-      }`
-    );
-    console.log(
-      `      Паттерн: ${seg.patternId || "нет"}${
-        seg.backgroundColor ? ` (цвет: ${seg.backgroundColor})` : ""
-      }`
-    );
-
     lastIndex = seg.startIndex + seg.length;
   });
-
-  if (lastIndex < text.length) {
-    console.log(
-      `  [GAP] ${text.length - lastIndex} символов в конце без сегмента`
-    );
-  }
 
   let covered = 0;
   sorted.forEach((seg) => {
     covered += seg.length;
   });
-
-  console.log(
-    `Покрыто: ${covered}/${text.length} символов (${Math.round(
-      (covered / text.length) * 100
-    )}%)`
-  );
-  console.log("========================");
 }

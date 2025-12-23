@@ -101,7 +101,6 @@ export function AddChordModal({
 
       setChords(Array.from(result.values()));
     } catch (error) {
-      console.error("Failed to load chords:", error);
     } finally {
       setIsLoading(false);
     }

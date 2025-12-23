@@ -127,8 +127,6 @@ export default function EditChordPage() {
         });
       } catch (error: unknown) {
         if (!isMounted) return;
-
-        console.error("Failed to load chord:", error);
         
         const errorMessage = error instanceof Error 
           ? error.message 
@@ -182,9 +180,7 @@ export default function EditChordPage() {
       toast.success(`Chord ${updatedChord.name} updated successfully!`);
       
       router.push(`/home/chords/${encodeURIComponent(updatedChord.name)}`);
-    } catch (error: unknown) {
-      console.error("Failed to update chord:", error);
-      
+    } catch (error: unknown) {      
       const isApiError = error && typeof error === 'object' && 'status' in error;
       
       if (isApiError) {

@@ -41,7 +41,6 @@ export function DeleteChordDialog({
       onSuccess();
       onClose();
     } catch (error: unknown) {
-      console.error("Failed to delete chord:", error);
       toast.error(error instanceof Error ? error.message : "Failed to delete chord");
     } finally {
       setIsLoading(false);

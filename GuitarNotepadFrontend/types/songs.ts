@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AudioInputData } from "./audio";
 
 export enum SegmentType {
   Text = 0,
@@ -45,17 +46,50 @@ export interface SegmentCommentDto {
 }
 
 export interface CreateSongWithSegmentsDto {
+  id: string;
   title: string;
   genre?: string;
   theme?: string;
   artist?: string;
   description?: string;
+  customAudioUrl?: string;
+  customAudioType?: string;
   isPublic: boolean;
   parentSongId?: string;
   segments: SongSegmentPositionDto[];
   segmentComments?: Record<number, SegmentCommentDto[]>;
   chordIds?: string[];
   patternIds?: string[];
+}
+
+export interface UpdateSongWithSegmentsDto {
+  id: string;
+  title?: string | null;
+  artist?: string | null;
+  description?: string | null;
+  genre?: string | null;
+  theme?: string | null;
+  customAudioUrl?: string | null;
+  customAudioType?: string | null;
+  isPublic?: boolean | null;
+  parentSongId?: string | null;
+
+  oldSegments?: string[] | null;
+  oldComments?: Record<number, string[]> | null;
+  segments?: SongSegmentPositionDto[] | null;
+  segmentComments?: Record<number, SegmentCommentDto[]> | null;
+}
+
+export interface MinimalUpdateSongDto {
+  id: string;
+  title?: string;
+  artist?: string;
+  genre?: string;
+  theme?: string;
+  description?: string;
+  isPublic?: boolean;
+  key?: string;
+  difficulty?: string;
 }
 
 export interface UpdateSongDto {
@@ -162,12 +196,97 @@ export interface SongCreationState {
   currentTool: ToolMode;
   selectedChordId?: string;
   selectedPatternId?: string;
+  audioInput?: AudioInputData | null;
 }
 
 export interface BrushState {
   type: "chord" | "pattern" | null;
   id: string | null;
 }
+
+export interface SongEditChanges {
+  metadata: {
+    title?: boolean;
+    artist?: boolean;
+    genre?: boolean;
+    theme?: boolean;
+    description?: boolean;
+    isPublic?: boolean;
+    customAudioUrl?: boolean;
+    customAudioType?: boolean;
+    parentSongId?: boolean;
+  };
+  segments: {
+    added: string[];
+    modified: string[];
+    deleted: string[];
+  };
+  comments: {
+    added: string[];
+    modified: string[];
+    deleted: string[];
+  };
+}
+
+export const initialEditChanges: SongEditChanges = {
+  metadata: {},
+  segments: { added: [], modified: [], deleted: [] },
+  comments: { added: [], modified: [], deleted: [] },
+};
+
+export interface SongEditState extends SongCreationState {
+  originalState?: {
+    title?: string;
+    artist?: string;
+    genre?: string;
+    theme?: string;
+    description?: string;
+    isPublic?: boolean;
+    customAudioUrl?: string;
+    customAudioType?: string;
+    parentSongId?: string | null;
+    segments?: UISegment[];
+    comments?: UIComment[];
+  };
+  changes: SongEditChanges;
+}
+
+export const initialEditState: SongEditState = {
+  title: "",
+  artist: "",
+  genre: "",
+  theme: "",
+  description: "",
+  isPublic: false,
+  text: "",
+  selectedChords: [],
+  selectedPatterns: [],
+  segments: [],
+  comments: [],
+  currentTool: "select",
+  selectedChordId: undefined,
+  selectedPatternId: undefined,
+
+  originalState: undefined,
+  changes: initialEditChanges,
+};
+
+export type SongEditAction =
+  | { type: "SET_EDIT_STATE"; payload: SongCreationState }
+  | { type: "UPDATE_EDIT_TITLE"; payload: string }
+  | { type: "UPDATE_EDIT_ARTIST"; payload: string }
+  | { type: "UPDATE_EDIT_GENRE"; payload: string }
+  | { type: "UPDATE_EDIT_THEME"; payload: string }
+  | { type: "UPDATE_EDIT_DESCRIPTION"; payload: string }
+  | { type: "UPDATE_EDIT_PUBLIC"; payload: boolean }
+  | { type: "UPDATE_EDIT_SEGMENT"; payload: UISegment }
+  | { type: "ADD_EDIT_SEGMENT"; payload: UISegment }
+  | { type: "REMOVE_EDIT_SEGMENT"; payload: string }
+  | { type: "UPDATE_EDIT_COMMENT"; payload: UIComment }
+  | { type: "ADD_EDIT_COMMENT"; payload: UIComment }
+  | { type: "REMOVE_EDIT_COMMENT"; payload: string }
+  | { type: "CLEAR_EDIT_CHANGES" }
+  | { type: "RESET_EDIT_STATE" };
 
 export interface SongSegmentDto {
   id: string;

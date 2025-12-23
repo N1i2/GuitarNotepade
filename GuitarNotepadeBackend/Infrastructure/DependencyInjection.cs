@@ -45,6 +45,9 @@ public static class DependencyInjection
         services.AddScoped<ISongPatternRepository, SongPatternRepository>();
         services.AddScoped<ISongRepository, SongRepository>();
 
+        services.AddScoped<IExecutionStrategy, ExecutionStrategy>();
+        services.AddScoped<UnitOfWork>();
+
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IFileStorageService, FileStorageService>();
 

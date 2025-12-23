@@ -51,8 +51,6 @@ export default function PatternDetailPage() {
       const data = await PatternsService.getPatternByName(patternName);
       setPattern(data);
     } catch (error: unknown) {
-      console.error("Failed to load pattern:", error);
-
       let errorMessage = "Failed to load pattern";
       if (error && typeof error === "object" && "status" in error) {
         const err = error as { status: number; message?: string };

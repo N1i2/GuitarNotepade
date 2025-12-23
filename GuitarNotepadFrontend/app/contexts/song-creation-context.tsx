@@ -1,13 +1,6 @@
 "use client";
 
-import React, {
-  createContext,
-  useContext,
-  useReducer,
-  ReactNode,
-  useEffect,
-  useState,
-} from "react";
+import React, { createContext, useContext, useReducer, ReactNode } from "react";
 import {
   SongCreationState,
   ToolMode,
@@ -17,6 +10,7 @@ import {
   UIComment,
 } from "@/types/songs";
 import { mergeAdjacentSegments } from "@/lib/song-segment-utils";
+import { AudioInputData, AudioInputType } from "@/types/audio";
 
 type SongCreationAction =
   | { type: "SET_TITLE"; payload: string }
@@ -33,6 +27,8 @@ type SongCreationAction =
   | { type: "ADD_PATTERN"; payload: SongPatternDto }
   | { type: "REMOVE_CHORD"; payload: string }
   | { type: "REMOVE_PATTERN"; payload: string }
+  | { type: "DELETE_COMMENT"; payload: string }
+  | { type: "SET_AUDIO_INPUT"; payload: AudioInputData | null }
   | {
       type: "REPLACE_CHORD";
       payload: { oldId: string; newId: string; chord: SongChordDto };
@@ -57,15 +53,7 @@ type SongCreationAction =
   | { type: "SET_COMMENTS"; payload: UIComment[] }
   | { type: "RESET_STATE" }
   | { type: "SET_STATE"; payload: Partial<SongCreationState> }
-  | { type: "CLEAR_STORAGE" };
-
-const LOCAL_STORAGE_KEY = "song-creation-state";
-const SESSION_TIMEOUT = 24 * 60 * 60 * 1000;
-
-interface StoredState {
-  state: SongCreationState;
-  timestamp: number;
-}
+  | { type: "CLEAR_STATE" };
 
 const initialState: SongCreationState = {
   title: "",
@@ -84,125 +72,66 @@ const initialState: SongCreationState = {
   selectedPatternId: undefined,
 };
 
-function loadStateFromStorage(): SongCreationState | null {
-  if (typeof window === "undefined") return null;
-
-  try {
-    const stored = window.localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!stored) return null;
-
-    const parsed: StoredState = JSON.parse(stored);
-
-    if (Date.now() - parsed.timestamp > SESSION_TIMEOUT) {
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
-      return null;
-    }
-
-    return parsed.state;
-  } catch (error) {
-    console.error("Error loading state from storage:", error);
-    return null;
-  }
-}
-
-function saveStateToStorage(state: SongCreationState) {
-  if (typeof window === "undefined") return;
-
-  try {
-    const storedState: StoredState = {
-      state,
-      timestamp: Date.now(),
-    };
-    window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(storedState));
-  } catch (error) {
-    console.error("Error saving state to storage:", error);
-  }
-}
-
-function clearStorage() {
-  if (typeof window === "undefined") return;
-
-  try {
-    window.localStorage.removeItem(LOCAL_STORAGE_KEY);
-  } catch (error) {
-    console.error("Error clearing storage:", error);
-  }
-}
-
 function songCreationReducer(
   state: SongCreationState,
   action: SongCreationAction
 ): SongCreationState {
-  let newState: SongCreationState;
-
   switch (action.type) {
     case "SET_TITLE":
-      newState = { ...state, title: action.payload };
-      break;
+      return { ...state, title: action.payload };
 
     case "SET_ARTIST":
-      newState = { ...state, artist: action.payload };
-      break;
+      return { ...state, artist: action.payload };
 
     case "SET_GENRE":
-      newState = { ...state, genre: action.payload };
-      break;
+      return { ...state, genre: action.payload };
 
     case "SET_THEME":
-      newState = { ...state, theme: action.payload };
-      break;
+      return { ...state, theme: action.payload };
 
     case "SET_DESCRIPTION":
-      newState = { ...state, description: action.payload };
-      break;
+      return { ...state, description: action.payload };
 
     case "SET_PUBLIC":
-      newState = { ...state, isPublic: action.payload };
-      break;
+      return { ...state, isPublic: action.payload };
 
     case "SET_TEXT":
-      newState = { ...state, text: action.payload };
-      break;
+      return { ...state, text: action.payload };
 
     case "SET_TOOL":
-      newState = { ...state, currentTool: action.payload };
-      break;
+      return { ...state, currentTool: action.payload };
 
     case "SELECT_CHORD":
-      newState = {
+      return {
         ...state,
         selectedChordId: action.payload,
         selectedPatternId: undefined,
         currentTool: "chord",
       };
-      break;
 
     case "SELECT_PATTERN":
-      newState = {
+      return {
         ...state,
         selectedPatternId: action.payload,
         selectedChordId: undefined,
         currentTool: "pattern",
       };
-      break;
 
     case "ADD_CHORD":
       if (state.selectedChords.length >= 20) return state;
-      newState = {
+      return {
         ...state,
         selectedChords: [...state.selectedChords, action.payload],
         selectedChordId: action.payload.id,
       };
-      break;
 
     case "ADD_PATTERN":
       if (state.selectedPatterns.length >= 10) return state;
-      newState = {
+      return {
         ...state,
         selectedPatterns: [...state.selectedPatterns, action.payload],
         selectedPatternId: action.payload.id,
       };
-      break;
 
     case "REMOVE_CHORD":
       const segmentsAfterChordRemoval = state.segments
@@ -212,7 +141,7 @@ function songCreationReducer(
           color: segment.chordId === action.payload ? undefined : segment.color,
         }));
 
-      newState = {
+      return {
         ...state,
         selectedChords: state.selectedChords.filter(
           (c) => c.id !== action.payload
@@ -223,7 +152,6 @@ function songCreationReducer(
             ? undefined
             : state.selectedChordId,
       };
-      break;
 
     case "REMOVE_PATTERN":
       const segmentsAfterPatternRemoval = state.segments
@@ -236,7 +164,7 @@ function songCreationReducer(
               : segment.backgroundColor,
         }));
 
-      newState = {
+      return {
         ...state,
         selectedPatterns: state.selectedPatterns.filter(
           (p) => p.id !== action.payload
@@ -247,10 +175,38 @@ function songCreationReducer(
             ? undefined
             : state.selectedPatternId,
       };
-      break;
+
+    case "SET_AUDIO_INPUT":
+      console.log("=== REDUCER: SET_AUDIO_INPUT ===");
+      console.log("Action payload:", action.payload);
+      console.log("Previous audioInput:", state.audioInput);
+
+      if (action.payload === null || action.payload === undefined) {
+        console.log("Clearing audio input completely");
+        return {
+          ...state,
+          audioInput: undefined,
+        };
+      }
+
+      if (action.payload.type === AudioInputType.NONE) {
+        console.log("Audio type is NONE, clearing");
+        return {
+          ...state,
+          audioInput: undefined,
+        };
+      }
+
+      const newState = {
+        ...state,
+        audioInput: action.payload,
+      };
+
+      console.log("New state audioInput:", newState.audioInput);
+      return newState;
 
     case "REPLACE_CHORD":
-      newState = {
+      return {
         ...state,
         selectedChords: state.selectedChords.map((c) =>
           c.id === action.payload.oldId ? action.payload.chord : c
@@ -269,10 +225,9 @@ function songCreationReducer(
             ? action.payload.newId
             : state.selectedChordId,
       };
-      break;
 
     case "REPLACE_PATTERN":
-      newState = {
+      return {
         ...state,
         selectedPatterns: state.selectedPatterns.map((p) =>
           p.id === action.payload.oldId ? action.payload.pattern : p
@@ -291,10 +246,9 @@ function songCreationReducer(
             ? action.payload.newId
             : state.selectedPatternId,
       };
-      break;
 
     case "UPDATE_CHORD_COLOR":
-      newState = {
+      return {
         ...state,
         selectedChords: state.selectedChords.map((c) =>
           c.id === action.payload.chordId
@@ -307,10 +261,9 @@ function songCreationReducer(
             : segment
         ),
       };
-      break;
 
     case "UPDATE_PATTERN_COLOR":
-      newState = {
+      return {
         ...state,
         selectedPatterns: state.selectedPatterns.map((p) =>
           p.id === action.payload.patternId
@@ -323,27 +276,49 @@ function songCreationReducer(
             : segment
         ),
       };
-      break;
 
     case "ADD_SEGMENT":
-      newState = { ...state, segments: [...state.segments, action.payload] };
-      break;
+      return { ...state, segments: [...state.segments, action.payload] };
 
     case "SET_SEGMENTS":
-      newState = { ...state, segments: action.payload };
-      break;
+      return { ...state, segments: action.payload };
 
     case "UPDATE_SEGMENT":
-      newState = {
+      return {
         ...state,
         segments: state.segments.map((s) =>
           s.id === action.payload.id ? action.payload : s
         ),
       };
-      break;
+
+    case "DELETE_COMMENT":
+      const commentId = action.payload;
+
+      const updatedComments = state.comments.filter(
+        (comment) => comment.id !== commentId
+      );
+
+      const updatedSegments = state.segments.map((segment) => {
+        if (
+          segment.comments &&
+          segment.comments.some((c) => c.id === commentId)
+        ) {
+          return {
+            ...segment,
+            comments: segment.comments.filter((c) => c.id !== commentId),
+          };
+        }
+        return segment;
+      });
+
+      return {
+        ...state,
+        comments: updatedComments,
+        segments: updatedSegments,
+      };
 
     case "REMOVE_SEGMENTS_BY_CHORD":
-      newState = {
+      return {
         ...state,
         segments: state.segments.map((segment) =>
           segment.chordId === action.payload
@@ -351,10 +326,9 @@ function songCreationReducer(
             : segment
         ),
       };
-      break;
 
     case "REMOVE_SEGMENTS_BY_PATTERN":
-      newState = {
+      return {
         ...state,
         segments: state.segments.map((segment) =>
           segment.patternId === action.payload
@@ -362,50 +336,39 @@ function songCreationReducer(
             : segment
         ),
       };
-      break;
 
     case "ADD_COMMENT":
-      newState = { ...state, comments: [...state.comments, action.payload] };
-      break;
+      return { ...state, comments: [...state.comments, action.payload] };
 
     case "UPDATE_COMMENT":
-      newState = {
+      return {
         ...state,
         comments: state.comments.map((c) =>
           c.id === action.payload.id ? action.payload : c
         ),
       };
-      break;
 
     case "REMOVE_COMMENT":
-      newState = {
+      return {
         ...state,
         comments: state.comments.filter((c) => c.id !== action.payload),
       };
-      break;
 
     case "SET_COMMENTS":
-      newState = { ...state, comments: action.payload };
-      break;
+      return { ...state, comments: action.payload };
 
     case "RESET_STATE":
-      newState = initialState;
-      break;
+      return initialState;
 
     case "SET_STATE":
-      newState = { ...state, ...action.payload };
-      break;
+      return { ...state, ...action.payload };
 
-    case "CLEAR_STORAGE":
-      clearStorage();
-      return state;
+    case "CLEAR_STATE":
+      return initialState;
 
     default:
       return state;
   }
-
-  saveStateToStorage(newState);
-  return newState;
 }
 
 const SongCreationContext = createContext<
@@ -418,32 +381,10 @@ const SongCreationContext = createContext<
 >(undefined);
 
 export function SongCreationProvider({ children }: { children: ReactNode }) {
-  const [isMounted, setIsMounted] = useState(false);
-
-  const initialLoadedState = isMounted
-    ? loadStateFromStorage() || initialState
-    : initialState;
-
-  const [state, dispatch] = useReducer(songCreationReducer, initialLoadedState);
-
-  useEffect(() => {
-    setIsMounted(true);
-
-    if (isMounted) {
-      const loadedState = loadStateFromStorage();
-      if (loadedState) {
-        dispatch({ type: "SET_STATE", payload: loadedState });
-      }
-    }
-
-    return () => {
-      saveStateToStorage(state);
-    };
-  }, [isMounted]);
+  const [state, dispatch] = useReducer(songCreationReducer, initialState);
 
   const clearState = () => {
-    dispatch({ type: "CLEAR_STORAGE" });
-    dispatch({ type: "RESET_STATE" });
+    dispatch({ type: "CLEAR_STATE" });
   };
 
   const value = {
@@ -468,5 +409,3 @@ export function useSongCreation() {
   }
   return context;
 }
-
-export { clearStorage as clearSongCreationStorage };

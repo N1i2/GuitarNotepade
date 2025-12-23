@@ -152,11 +152,17 @@ public class SongRepository : BaseRepository<Song>, ISongRepository
                 .Include(s => s.Comments)
                 .Include(s => s.Reviews)
                 .Include(s => s.ChildSongs)
+                .Include(s => s.SegmentPositions) 
                 .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
 
             if (song == null)
             {
                 return false;
+            }
+
+            foreach (var segmentPosition in song.SegmentPositions.ToList())
+            {
+                _context.SongSegmentPositions.Remove(segmentPosition);
             }
 
             foreach (var songChord in song.SongChords.ToList())

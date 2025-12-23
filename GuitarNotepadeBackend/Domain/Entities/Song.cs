@@ -35,6 +35,7 @@ public class Song : BaseEntityWithId
     public virtual ICollection<SongReview> Reviews { get; private set; }
     public virtual ICollection<SongChord> SongChords { get; private set; }
     public virtual ICollection<SongPattern> SongPatterns { get; private set; }
+    public virtual ICollection<SongSegmentPosition> SegmentPositions { get; private set; }
 
     protected Song()
     {
@@ -47,6 +48,7 @@ public class Song : BaseEntityWithId
         Reviews = new List<SongReview>();
         SongChords = new List<SongChord>();
         SongPatterns = new List<SongPattern>();
+        SegmentPositions = new List<SongSegmentPosition>();
     }
 
     public static Song Create(

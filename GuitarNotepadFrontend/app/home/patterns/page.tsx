@@ -118,7 +118,6 @@ export default function PatternsPage() {
       setAllPatterns(allPatternsData);
       setPatternsCount(allPatternsData.length);
     } catch (error: unknown) {
-      console.error("Failed to load patterns:", error);
       toast.error("Failed to load patterns. Please try again.");
     } finally {
       setIsLoadingAll(false);

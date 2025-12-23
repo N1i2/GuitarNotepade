@@ -14,6 +14,18 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useSongCreation } from "@/app/contexts/song-creation-context";
 import { useAuth } from "@/components/providers/auth-provider";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 
 interface AddCommentModalProps {
   open: boolean;
@@ -86,19 +98,39 @@ export function AddCommentModal({
     handleClose();
   };
 
+  const handleDelete = () => {
+    const existingComment = state.comments.find(
+      (c) => c.segmentId === segmentId
+    );
+
+    if (existingComment) {
+      dispatch({ type: "DELETE_COMMENT", payload: existingComment.id });
+      toast.success("Комментарий удален");
+      handleClose();
+    }
+  };
+
   const handleClose = () => {
     setComment("");
     setSegmentText("");
     onClose();
   };
 
+  const existingComment = state.comments.find((c) => c.segmentId === segmentId);
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Добавить комментарий</DialogTitle>
+          <DialogTitle>
+            {existingComment
+              ? "Редактировать комментарий"
+              : "Добавить комментарий"}
+          </DialogTitle>
           <DialogDescription>
-            Добавьте комментарий к выделенному сегменту
+            {existingComment
+              ? "Редактирование комментария к выделенному сегменту"
+              : "Добавьте комментарий к выделенному сегменту"}
           </DialogDescription>
         </DialogHeader>
 
@@ -133,15 +165,50 @@ export function AddCommentModal({
             </div>
           </div>
 
-          <div className="flex gap-3 justify-end pt-4">
-            <Button variant="outline" onClick={handleClose}>
-              Отмена
-            </Button>
-            <Button onClick={handleSubmit} disabled={!comment.trim()}>
-              {state.comments.find((c) => c.segmentId === segmentId)
-                ? "Обновить"
-                : "Добавить"}
-            </Button>
+          <div className="flex gap-3 justify-between items-center pt-4">
+            <div className="flex gap-2">
+              {existingComment && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive border-destructive/20 hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Удалить
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Удалить комментарий</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Вы уверены, что хотите удалить этот комментарий? Это
+                        действие нельзя отменить.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Отмена</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Удалить
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={handleClose}>
+                Отмена
+              </Button>
+              <Button onClick={handleSubmit} disabled={!comment.trim()}>
+                {existingComment ? "Обновить" : "Добавить"}
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>

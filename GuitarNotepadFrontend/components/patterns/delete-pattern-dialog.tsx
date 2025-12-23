@@ -40,9 +40,7 @@ export function DeletePatternDialog({
       toast.success(`Pattern "${pattern.name}" deleted successfully`);
       onSuccess();
       onClose();
-    } catch (error: unknown) {
-      console.error("Failed to delete pattern:", error);
-      
+    } catch (error: unknown) {      
       let errorMessage = "Failed to delete pattern";
       if (error && typeof error === "object" && "status" in error) {
         const err = error as { status: number; message?: string };

@@ -106,9 +106,7 @@ export function EditChordDialog({
       onSuccess(updatedChord);
       onClose();
       toast.success("Chord updated successfully");
-    } catch (error: unknown) {
-      console.error("Failed to update chord:", error);
-      
+    } catch (error: unknown) {      
       const isApiError = error && typeof error === 'object' && 'status' in error;
       
       if (isApiError) {

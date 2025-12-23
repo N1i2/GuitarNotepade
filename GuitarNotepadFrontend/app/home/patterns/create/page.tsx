@@ -199,8 +199,6 @@ export default function CreatePatternPage() {
       toast.success(`Pattern "${createdPattern.name}" created successfully!`);
       router.push(`/home/patterns/${createdPattern.name}`);
     } catch (error: unknown) {
-      console.error("Failed to create pattern:", error);
-
       let errorMessage = "Failed to create pattern";
 
       if (error && typeof error === "object" && "status" in error) {

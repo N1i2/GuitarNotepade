@@ -93,7 +93,6 @@ export class AuthService {
 
       return user;
     } catch (error) {
-      console.error("Token validation failed:", error);
       userCache = { user: null, timestamp: 0 };
       this.logout();
       return null;

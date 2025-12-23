@@ -260,8 +260,6 @@ export default function EditPatternPage() {
       } catch (error: unknown) {
         if (!isMounted) return;
 
-        console.error("Failed to load pattern:", error);
-
         let errorMessage = "Failed to load pattern";
         const apiError = error as ApiError;
 
@@ -370,8 +368,6 @@ export default function EditPatternPage() {
 
       router.push(`/home/patterns/${encodeURIComponent(updatedPattern.name)}`);
     } catch (error: unknown) {
-      console.error("Failed to update pattern:", error);
-
       let errorMessage = "Failed to update pattern";
       const apiError = error as ApiError;
 

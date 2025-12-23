@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251222190303_creatv3")]
-    partial class creatv3
+    [Migration("20251223090654_createv3")]
+    partial class createv3
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -58,6 +58,8 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasIndex("CreatedByUserId");
 
+                    b.HasIndex("Name");
+
                     b.ToTable("Chords");
                 });
 
@@ -94,10 +96,10 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("character varying(200)");
 
                     b.Property<decimal?>("AverageBeautifulRating")
-                        .HasColumnType("numeric");
+                        .HasColumnType("decimal(3,2)");
 
                     b.Property<decimal?>("AverageDifficultyRating")
-                        .HasColumnType("numeric");
+                        .HasColumnType("decimal(3,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -136,7 +138,9 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<int>("ReviewCount")
-                        .HasColumnType("integer");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
 
                     b.Property<string>("Theme")
                         .IsRequired()
@@ -153,11 +157,17 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Genre");
+
                     b.HasIndex("IsPublic");
 
                     b.HasIndex("OwnerId");
 
                     b.HasIndex("ParentSongId");
+
+                    b.HasIndex("Theme");
+
+                    b.HasIndex("Title");
 
                     b.ToTable("Songs");
                 });
@@ -209,6 +219,8 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAt");
+
                     b.HasIndex("SegmentId");
 
                     b.HasIndex("SongId");
@@ -234,6 +246,8 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("character varying(50)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Name");
 
                     b.ToTable("SongLabels");
                 });
@@ -267,13 +281,13 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<int?>("BeautifulLevel")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int?>("DifficultyLevel")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<string>("ReviewText")
                         .IsRequired()
@@ -291,9 +305,14 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAt");
+
                     b.HasIndex("SongId");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "SongId")
+                        .IsUnique();
 
                     b.ToTable("SongReviews");
                 });
@@ -343,7 +362,11 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasIndex("ChordId");
 
+                    b.HasIndex("ContentHash");
+
                     b.HasIndex("PatternId");
+
+                    b.HasIndex("Type");
 
                     b.ToTable("SongSegments");
                 });
@@ -371,6 +394,8 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasIndex("PositionIndex");
 
+                    b.HasIndex("RepeatGroup");
+
                     b.HasIndex("SegmentId");
 
                     b.HasIndex("SongId", "PositionIndex")
@@ -389,6 +414,9 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("SongId")
+                        .IsUnique();
 
                     b.ToTable("SongStructures");
                 });
@@ -410,7 +438,9 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("character varying(1000)");
 
                     b.Property<bool>("IsFingerStyle")
-                        .HasColumnType("boolean");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -428,6 +458,10 @@ namespace Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("IsFingerStyle");
+
+                    b.HasIndex("Name");
 
                     b.ToTable("StrummingPatterns");
                 });
@@ -639,9 +673,10 @@ namespace Infrastructure.Data.Migrations
                         .IsRequired();
 
                     b.HasOne("Domain.Entities.Song", "Song")
-                        .WithMany()
+                        .WithMany("SegmentPositions")
                         .HasForeignKey("SongId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("Domain.Entities.SongStructure", "SongStructure")
                         .WithMany("SegmentPositions")
@@ -691,6 +726,8 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Comments");
 
                     b.Navigation("Reviews");
+
+                    b.Navigation("SegmentPositions");
 
                     b.Navigation("SongChords");
 

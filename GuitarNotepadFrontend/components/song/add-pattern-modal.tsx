@@ -106,7 +106,6 @@ export function AddPatternModal({
       });
       setPatterns(data.items);
     } catch (error) {
-      console.error("Failed to load patterns:", error);
     } finally {
       setIsLoading(false);
     }

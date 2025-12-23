@@ -34,7 +34,6 @@ import {
 import { AddChordModal } from "./add-chord-modal";
 import { AddPatternModal } from "./add-pattern-modal";
 import { CHORD_COLORS, PATTERN_COLORS } from "@/lib/song-segment-utils";
-import { useSongCreation } from "@/app/contexts/song-creation-context";
 import { ReplaceChordModal } from "./replace-chord-modal";
 import { ReplacePatternModal } from "./replace-pattern-modal";
 import { ChordsService } from "@/lib/api/chords-service";
@@ -44,6 +43,8 @@ import { Pattern } from "@/types/patterns";
 import { SVGChordDiagram } from "@/components/chords/svg-chord-diagram";
 import { PatternDiagram } from "@/components/patterns/pattern-diagram";
 import { FingerStyleDiagram } from "@/components/patterns/finger-style-diagram";
+import { getDefaultChordColor, getDefaultPatternColor } from "@/lib/song-converter";
+import { useSongCreation } from "@/app/contexts/song-creation-context";
 
 function ChordModal({
   chordName,
@@ -72,7 +73,6 @@ function ChordModal({
         setCurrentIndex(0);
       }
     } catch (error: unknown) {
-      console.error("Failed to load chord variations:", error);
     } finally {
       setIsLoading(false);
     }
@@ -277,7 +277,6 @@ function PatternModal({
       const data = await PatternsService.getPatternByName(patternName);
       setPattern(data);
     } catch (error: unknown) {
-      console.error("Failed to load pattern:", error);
     } finally {
       setIsLoading(false);
     }
@@ -700,7 +699,13 @@ export function ToolPanel() {
                     <div className="flex items-center gap-2">
                       <div
                         className="w-3 h-3 rounded-full border"
-                        style={{ backgroundColor: chord.color }}
+                        style={{
+                          backgroundColor:
+                            chord.color || getDefaultChordColor(chord.id),
+                          borderColor: chord.color
+                            ? "transparent"
+                            : "currentColor",
+                        }}
                       />
                       <span className="font-medium">{chord.name}</span>
                     </div>
@@ -773,7 +778,13 @@ export function ToolPanel() {
                     <div className="flex items-center gap-2">
                       <div
                         className="w-4 h-4 rounded border"
-                        style={{ backgroundColor: pattern.color }}
+                        style={{
+                          backgroundColor:
+                            pattern.color || getDefaultPatternColor(pattern.id),
+                          borderColor: pattern.color
+                            ? "transparent"
+                            : "currentColor",
+                        }}
                       />
                       <div>
                         <div className="font-medium">{pattern.name}</div>

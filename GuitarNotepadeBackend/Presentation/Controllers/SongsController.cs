@@ -235,6 +235,7 @@ public class SongsController : ControllerBase
 
             var command = new CreateSongCommand(
                 userId,
+
                 dto.Title,
                 dto.Genre,
                 dto.Theme,
@@ -281,36 +282,21 @@ public class SongsController : ControllerBase
         }
     }
 
-    [HttpPut("{id}")]
-    public async Task<ActionResult<SongDto>> UpdateSong(Guid id, [FromBody] UpdateSongDto dto)
+    [HttpPut("with-segments")]
+    public async Task<ActionResult<SongDto>> UpdateSongWithSegments([FromBody] UpdateSongWithSegmentsDto dto)
     {
         try
         {
             var userId = GetCurrentUserId();
 
-            var command = new UpdateSongCommand(
-                userId,
-                id,
-                dto.Title,
-                dto.Artist,
-                dto.Genre,
-                dto.Theme,
-                dto.Description,
-                dto.AudioBase64,
-                dto.AudioType,
-                dto.IsPublic);
-
+            var command = new UpdateSongCommand(userId, dto);
             var result = await _mediator.Send(command);
 
-            return Ok(result);
+            return CreatedAtAction(nameof(GetSongById), new { id = result.Id }, result);
         }
-        catch (KeyNotFoundException ex)
+        catch (ArgumentException ex)
         {
-            return NotFound(new { error = ex.Message });
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
+            return BadRequest(new { error = ex.Message });
         }
         catch (Exception ex)
         {

@@ -152,6 +152,7 @@ public class MappingProfile : Profile
 
         return new SegmentDataDto
         {
+            Id = segment.Id,
             Type = segment.Type.ToString(),
             Lyric = segment.Lyric,
             ChordId = segment.ChordId,

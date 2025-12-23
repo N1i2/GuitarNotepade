@@ -154,6 +154,7 @@ public class SongStructure : BaseEntityWithId
         return SegmentPositions
             .OrderBy(sp => sp.PositionIndex)
             .Select(sp => sp.Segment)
+            .Where(s => s != null)
             .ToList();
     }
 

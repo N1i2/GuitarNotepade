@@ -78,7 +78,6 @@ export function ReplaceChordModal({
       });
       setChords(data.items);
     } catch (error) {
-      console.error("Failed to load chords:", error);
     } finally {
       setIsLoading(false);
     }

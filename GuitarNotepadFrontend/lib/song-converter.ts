@@ -1,4 +1,4 @@
-import { SongDetailDto } from "@/types/song-detail";
+import { AudioInputType } from "@/types/audio";
 import {
   UISegment,
   SongCreationState,
@@ -23,7 +23,6 @@ export function convertSegmentsToUI(data: FullSongDto): {
   console.log("Segments from data:", data.segments);
 
   const segments: UISegment[] = [];
-
   let fullText = "";
   let position = 0;
 
@@ -32,10 +31,21 @@ export function convertSegmentsToUI(data: FullSongDto): {
   );
 
   const positionToDbSegmentId = new Map<number, string>();
-
   const commentsByDbSegmentId = new Map<string, SongCommentDto[]>();
 
+  const chordColors = new Map<string, string>();
+  const patternColors = new Map<string, string>();
+
   sortedSegments.forEach((segmentData: SegmentDataWithPositionDto, index) => {
+    const segment = segmentData.segmentData;
+
+    if (segment.chordId && segment.color) {
+      chordColors.set(segment.chordId, segment.color);
+    }
+    if (segment.patternId && segment.backgroundColor) {
+      patternColors.set(segment.patternId, segment.backgroundColor);
+    }
+
     if ((segmentData as any).id) {
       positionToDbSegmentId.set(
         segmentData.positionIndex,
@@ -55,20 +65,8 @@ export function convertSegmentsToUI(data: FullSongDto): {
         commentsByDbSegmentId.set(comment.segmentId, []);
       }
       commentsByDbSegmentId.get(comment.segmentId)!.push(comment);
-      console.log(
-        `Comment ${comment.id} belongs to DB segment ${comment.segmentId}`
-      );
     }
   });
-
-  console.log(
-    "Position to DB SegmentId mapping:",
-    Array.from(positionToDbSegmentId.entries())
-  );
-  console.log(
-    "Comments by DB SegmentId:",
-    Array.from(commentsByDbSegmentId.entries())
-  );
 
   sortedSegments.forEach((segmentData: SegmentDataWithPositionDto, index) => {
     const segment = segmentData.segmentData;
@@ -78,17 +76,9 @@ export function convertSegmentsToUI(data: FullSongDto): {
     }
 
     const dbSegmentId = positionToDbSegmentId.get(segmentData.positionIndex);
-    console.log(
-      `Segment at position ${segmentData.positionIndex} -> DB SegmentId: ${dbSegmentId}`
-    );
-
     const segmentComments: SongCommentDto[] = dbSegmentId
       ? commentsByDbSegmentId.get(dbSegmentId) || []
       : [];
-
-    console.log(
-      `Segment ${index} (DB ID: ${dbSegmentId}) has ${segmentComments.length} comments`
-    );
 
     const uiSegmentId = `ui-segment-${
       segmentData.positionIndex
@@ -116,12 +106,38 @@ export function convertSegmentsToUI(data: FullSongDto): {
   });
 
   const chords: SongChordDto[] = Array.from(
-    new Map(data.chords?.map((chord) => [chord.id, chord]) || []).values()
+    new Map(
+      data.chords?.map((chord) => {
+        const colorFromSegments = chordColors.get(chord.id);
+        return [
+          chord.id,
+          {
+            ...chord,
+            color:
+              colorFromSegments ||
+              chord.color ||
+              getDefaultChordColor(chord.id),
+          },
+        ];
+      }) || []
+    ).values()
   );
 
   const patterns: SongPatternDto[] = Array.from(
     new Map(
-      data.patterns?.map((pattern) => [pattern.id, pattern]) || []
+      data.patterns?.map((pattern) => {
+        const colorFromSegments = patternColors.get(pattern.id);
+        return [
+          pattern.id,
+          {
+            ...pattern,
+            color:
+              colorFromSegments ||
+              pattern.color ||
+              getDefaultPatternColor(pattern.id),
+          },
+        ];
+      }) || []
     ).values()
   );
 
@@ -130,15 +146,11 @@ export function convertSegmentsToUI(data: FullSongDto): {
   console.log("Conversion result:", {
     segmentsCount: segments.length,
     chordsCount: chords.length,
+    chordsWithColors: chords.filter((c) => c.color).length,
     patternsCount: patterns.length,
+    patternsWithColors: patterns.filter((p) => p.color).length,
     textLength: fullText.length,
     commentsCount: allComments.length,
-    segmentsWithComments: segments.filter(
-      (s) => s.comments && s.comments.length > 0
-    ).length,
-    segmentsWithCommentsDetails: segments
-      .filter((s) => s.comments && s.comments.length > 0)
-      .map((s) => ({ id: s.id, comments: s.comments?.length })),
   });
 
   return {
@@ -150,9 +162,88 @@ export function convertSegmentsToUI(data: FullSongDto): {
   };
 }
 
-export function convertStateToBackendFormat(state: SongCreationState): any {
-  const segments = prepareSegmentsForBackend(state.segments, state.text);
+export function getDefaultChordColor(chordId: string): string {
+  const colors = [
+    "#FF6B6B",
+    "#4ECDC4",
+    "#FFD166",
+    "#06D6A0",
+    "#118AB2",
+    "#EF476F",
+    "#073B4C",
+    "#FF9F1C",
+    "#2EC4B6",
+    "#E71D36",
+    "#B91372",
+    "#06BCC1",
+    "#C5D86D",
+    "#F4D35E",
+    "#EE964B",
+  ];
 
+  let hash = 0;
+  for (let i = 0; i < chordId.length; i++) {
+    hash = (hash << 5) - hash + chordId.charCodeAt(i);
+    hash = hash & hash;
+  }
+
+  return colors[Math.abs(hash) % colors.length];
+}
+
+export function getDefaultPatternColor(patternId: string): string {
+  const colors = [
+    "#FF6B6B",
+    "#4ECDC4",
+    "#FFD166",
+    "#06D6A0",
+    "#118AB2",
+    "#EF476F",
+    "#073B4C",
+    "#FF9F1C",
+    "#2EC4B6",
+    "#E71D36",
+  ];
+
+  let hash = 0;
+  for (let i = 0; i < patternId.length; i++) {
+    hash = (hash << 5) - hash + patternId.charCodeAt(i);
+    hash = hash & hash;
+  }
+
+  return colors[Math.abs(hash) % colors.length];
+}
+
+export function convertStateToBackendFormat(state: SongCreationState): any {
+  console.log("=== convertStateToBackendFormat DEBUG ===");
+  console.log("Full state:", state);
+  console.log("Audio input object:", state.audioInput);
+  console.log("Audio input type:", state.audioInput?.type);
+
+  let audioInput = state.audioInput;
+
+  if (!audioInput && (window as any).__lastAudioRecording) {
+    console.log("Using audio data from window backup");
+    audioInput = (window as any).__lastAudioRecording;
+  }
+
+  if (audioInput) {
+    console.log("Audio input details:", {
+      type: audioInput.type,
+      customAudioUrlLength: audioInput.customAudioUrl?.length,
+      customAudioType: audioInput.customAudioType,
+      fileName: audioInput.fileName,
+    });
+
+    if (audioInput.customAudioUrl) {
+      console.log("Is base64?", audioInput.customAudioUrl.startsWith("data:"));
+      console.log(
+        "Base64 prefix:",
+        audioInput.customAudioUrl.substring(0, 100)
+      );
+    }
+  }
+
+  const segments = prepareSegmentsForBackend(state.segments, state.text);
   const segmentComments = prepareCommentsForBackend(
     state.comments,
     state.segments
@@ -174,7 +265,16 @@ export function convertStateToBackendFormat(state: SongCreationState): any {
     )
   );
 
-  return {
+  let customAudioUrl: string | undefined;
+  let customAudioType: string | undefined;
+
+  if (audioInput && audioInput.type !== AudioInputType.NONE) {
+    customAudioUrl = audioInput.customAudioUrl;
+    customAudioType = audioInput.customAudioType;
+  }
+
+  const result = {
+    id: "",
     title: state.title || "Untitled",
     artist: state.artist || "",
     genre: state.genre || "",
@@ -187,7 +287,26 @@ export function convertStateToBackendFormat(state: SongCreationState): any {
       Object.keys(segmentComments).length > 0 ? segmentComments : undefined,
     chordIds: chordIds.length > 0 ? chordIds : undefined,
     patternIds: patternIds.length > 0 ? patternIds : undefined,
+    customAudioUrl,
+    customAudioType,
   };
+
+  console.log("=== FINAL RESULT FOR BACKEND ===");
+  console.log("Result object keys:", Object.keys(result));
+  console.log(
+    "customAudioUrl in result:",
+    result.customAudioUrl ? "PRESENT" : "NULL/UNDEFINED"
+  );
+  console.log(
+    "customAudioType in result:",
+    result.customAudioType ? result.customAudioType : "NULL/UNDEFINED"
+  );
+  console.log(
+    "Full result to send:",
+    JSON.stringify(result, null, 2).substring(0, 500) + "..."
+  );
+
+  return result;
 }
 
 export function prepareSegmentsForBackend(

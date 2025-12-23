@@ -1,7 +1,7 @@
 ﻿using Domain.Interfaces;
 using Domain.Interfaces.Repositories;
-using Domain.Interfaces.Services;
 using Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 
@@ -11,12 +11,18 @@ public class UnitOfWork : IUnitOfWork
 {
     private readonly AppDbContext _context;
     private readonly ILoggerFactory _loggerFactory;
-    private IDbContextTransaction? _transaction;
+    private readonly ILogger<UnitOfWork> _logger;
+    private IExecutionStrategy? _executionStrategy;
+    private IDbContextTransaction? _currentTransaction;
 
-    public UnitOfWork(AppDbContext context, ILoggerFactory loggerFactory)
+    public UnitOfWork(
+        AppDbContext context,
+        ILoggerFactory loggerFactory,
+        ILogger<UnitOfWork> logger)
     {
         _context = context;
         _loggerFactory = loggerFactory;
+        _logger = logger;
 
         Users = new UserRepository(context);
         Chords = new ChordRepository(context);
@@ -56,36 +62,116 @@ public class UnitOfWork : IUnitOfWork
 
     public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
-        _transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        _logger.LogWarning("BeginTransactionAsync is deprecated. Use ExecuteInTransactionAsync instead.");
+
+        if (_currentTransaction != null)
+        {
+            throw new InvalidOperationException("A transaction is already in progress");
+        }
+
+        _currentTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);
     }
 
     public async Task CommitTransactionAsync(CancellationToken cancellationToken = default)
     {
-        if (_transaction == null)
+        if (_currentTransaction == null)
         {
             throw new InvalidOperationException("Transaction has not been started");
         }
 
-        await _transaction.CommitAsync(cancellationToken);
-        await _transaction.DisposeAsync();
-        _transaction = null;
+        await _currentTransaction.CommitAsync(cancellationToken);
+        await _currentTransaction.DisposeAsync();
+        _currentTransaction = null;
     }
 
     public async Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
     {
-        if (_transaction == null)
+        if (_currentTransaction == null)
         {
             throw new InvalidOperationException("Transaction has not been started");
         }
 
-        await _transaction.RollbackAsync(cancellationToken);
-        await _transaction.DisposeAsync();
-        _transaction = null;
+        await _currentTransaction.RollbackAsync(cancellationToken);
+        await _currentTransaction.DisposeAsync();
+        _currentTransaction = null;
+    }
+
+    public async Task<TResult> ExecuteInTransactionAsync<TResult>(
+        Func<Task<TResult>> operation,
+        CancellationToken cancellationToken = default)
+    {
+        var strategy = _context.Database.CreateExecutionStrategy();
+
+        return await strategy.ExecuteAsync(async (ct) =>
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+
+            try
+            {
+                var result = await operation();
+                await SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync(ct);
+                _logger.LogError(ex, "Transaction execution failed");
+                throw;
+            }
+        }, cancellationToken);
+    }
+
+    public async Task ExecuteInTransactionAsync(
+        Func<Task> operation,
+        CancellationToken cancellationToken = default)
+    {
+        var strategy = _context.Database.CreateExecutionStrategy();
+
+        await strategy.ExecuteAsync(async (ct) =>
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+
+            try
+            {
+                await operation();
+                await SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync(ct);
+                _logger.LogError(ex, "Transaction execution failed");
+                throw;
+            }
+        }, cancellationToken);
+    }
+
+    public async Task<TResult> ExecuteInExistingTransactionAsync<TResult>(
+        Func<Task<TResult>> operation,
+        CancellationToken cancellationToken = default)
+    {
+        if (_currentTransaction == null)
+        {
+            throw new InvalidOperationException("No transaction has been started. Call BeginTransactionAsync first.");
+        }
+
+        try
+        {
+            var result = await operation();
+            await SaveChangesAsync(cancellationToken);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Operation failed within existing transaction");
+            throw;
+        }
     }
 
     public void Dispose()
     {
-        _transaction?.Dispose();
+        _currentTransaction?.Dispose();
         _context.Dispose();
         GC.SuppressFinalize(this);
     }

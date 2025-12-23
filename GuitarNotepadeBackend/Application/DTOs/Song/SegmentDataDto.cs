@@ -1,5 +1,6 @@
 ﻿public class SegmentDataDto
 {
+    public Guid Id { get; set; }
     public string Type { get; set; } = string.Empty;
     public string? Lyric { get; set; }
     public Guid? ChordId { get; set; }           

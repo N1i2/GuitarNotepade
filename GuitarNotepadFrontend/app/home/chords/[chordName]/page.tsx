@@ -52,7 +52,6 @@ export default function ChordVariationsPage() {
         toast.warning(`No variations found for chord "${chordName}"`);
       }
     } catch (error: unknown) {
-      console.error("Failed to load chord variations:", error);
       toast.error(error instanceof Error ? error.message : "Failed to load chord variations.");
     } finally {
       setIsLoading(false);

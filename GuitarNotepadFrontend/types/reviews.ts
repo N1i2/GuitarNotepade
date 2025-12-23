@@ -55,7 +55,6 @@ export async function submitReview(
   try {
     return await ReviewsService.createReview(songId, reviewData);
   } catch (error) {
-    console.error("Failed to submit review:", error);
     throw error;
   }
 }
@@ -71,7 +70,6 @@ export async function updateReview(
   try {
     return await ReviewsService.updateReview(reviewId, reviewData);
   } catch (error) {
-    console.error("Failed to update review:", error);
     throw error;
   }
 }
@@ -80,7 +78,6 @@ export async function deleteReview(reviewId: string) {
   try {
     await ReviewsService.deleteReview(reviewId);
   } catch (error) {
-    console.error("Failed to delete review:", error);
     throw error;
   }
 }

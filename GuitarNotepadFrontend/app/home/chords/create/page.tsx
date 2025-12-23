@@ -112,8 +112,6 @@ export default function CreateChordPage() {
       toast.success(`Chord ${createdChord.name} created successfully!`);
       router.push(`/home/chords/${createdChord.name}`);
     } catch (error: unknown) {
-      console.error("Failed to create chord:", error);
-
       const isApiError =
         error && typeof error === "object" && "status" in error;
 

@@ -121,6 +121,16 @@ namespace Infrastructure.Data
                 entity.Property(e => e.CreatedAt)
                     .IsRequired();
 
+                entity.Property(e => e.ReviewCount)
+                    .IsRequired()
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.AverageBeautifulRating)
+                    .HasColumnType("decimal(3,2)");
+
+                entity.Property(e => e.AverageDifficultyRating)
+                    .HasColumnType("decimal(3,2)");
+
                 entity.HasOne(e => e.ParentSong)
                     .WithMany(e => e.ChildSongs)
                     .HasForeignKey(e => e.ParentSongId)
@@ -155,6 +165,13 @@ namespace Infrastructure.Data
                     .WithOne(e => e.ParentSong)
                     .HasForeignKey(e => e.ParentSongId)
                     .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => e.OwnerId);
+                entity.HasIndex(e => e.ParentSongId);
+                entity.HasIndex(e => e.IsPublic);
+                entity.HasIndex(e => e.Title);
+                entity.HasIndex(e => e.Genre);
+                entity.HasIndex(e => e.Theme);
             });
 
             modelBuilder.Entity<Chord>(entity =>
@@ -175,10 +192,18 @@ namespace Infrastructure.Data
                 entity.Property(e => e.CreatedAt)
                     .IsRequired();
 
+                entity.HasOne(e => e.CreatedBy)
+                    .WithMany(e => e.Chords)
+                    .HasForeignKey(e => e.CreatedByUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
                 entity.HasMany(e => e.SongChords)
                     .WithOne(e => e.Chord)
                     .HasForeignKey(e => e.ChordId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(e => e.CreatedByUserId);
+                entity.HasIndex(e => e.Name);
             });
 
             modelBuilder.Entity<StrummingPattern>(entity =>
@@ -196,13 +221,28 @@ namespace Infrastructure.Data
                 entity.Property(e => e.Description)
                     .HasMaxLength(1000);
 
+                entity.Property(e => e.IsFingerStyle)
+                    .IsRequired()
+                    .HasDefaultValue(false);
+
                 entity.Property(e => e.CreatedAt)
                     .IsRequired();
+
+                entity.Property(e => e.UpdatedAt);
+
+                entity.HasOne(e => e.CreatedBy)
+                    .WithMany(e => e.StrummingPatterns)
+                    .HasForeignKey(e => e.CreatedByUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasMany(e => e.SongPatterns)
                     .WithOne(e => e.StrummingPattern)
                     .HasForeignKey(e => e.StrummingPatternId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(e => e.CreatedByUserId);
+                entity.HasIndex(e => e.Name);
+                entity.HasIndex(e => e.IsFingerStyle);
             });
 
             modelBuilder.Entity<SongStructure>(entity =>
@@ -219,6 +259,9 @@ namespace Infrastructure.Data
                     .HasForeignKey(e => e.SongId)
                     .HasPrincipalKey(e => e.SongId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(e => e.SongId)
+                    .IsUnique();
             });
 
             modelBuilder.Entity<SongSegment>(entity =>
@@ -240,6 +283,11 @@ namespace Infrastructure.Data
                 entity.Property(e => e.ContentHash)
                     .IsRequired()
                     .HasMaxLength(100);
+
+                entity.Property(e => e.Type)
+                    .IsRequired()
+                    .HasConversion<string>()
+                    .HasMaxLength(20);
 
                 entity.HasOne(e => e.Chord)
                     .WithMany()
@@ -265,6 +313,11 @@ namespace Infrastructure.Data
                     .WithOne(e => e.Segment)
                     .HasForeignKey(e => e.SegmentId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(e => e.ContentHash);
+                entity.HasIndex(e => e.Type);
+                entity.HasIndex(e => e.ChordId);
+                entity.HasIndex(e => e.PatternId);
             });
 
             modelBuilder.Entity<SongSegmentPosition>(entity =>
@@ -274,11 +327,6 @@ namespace Infrastructure.Data
                 entity.Property(e => e.RepeatGroup)
                     .HasMaxLength(100);
 
-                entity.HasIndex(e => e.PositionIndex);
-
-                entity.HasIndex(e => new { e.SongId, e.PositionIndex })
-                    .IsUnique();
-
                 entity.HasOne(e => e.Segment)
                     .WithMany(e => e.Positions)
                     .HasForeignKey(e => e.SegmentId)
@@ -286,15 +334,21 @@ namespace Infrastructure.Data
 
                 entity.HasOne(e => e.SongStructure)
                     .WithMany(e => e.SegmentPositions)
-                    .HasForeignKey(e => e.SongId)  
-                    .HasPrincipalKey(e => e.SongId)  
+                    .HasForeignKey(e => e.SongId)
+                    .HasPrincipalKey(e => e.SongId)
                     .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(e => e.Song)
-                    .WithMany() 
+                    .WithMany(e => e.SegmentPositions)
                     .HasForeignKey(e => e.SongId)
-                    .OnDelete(DeleteBehavior.Restrict) 
-                    .IsRequired(false); 
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => new { e.SongId, e.PositionIndex })
+                    .IsUnique();
+
+                entity.HasIndex(e => e.PositionIndex);
+                entity.HasIndex(e => e.SegmentId);
+                entity.HasIndex(e => e.RepeatGroup);
             });
 
             modelBuilder.Entity<SongReview>(entity =>
@@ -305,8 +359,16 @@ namespace Infrastructure.Data
                     .IsRequired()
                     .HasMaxLength(2000);
 
+                entity.Property(e => e.BeautifulLevel)
+                    .HasColumnType("int");
+
+                entity.Property(e => e.DifficultyLevel)
+                    .HasColumnType("int");
+
                 entity.Property(e => e.CreatedAt)
                     .IsRequired();
+
+                entity.Property(e => e.UpdatedAt);
 
                 entity.HasOne(e => e.User)
                     .WithMany(e => e.Reviews)
@@ -317,6 +379,13 @@ namespace Infrastructure.Data
                     .WithMany(e => e.Reviews)
                     .HasForeignKey(e => e.SongId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(e => new { e.UserId, e.SongId })
+                    .IsUnique();
+
+                entity.HasIndex(e => e.SongId);
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.CreatedAt);
             });
 
             modelBuilder.Entity<SongPattern>(entity =>
@@ -370,6 +439,8 @@ namespace Infrastructure.Data
                     .WithOne(e => e.Label)
                     .HasForeignKey(e => e.LabelId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(e => e.Name);
             });
 
             modelBuilder.Entity<SegmentLabel>(entity =>
@@ -415,39 +486,12 @@ namespace Infrastructure.Data
                     .WithMany(e => e.Comments)
                     .HasForeignKey(e => e.SegmentId)
                     .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => e.SongId);
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.SegmentId);
+                entity.HasIndex(e => e.CreatedAt);
             });
-
-            modelBuilder.Entity<SongSegment>()
-                .Property(e => e.Type)
-                .HasConversion<string>()
-                .HasMaxLength(20);
-
-            modelBuilder.Entity<Song>()
-                .HasIndex(e => e.OwnerId);
-
-            modelBuilder.Entity<Song>()
-                .HasIndex(e => e.ParentSongId);
-
-            modelBuilder.Entity<Song>()
-                .HasIndex(e => e.IsPublic);
-
-            modelBuilder.Entity<SongReview>()
-                .HasIndex(e => e.SongId);
-
-            modelBuilder.Entity<SongReview>()
-                .HasIndex(e => e.UserId);
-
-            modelBuilder.Entity<SongComment>()
-                .HasIndex(e => e.SongId);
-
-            modelBuilder.Entity<SongComment>()
-                .HasIndex(e => e.SegmentId);
-
-            modelBuilder.Entity<Chord>()
-                .HasIndex(e => e.CreatedByUserId);
-
-            modelBuilder.Entity<StrummingPattern>()
-                .HasIndex(e => e.CreatedByUserId);
         }
     }
 }
