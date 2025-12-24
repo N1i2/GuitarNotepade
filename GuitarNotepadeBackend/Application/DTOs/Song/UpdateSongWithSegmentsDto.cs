@@ -10,6 +10,7 @@ public class UpdateSongWithSegmentsDto
     public string? Theme { get; set; } = null;
     public string? CustomAudioUrl { get; set; } = null;
     public string? CustomAudioType { get; set; } = null;
+    public bool isDeleteAudio { get; set; } 
 
     public bool? IsPublic { get; set; } = null;
     public Guid? ParentSongId { get; set; } = null;

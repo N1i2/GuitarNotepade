@@ -157,10 +157,16 @@ export class SongsService {
   static async createSongWithSegments(
     data: CreateSongWithSegmentsDto
   ): Promise<SongDto> {
-    return await apiClient.post<CreateSongWithSegmentsDto, SongDto>(
-      `${this.BASE_PATH}/with-segments`,
-      data
-    );
+    try {
+      const result = await apiClient.post<CreateSongWithSegmentsDto, SongDto>(
+        `${this.BASE_PATH}/with-segments`,
+        data
+      );
+
+      return result;
+    } catch (error: any) {
+      throw error;
+    }
   }
 
   static async updateSong(id: string, data: UpdateSongDto): Promise<SongDto> {

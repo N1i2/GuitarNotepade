@@ -29,10 +29,6 @@ export interface SongSegmentDataDto {
   description?: string;
   color?: string;
   backgroundColor?: string;
-
-  chord?: SongChordDto;
-  pattern?: SongPatternDto;
-  labels?: SegmentLabelDto[];
 }
 
 export interface SongSegmentPositionDto {
@@ -46,7 +42,7 @@ export interface SegmentCommentDto {
 }
 
 export interface CreateSongWithSegmentsDto {
-  id: string;
+  id?: string;
   title: string;
   genre?: string;
   theme?: string;
@@ -71,6 +67,7 @@ export interface UpdateSongWithSegmentsDto {
   theme?: string | null;
   customAudioUrl?: string | null;
   customAudioType?: string | null;
+  isDeleteAudio?: boolean;
   isPublic?: boolean | null;
   parentSongId?: string | null;
 
@@ -303,15 +300,6 @@ export interface SongSegmentDto {
   positions: SongSegmentPositionDto[];
   comments: SongCommentDto[];
   segmentLabels: SegmentLabelDto[];
-}
-
-export interface SongSegmentPositionDto {
-  id: string;
-  songId: string;
-  segmentId: string;
-  positionIndex: number;
-  repeatGroup?: string;
-  segment: SongSegmentDto;
 }
 
 export interface ChordDto {

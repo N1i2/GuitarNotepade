@@ -8,6 +8,7 @@ import {
   SongCommentDto,
   SegmentDataWithPositionDto,
   FullSongDto,
+  UpdateSongWithSegmentsDto,
 } from "@/types/songs";
 
 export function convertSegmentsToUI(data: FullSongDto): {
@@ -17,11 +18,6 @@ export function convertSegmentsToUI(data: FullSongDto): {
   text: string;
   comments: any[];
 } {
-  console.log("=== convertSegmentsToUI DEBUG ===");
-  console.log("Data received:", data);
-  console.log("Comments from data:", data.comments);
-  console.log("Segments from data:", data.segments);
-
   const segments: UISegment[] = [];
   let fullText = "";
   let position = 0;
@@ -143,16 +139,6 @@ export function convertSegmentsToUI(data: FullSongDto): {
 
   const allComments = (data.comments || []).map(convertSongCommentToUI);
 
-  console.log("Conversion result:", {
-    segmentsCount: segments.length,
-    chordsCount: chords.length,
-    chordsWithColors: chords.filter((c) => c.color).length,
-    patternsCount: patterns.length,
-    patternsWithColors: patterns.filter((p) => p.color).length,
-    textLength: fullText.length,
-    commentsCount: allComments.length,
-  });
-
   return {
     segments,
     chords,
@@ -214,33 +200,9 @@ export function getDefaultPatternColor(patternId: string): string {
 }
 
 export function convertStateToBackendFormat(state: SongCreationState): any {
-  console.log("=== convertStateToBackendFormat DEBUG ===");
-  console.log("Full state:", state);
-  console.log("Audio input object:", state.audioInput);
-  console.log("Audio input type:", state.audioInput?.type);
-
   let audioInput = state.audioInput;
-
   if (!audioInput && (window as any).__lastAudioRecording) {
-    console.log("Using audio data from window backup");
     audioInput = (window as any).__lastAudioRecording;
-  }
-
-  if (audioInput) {
-    console.log("Audio input details:", {
-      type: audioInput.type,
-      customAudioUrlLength: audioInput.customAudioUrl?.length,
-      customAudioType: audioInput.customAudioType,
-      fileName: audioInput.fileName,
-    });
-
-    if (audioInput.customAudioUrl) {
-      console.log("Is base64?", audioInput.customAudioUrl.startsWith("data:"));
-      console.log(
-        "Base64 prefix:",
-        audioInput.customAudioUrl.substring(0, 100)
-      );
-    }
   }
 
   const segments = prepareSegmentsForBackend(state.segments, state.text);
@@ -255,7 +217,7 @@ export function convertStateToBackendFormat(state: SongCreationState): any {
         .filter((s) => s.chordId && s.chordId !== "empty")
         .map((s) => s.chordId!)
     )
-  );
+  ).map((id) => id); 
 
   const patternIds = Array.from(
     new Set(
@@ -263,7 +225,7 @@ export function convertStateToBackendFormat(state: SongCreationState): any {
         .filter((s) => s.patternId && s.patternId !== "empty")
         .map((s) => s.patternId!)
     )
-  );
+  ).map((id) => id); 
 
   let customAudioUrl: string | undefined;
   let customAudioType: string | undefined;
@@ -274,12 +236,11 @@ export function convertStateToBackendFormat(state: SongCreationState): any {
   }
 
   const result = {
-    id: "",
     title: state.title || "Untitled",
-    artist: state.artist || "",
+    artist: state.artist || undefined,
     genre: state.genre || "",
     theme: state.theme || "",
-    description: state.description || "",
+    description: state.description || undefined,
     isPublic: state.isPublic,
     parentSongId: undefined,
     segments: segments,
@@ -291,22 +252,59 @@ export function convertStateToBackendFormat(state: SongCreationState): any {
     customAudioType,
   };
 
-  console.log("=== FINAL RESULT FOR BACKEND ===");
-  console.log("Result object keys:", Object.keys(result));
-  console.log(
-    "customAudioUrl in result:",
-    result.customAudioUrl ? "PRESENT" : "NULL/UNDEFINED"
-  );
-  console.log(
-    "customAudioType in result:",
-    result.customAudioType ? result.customAudioType : "NULL/UNDEFINED"
-  );
-  console.log(
-    "Full result to send:",
-    JSON.stringify(result, null, 2).substring(0, 500) + "..."
+  const cleanedResult = Object.fromEntries(
+    Object.entries(result).filter(([_, v]) => v !== undefined)
   );
 
-  return result;
+  return cleanedResult;
+}
+
+export function convertStateToUpdateBackendFormat(
+  state: SongCreationState,
+  songId: string,
+  originalAudioData?: { url?: string; type?: string }
+): UpdateSongWithSegmentsDto {
+  const segments = prepareSegmentsForBackend(state.segments, state.text);
+  const segmentComments = prepareCommentsForBackend(
+    state.comments,
+    state.segments
+  );
+
+  let isDeleteAudio = false;
+
+  if (originalAudioData?.url && !state.audioInput?.customAudioUrl) {
+    isDeleteAudio = true;
+  }
+
+  const result: UpdateSongWithSegmentsDto = {
+    id: songId,
+    title: state.title || null,
+    artist: state.artist || null,
+    description: state.description || null,
+    genre: state.genre || null,
+    theme: state.theme || null,
+    isPublic: state.isPublic,
+    oldSegments: null,
+    oldComments: null,
+    segments: segments.length > 0 ? segments : null,
+    segmentComments:
+      Object.keys(segmentComments).length > 0 ? segmentComments : null,
+    isDeleteAudio: isDeleteAudio,
+  };
+
+  if (state.audioInput?.customAudioUrl) {
+    result.customAudioUrl = state.audioInput.customAudioUrl;
+    result.customAudioType = state.audioInput.customAudioType;
+  } else if (isDeleteAudio) {
+    result.customAudioUrl = null;
+    result.customAudioType = null;
+  }
+
+  const cleanedResult = Object.fromEntries(
+    Object.entries(result).filter(([_, v]) => v !== undefined)
+  ) as UpdateSongWithSegmentsDto;
+
+  return cleanedResult;
 }
 
 export function prepareSegmentsForBackend(
@@ -332,15 +330,21 @@ export function prepareSegmentsForBackend(
       segmentType = "1";
     }
 
+    const segmentData = {
+      type: segmentType,
+      lyric: segmentText === "[SPACE]" ? "" : segmentText,
+      chordId: segment.chordId || undefined,
+      patternId: segment.patternId || undefined,
+      color: segment.color || undefined,
+      backgroundColor: segment.backgroundColor || undefined,
+    };
+
+    const cleanedSegmentData = Object.fromEntries(
+      Object.entries(segmentData).filter(([_, v]) => v !== undefined)
+    );
+
     result.push({
-      segmentData: {
-        type: segmentType,
-        lyric: segmentText === "[SPACE]" ? "" : segmentText,
-        chordId: segment.chordId,
-        patternId: segment.patternId,
-        color: segment.color,
-        backgroundColor: segment.backgroundColor,
-      },
+      segmentData: cleanedSegmentData,
       positionIndex: positionIndex++,
     });
   }

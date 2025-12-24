@@ -35,12 +35,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  SongCreationProvider,
-  useSongCreation,
-} from "@/app/contexts/song-creation-context";
+import { useSongCreation } from "@/app/contexts/song-creation-context";
 import { convertStateToBackendFormat } from "@/lib/song-converter";
 import AudioInputPanel from "@/components/song/audio-input-panel";
+import { CreateSongProvider } from "@/app/contexts/create-song-context";
 
 function SongDetails() {
   const { state, dispatch } = useSongCreation();
@@ -276,7 +274,7 @@ function CreateSongContent() {
 
   const handleSubmit = async () => {
     if (!user) {
-      toast.error("Pleas, log in");
+      toast.error("Please, log in");
       return;
     }
 
@@ -345,13 +343,13 @@ function CreateSongContent() {
           <p className="text-muted-foreground mt-2">
             Write a song, add chords and patterns, and add comments
           </p>
-        </div>    
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="space-y-6">
             <SongDetails />
             <ToolPanel />
-            <AudioInputPanel /> 
+            <AudioInputPanel />
           </div>
 
           <div className="lg:col-span-2 space-y-6">
@@ -405,8 +403,8 @@ function CreateSongContent() {
 
 export default function CreateSongPage() {
   return (
-    <SongCreationProvider>
+    <CreateSongProvider>
       <CreateSongContent />
-    </SongCreationProvider>
+    </CreateSongProvider>
   );
 }

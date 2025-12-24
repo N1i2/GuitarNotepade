@@ -35,16 +35,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  SongCreationProvider,
-  useSongCreation,
-} from "@/app/contexts/song-creation-context";
+import { useSongCreation } from "@/app/contexts/song-creation-context";
 import {
   convertSegmentsToUI,
   convertStateToBackendFormat,
+  convertStateToUpdateBackendFormat,
 } from "@/lib/song-converter";
-import { AudioInputType } from "@/types/audio";
+import { AudioInputData, AudioInputType } from "@/types/audio";
 import AudioInputPanel from "@/components/song/audio-input-panel";
+import { EditSongProvider } from "@/app/contexts/edit-song-context";
 
 function SongDetails() {
   const { state, dispatch } = useSongCreation();
@@ -280,6 +279,10 @@ function EditSongContent() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [originalAudioData, setOriginalAudioData] = useState<{
+    url?: string;
+    type?: string;
+  } | null>(null);
 
   useEffect(() => {
     const loadSongData = async () => {
@@ -299,15 +302,26 @@ function EditSongContent() {
 
         const uiData = convertSegmentsToUI(songData);
 
-        let audioInputData = null;
+        let audioInputData: AudioInputData | null = null;
+
         if (songData.customAudioUrl && songData.customAudioType) {
+          setOriginalAudioData({
+            url: songData.customAudioUrl,
+            type: songData.customAudioType,
+          });
+
           if (songData.customAudioType === "File") {
             audioInputData = {
               type: AudioInputType.FILE,
               customAudioUrl: songData.customAudioUrl,
               customAudioType: "File",
-              fileName: "audio-file.mp3",
+              fileName:
+                songData.customAudioUrl.split("/").pop() || "audio-file.mp3",
             };
+
+            if (songData.customAudioUrl.startsWith("data:audio/")) {
+              audioInputData.fileName = "audio-file.mp3";
+            }
           } else if (songData.customAudioType === "Url") {
             audioInputData = {
               type: AudioInputType.URL,
@@ -338,12 +352,6 @@ function EditSongContent() {
         });
 
         setIsInitialized(true);
-        console.log("Song data loaded:", {
-          title: songData.title,
-          hasAudio: !!songData.customAudioUrl,
-          audioType: songData.customAudioType,
-          audioInputData,
-        });
       } catch (error: any) {
         toast.error(error.message || "Failed to load song");
         router.push("/home/songs");
@@ -395,12 +403,13 @@ function EditSongContent() {
 
     setIsLoading(true);
     try {
-      const songData = convertStateToBackendFormat(state);
+      const updateData = convertStateToUpdateBackendFormat(
+        state,
+        songId,
+        originalAudioData || undefined
+      );
 
-      const updatedSong = await SongsService.updateSongWithSegments({
-        id: songId,
-        ...songData,
-      });
+      const updatedSong = await SongsService.updateSongWithSegments(updateData);
 
       toast.success(`Song "${updatedSong.title}" successfully updated!`);
 
@@ -501,9 +510,12 @@ function EditSongContent() {
 }
 
 export default function EditSongPage() {
+  const params = useParams();
+  const songId = params.songId as string;
+
   return (
-    <SongCreationProvider>
+    <EditSongProvider songId={songId}>
       <EditSongContent />
-    </SongCreationProvider>
+    </EditSongProvider>
   );
 }

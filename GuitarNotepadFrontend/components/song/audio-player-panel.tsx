@@ -89,7 +89,6 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
       setAudioError(true);
       setAudioLoaded(false);
       setIsLoading(false);
-      console.error("Audio load error");
     };
     const handleCanPlay = () => {
       if (audio.duration && audio.duration !== Infinity && audio.duration > 0) {
@@ -141,7 +140,6 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
     } else {
       audioPlayerRef.current.play().catch((error) => {
         setAudioError(true);
-        console.error("Play error:", error);
       });
     }
     setIsPlaying(!isPlaying);

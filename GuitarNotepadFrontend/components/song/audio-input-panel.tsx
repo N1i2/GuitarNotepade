@@ -52,14 +52,20 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
 }) => {
   const { state, dispatch } = useSongCreation();
   const toast = useToast();
+
+  const initialAudioInput = state.audioInput || value;
   const [activeTab, setActiveTab] = useState<AudioInputType>(
-    value?.type || AudioInputType.NONE
+    initialAudioInput?.type || AudioInputType.NONE
   );
   const [audioFile, setAudioFile] = useState<File | null>(
-    value?.type === AudioInputType.FILE ? value.file || null : null
+    initialAudioInput?.type === AudioInputType.FILE
+      ? initialAudioInput.file || null
+      : null
   );
   const [audioUrl, setAudioUrl] = useState<string>(
-    value?.type === AudioInputType.URL ? value.url || "" : ""
+    initialAudioInput?.type === AudioInputType.URL
+      ? initialAudioInput.url || ""
+      : ""
   );
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -85,14 +91,43 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
   } = useAudioRecorder();
 
   const [playbackUrl, setPlaybackUrl] = useState<string | null>(null);
+  const [hasLoadedInitialAudio, setHasLoadedInitialAudio] = useState(false);
 
   useEffect(() => {
-    console.log("=== AudioInputPanel CONTEXT STATE ===", {
-      hasAudioInput: !!state.audioInput,
-      audioInputType: state.audioInput?.type,
-      audioInput: state.audioInput,
-    });
-  }, [state.audioInput]);
+    if (state.audioInput && !hasLoadedInitialAudio) {
+      setActiveTab(state.audioInput.type);
+
+      if (
+        state.audioInput.type === AudioInputType.URL &&
+        state.audioInput.url
+      ) {
+        setAudioUrl(state.audioInput.url);
+      }
+
+      if (state.audioInput.type === AudioInputType.FILE) {
+        if (state.audioInput.file) {
+          setAudioFile(state.audioInput.file);
+        } else if (state.audioInput.fileName) {
+          const dummyFile = new File([], state.audioInput.fileName, {
+            type: "audio/*",
+          });
+          setAudioFile(dummyFile);
+        } else if (state.audioInput.customAudioUrl) {
+          const fileName = state.audioInput.fileName || "audio-file.mp3";
+          const dummyFile = new File([], fileName, {
+            type: "audio/*",
+          });
+          setAudioFile(dummyFile);
+        }
+      }
+
+      setHasLoadedInitialAudio(true);
+    }
+
+    if (!state.audioInput && hasLoadedInitialAudio) {
+      setHasLoadedInitialAudio(false);
+    }
+  }, [state.audioInput, hasLoadedInitialAudio]);
 
   useEffect(() => {
     if (value?.type) {
@@ -105,10 +140,21 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
 
     switch (activeTab) {
       case AudioInputType.FILE:
-        url = audioFile ? URL.createObjectURL(audioFile) : null;
+        if (audioFile) {
+          if (audioFile.size > 0) {
+            url = URL.createObjectURL(audioFile);
+          } else if (state.audioInput?.customAudioUrl) {
+            url = state.audioInput.customAudioUrl;
+          }
+        }
         break;
       case AudioInputType.RECORD:
         url = audioURL;
+        break;
+      case AudioInputType.URL:
+        if (audioUrl && !audioUrl.startsWith("blob:")) {
+          url = audioUrl;
+        }
         break;
       default:
         url = null;
@@ -130,7 +176,7 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
         URL.revokeObjectURL(url);
       }
     };
-  }, [activeTab, audioFile, audioURL]);
+  }, [activeTab, audioFile, audioURL, audioUrl, state.audioInput]);
 
   useEffect(() => {
     const audio = audioPlayerRef.current;
@@ -197,7 +243,6 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
     setActiveTab(newTab);
 
     if (newTab === AudioInputType.NONE) {
-      console.log("Setting audio input to null (NONE selected)");
       dispatch({ type: "SET_AUDIO_INPUT", payload: null });
       setAudioFile(null);
       setAudioUrl("");
@@ -211,13 +256,6 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
-    console.log(
-      "handleFileChange - file selected:",
-      file.name,
-      file.type,
-      file.size
-    );
 
     if (file.size === 0) {
       toast.error("File is empty");
@@ -236,11 +274,6 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
       setIsProcessing(true);
       const audioBase64 = await fileToBase64(file);
 
-      console.log(
-        "handleFileChange - audioBase64 generated, length:",
-        audioBase64.length
-      );
-
       const audioData: AudioInputData = {
         type: AudioInputType.FILE,
         file,
@@ -249,13 +282,10 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
         customAudioType: "File",
       };
 
-      console.log("handleFileChange - audioData to send:", audioData);
-
       dispatch({ type: "SET_AUDIO_INPUT", payload: audioData });
       toast.success("Audio file loaded successfully");
     } catch (error) {
       toast.error("Failed to process audio file");
-      console.error(error);
     } finally {
       setIsProcessing(false);
     }
@@ -263,7 +293,6 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
 
   const handleUrlChange = async (url: string) => {
     setAudioUrl(url);
-    console.log("handleUrlChange - URL:", url);
 
     if (url.trim() === "") {
       dispatch({ type: "SET_AUDIO_INPUT", payload: null });
@@ -279,7 +308,6 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
         customAudioType: "Url",
       };
 
-      console.log("handleUrlChange - audioData to send:", audioData);
       dispatch({ type: "SET_AUDIO_INPUT", payload: audioData });
       toast.success("URL saved successfully");
     } catch (error) {
@@ -305,50 +333,28 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
   };
 
   const handleSaveRecordingClick = () => {
-    console.log("=== SAVE RECORDING BUTTON CLICKED ===");
-    console.log("audioBlob exists:", !!audioBlob);
-    console.log("isProcessing:", isProcessing);
-
-    if (audioBlob && !isProcessing) {
-      handleSaveRecording();
-    } else {
-      console.log("Button disabled or no audioBlob");
-    }
+    handleSaveRecording();
   };
 
   const handleSaveRecording = async () => {
-    console.log("=== 1. handleSaveRecording STARTED ===");
-    console.log("audioBlob exists:", !!audioBlob);
-
     if (!audioBlob) {
-      console.log("ERROR: No audioBlob");
       return;
     }
 
     setIsProcessing(true);
-    console.log("=== 2. Processing started ===");
 
     try {
-      console.log("=== 3. Converting to MP3 ===");
       const mp3Blob = await convertWebmToMp3(audioBlob);
-      console.log("MP3 Blob:", {
-        size: mp3Blob.size,
-        type: mp3Blob.type,
-      });
 
       if (mp3Blob.size < 1000) {
-        console.log("Recording is too small or empty");
         toast.error("Recording is too short or empty. Please record again.");
         setIsProcessing(false);
         resetRecording();
         return;
       }
 
-      console.log("=== 4. Converting to base64 ===");
       const audioBase64 = await blobToBase64(mp3Blob);
-      console.log("Base64 length:", audioBase64.length);
 
-      console.log("=== 5. Creating audioData object ===");
       const audioData: AudioInputData = {
         type: AudioInputType.RECORD,
         audioBlob: mp3Blob,
@@ -357,7 +363,6 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
         customAudioType: "File",
       };
 
-      console.log("=== 6. Dispatching... ===");
       dispatch({
         type: "SET_AUDIO_INPUT",
         payload: audioData,
@@ -365,11 +370,9 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
 
       toast.success("Recording saved successfully!");
     } catch (error) {
-      console.error("=== ERROR in handleSaveRecording ===", error);
       toast.error("Failed to save recording");
     } finally {
       setIsProcessing(false);
-      console.log("=== 11. handleSaveRecording FINISHED ===");
     }
   };
 
@@ -434,7 +437,10 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
 
   const isPlaybackAvailable =
     (activeTab === AudioInputType.FILE && audioFile) ||
-    (activeTab === AudioInputType.RECORD && audioBlob && !isRecording);
+    (activeTab === AudioInputType.RECORD && audioBlob && !isRecording) ||
+    (activeTab === AudioInputType.URL &&
+      audioUrl &&
+      state.audioInput?.customAudioUrl);
 
   const getEstimatedRecordingDuration = () => {
     if (recordingTime > 0) {
@@ -445,6 +451,10 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
 
   const displayDuration =
     duration > 0 ? duration : getEstimatedRecordingDuration();
+
+  const hasAudioToShow =
+    state.audioInput && state.audioInput.type !== AudioInputType.NONE;
+  const audioSourceName = state.audioInput?.fileName || state.audioInput?.url;
 
   return (
     <Card>
@@ -476,7 +486,29 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
           <div className="mt-4">
             {activeTab === AudioInputType.NONE && (
               <div className="text-center py-8 text-muted-foreground">
-                No audio attached
+                {hasAudioToShow ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-center gap-2">
+                      <Music className="h-6 w-6 text-primary" />
+                      <span className="font-medium">Audio attached</span>
+                    </div>
+                    <p className="text-sm">
+                      {state.audioInput?.type === AudioInputType.FILE &&
+                        "File: "}
+                      {state.audioInput?.type === AudioInputType.URL && "URL: "}
+                      {state.audioInput?.type === AudioInputType.RECORD &&
+                        "Recording: "}
+                      <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
+                        {audioSourceName}
+                      </span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Switch to another tab to modify audio
+                    </p>
+                  </div>
+                ) : (
+                  "No audio attached"
+                )}
               </div>
             )}
 
@@ -499,7 +531,9 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
                     ) : (
                       <Upload className="h-4 w-4 mr-2" />
                     )}
-                    {audioFile ? "Change Audio File" : "Upload Audio File"}
+                    {audioFile || state.audioInput?.type === AudioInputType.FILE
+                      ? "Change Audio File"
+                      : "Upload Audio File"}
                   </Button>
                   <Input
                     ref={fileInputRef}
@@ -510,7 +544,8 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
                   />
                 </div>
 
-                {audioFile && (
+                {(audioFile ||
+                  state.audioInput?.type === AudioInputType.FILE) && (
                   <div className="space-y-4">
                     <Alert
                       className={`${
@@ -533,7 +568,11 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
                       >
                         {audioError
                           ? "Error loading file"
-                          : `File loaded: ${audioFile.name}`}
+                          : `File: ${
+                              state.audioInput?.fileName ||
+                              audioFile?.name ||
+                              "audio file"
+                            }`}
                       </AlertDescription>
                     </Alert>
 
@@ -624,19 +663,28 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
                   </p>
                 </div>
 
-                {audioUrl && (
+                {(audioUrl ||
+                  state.audioInput?.type === AudioInputType.URL) && (
                   <div className="space-y-2">
                     <Alert className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
                       <Check className="h-4 w-4 text-green-600" />
                       <AlertDescription className="text-green-800 dark:text-green-300">
-                        URL saved
+                        {state.audioInput?.type === AudioInputType.URL
+                          ? `URL: ${state.audioInput.url || audioUrl}`
+                          : "URL saved"}
                       </AlertDescription>
                     </Alert>
                     <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => window.open(audioUrl, "_blank")}
+                        onClick={() =>
+                          window.open(
+                            state.audioInput?.url || audioUrl,
+                            "_blank"
+                          )
+                        }
+                        disabled={!state.audioInput?.url && !audioUrl}
                       >
                         <ExternalLink className="h-4 w-4 mr-2" />
                         Open URL
@@ -731,11 +779,15 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
                     </>
                   )}
 
-                  {audioBlob && !isRecording && (
+                  {(audioBlob && !isRecording) ||
+                  state.audioInput?.type === AudioInputType.RECORD ? (
                     <>
                       <Button
                         onClick={handleSaveRecordingClick}
-                        disabled={isProcessing}
+                        disabled={
+                          isProcessing ||
+                          state.audioInput?.type === AudioInputType.RECORD
+                        }
                         className="relative bg-teal-600 hover:bg-teal-700 text-white"
                       >
                         {isProcessing ? (
@@ -746,7 +798,9 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
                         ) : (
                           <>
                             <Check className="h-4 w-4 mr-2" />
-                            Save Recording
+                            {state.audioInput?.type === AudioInputType.RECORD
+                              ? "Recording Saved"
+                              : "Save Recording"}
                           </>
                         )}
                       </Button>
@@ -755,82 +809,87 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
                         Clear
                       </Button>
                     </>
-                  )}
+                  ) : null}
                 </div>
 
-                {audioBlob && !isRecording && playbackUrl && (
+                {(audioBlob && !isRecording && playbackUrl) ||
+                state.audioInput?.type === AudioInputType.RECORD ? (
                   <div className="space-y-4">
                     <Alert className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
                       <Music className="h-4 w-4 text-blue-600" />
                       <AlertDescription className="text-blue-800 dark:text-blue-300">
-                        Recording complete ({formattedRecordingTime})
+                        {state.audioInput?.type === AudioInputType.RECORD
+                          ? "Recording attached"
+                          : `Recording complete (${formattedRecordingTime})`}
                       </AlertDescription>
                     </Alert>
-                    <div className="space-y-3">
-                      <audio
-                        ref={audioPlayerRef}
-                        src={playbackUrl}
-                        preload="auto"
-                        className="hidden"
-                      />
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>{formattedCurrentTime}</span>
-                          <span>
-                            {displayDuration > 0
-                              ? formatTime(displayDuration * 1000)
-                              : formatTime(recordingTime)}
-                          </span>
-                        </div>
-                        <Slider
-                          value={[
-                            displayDuration > 0
-                              ? (currentTime / displayDuration) * 100
-                              : 0,
-                          ]}
-                          max={100}
-                          step={0.1}
-                          className="w-full"
-                          onValueChange={handleSliderChange}
-                          disabled={!isRecordPlaybackReady}
+                    {(playbackUrl || state.audioInput?.customAudioUrl) && (
+                      <div className="space-y-3">
+                        <audio
+                          ref={audioPlayerRef}
+                          src={playbackUrl || state.audioInput?.customAudioUrl}
+                          preload="auto"
+                          className="hidden"
                         />
-                        <div className="flex items-center justify-center gap-3">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={seekBackward}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>{formattedCurrentTime}</span>
+                            <span>
+                              {displayDuration > 0
+                                ? formatTime(displayDuration * 1000)
+                                : formatTime(recordingTime)}
+                            </span>
+                          </div>
+                          <Slider
+                            value={[
+                              displayDuration > 0
+                                ? (currentTime / displayDuration) * 100
+                                : 0,
+                            ]}
+                            max={100}
+                            step={0.1}
+                            className="w-full"
+                            onValueChange={handleSliderChange}
                             disabled={!isRecordPlaybackReady}
-                          >
-                            <SkipBack className="h-4 w-4" />
-                            <span className="sr-only">5s back</span>
-                          </Button>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={togglePlayPause}
-                            disabled={!isRecordPlaybackReady}
-                            className="w-16"
-                          >
-                            {isPlaying ? (
-                              <Pause className="h-4 w-4" />
-                            ) : (
-                              <Play className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={seekForward}
-                            disabled={!isRecordPlaybackReady}
-                          >
-                            <SkipForward className="h-4 w-4" />
-                            <span className="sr-only">5s forward</span>
-                          </Button>
+                          />
+                          <div className="flex items-center justify-center gap-3">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={seekBackward}
+                              disabled={!isRecordPlaybackReady}
+                            >
+                              <SkipBack className="h-4 w-4" />
+                              <span className="sr-only">5s back</span>
+                            </Button>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={togglePlayPause}
+                              disabled={!isRecordPlaybackReady}
+                              className="w-16"
+                            >
+                              {isPlaying ? (
+                                <Pause className="h-4 w-4" />
+                              ) : (
+                                <Play className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={seekForward}
+                              disabled={!isRecordPlaybackReady}
+                            >
+                              <SkipForward className="h-4 w-4" />
+                              <span className="sr-only">5s forward</span>
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </div>
-                )}
+                ) : null}
 
                 {audioBlob && !isRecording && !playbackUrl && (
                   <Alert className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
@@ -851,24 +910,39 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
           </div>
         </Tabs>
 
-        {value && value.type !== AudioInputType.NONE && (
+        {state.audioInput && state.audioInput.type !== AudioInputType.NONE && (
           <div className="pt-4 border-t">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div
                   className={`h-3 w-3 rounded-full ${
-                    value.type === AudioInputType.FILE
+                    state.audioInput.type === AudioInputType.FILE
                       ? "bg-green-500"
-                      : value.type === AudioInputType.URL
+                      : state.audioInput.type === AudioInputType.URL
                       ? "bg-blue-500"
                       : "bg-purple-500"
                   }`}
                 />
-                <span className="text-sm font-medium">
-                  {value.type === AudioInputType.FILE && "File attached"}
-                  {value.type === AudioInputType.URL && "URL attached"}
-                  {value.type === AudioInputType.RECORD && "Recording attached"}
-                </span>
+                <div>
+                  <span className="text-sm font-medium">
+                    {state.audioInput.type === AudioInputType.FILE &&
+                      "File attached"}
+                    {state.audioInput.type === AudioInputType.URL &&
+                      "URL attached"}
+                    {state.audioInput.type === AudioInputType.RECORD &&
+                      "Recording attached"}
+                  </span>
+                  {state.audioInput.fileName && (
+                    <p className="text-xs text-muted-foreground">
+                      {state.audioInput.fileName}
+                    </p>
+                  )}
+                  {state.audioInput.url && (
+                    <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+                      {state.audioInput.url}
+                    </p>
+                  )}
+                </div>
               </div>
               <Button
                 variant="ghost"

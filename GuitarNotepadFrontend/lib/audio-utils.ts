@@ -119,10 +119,6 @@ export const fileToBase64 = (file: File): Promise<string> => {
     reader.readAsDataURL(file);
     reader.onload = () => {
       const base64String = reader.result as string;
-      console.log(
-        "fileToBase64 result (first 200 chars):",
-        base64String.substring(0, 200)
-      );
       resolve(base64String);
     };
     reader.onerror = (error) => reject(error);
@@ -156,15 +152,9 @@ export const blobToBase64 = (blob: Blob): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
-    const mimeType = blob.type || "audio/webm";
-
     reader.readAsDataURL(blob);
     reader.onload = () => {
       const base64String = reader.result as string;
-      console.log(
-        "blobToBase64 result (first 200 chars):",
-        base64String.substring(0, 200)
-      );
       resolve(base64String);
     };
     reader.onerror = (error) => reject(error);
@@ -182,20 +172,10 @@ export const convertWebmToMp3 = async (webmBlob: Blob): Promise<Blob> => {
         type: "audio/mpeg",
       });
 
-      console.log("WebM to MP3 conversion (simulated):", {
-        originalSize: webmBlob.size,
-        newSize: mp3Blob.size,
-        originalType: webmBlob.type,
-        newType: mp3Blob.type,
-      });
-
       return mp3Blob;
     }
-
-    console.warn("Unsupported audio format for conversion:", webmBlob.type);
     return webmBlob;
   } catch (error) {
-    console.warn("Failed to convert audio, returning original:", error);
     return webmBlob;
   }
 };

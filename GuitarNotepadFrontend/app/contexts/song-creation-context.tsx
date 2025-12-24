@@ -12,7 +12,7 @@ import {
 import { mergeAdjacentSegments } from "@/lib/song-segment-utils";
 import { AudioInputData, AudioInputType } from "@/types/audio";
 
-type SongCreationAction =
+export type SongCreationAction =
   | { type: "SET_TITLE"; payload: string }
   | { type: "SET_ARTIST"; payload: string }
   | { type: "SET_GENRE"; payload: string }
@@ -55,7 +55,7 @@ type SongCreationAction =
   | { type: "SET_STATE"; payload: Partial<SongCreationState> }
   | { type: "CLEAR_STATE" };
 
-const initialState: SongCreationState = {
+export const initialState: SongCreationState = {
   title: "",
   artist: "",
   genre: "",
@@ -72,7 +72,7 @@ const initialState: SongCreationState = {
   selectedPatternId: undefined,
 };
 
-function songCreationReducer(
+export function songCreationReducer(
   state: SongCreationState,
   action: SongCreationAction
 ): SongCreationState {
@@ -177,12 +177,7 @@ function songCreationReducer(
       };
 
     case "SET_AUDIO_INPUT":
-      console.log("=== REDUCER: SET_AUDIO_INPUT ===");
-      console.log("Action payload:", action.payload);
-      console.log("Previous audioInput:", state.audioInput);
-
       if (action.payload === null || action.payload === undefined) {
-        console.log("Clearing audio input completely");
         return {
           ...state,
           audioInput: undefined,
@@ -190,20 +185,16 @@ function songCreationReducer(
       }
 
       if (action.payload.type === AudioInputType.NONE) {
-        console.log("Audio type is NONE, clearing");
         return {
           ...state,
           audioInput: undefined,
         };
       }
 
-      const newState = {
+      return {
         ...state,
         audioInput: action.payload,
       };
-
-      console.log("New state audioInput:", newState.audioInput);
-      return newState;
 
     case "REPLACE_CHORD":
       return {
@@ -371,7 +362,7 @@ function songCreationReducer(
   }
 }
 
-const SongCreationContext = createContext<
+export const SongCreationContext = createContext<
   | {
       state: SongCreationState;
       dispatch: React.Dispatch<SongCreationAction>;
@@ -379,26 +370,6 @@ const SongCreationContext = createContext<
     }
   | undefined
 >(undefined);
-
-export function SongCreationProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(songCreationReducer, initialState);
-
-  const clearState = () => {
-    dispatch({ type: "CLEAR_STATE" });
-  };
-
-  const value = {
-    state,
-    dispatch,
-    clearState,
-  };
-
-  return (
-    <SongCreationContext.Provider value={value}>
-      {children}
-    </SongCreationContext.Provider>
-  );
-}
 
 export function useSongCreation() {
   const context = useContext(SongCreationContext);

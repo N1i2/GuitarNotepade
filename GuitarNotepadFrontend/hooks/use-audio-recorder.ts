@@ -60,8 +60,6 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
         ? "audio/webm;codecs=opus"
         : "audio/webm";
 
-      console.log("Using MIME type for recording:", mimeType);
-
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: mimeType,
       });
@@ -82,7 +80,6 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
             setAudioBlob(blob);
             const url = URL.createObjectURL(blob);
             setAudioURL(url);
-            console.log("Recording saved, blob size:", blob.size);
           }
 
           if (streamRef.current) {
@@ -111,7 +108,6 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
         });
       }, 1000);
     } catch (error) {
-      console.error("Error starting recording:", error);
       throw error;
     }
   }, [MAX_RECORDING_TIME, stopRecording]);

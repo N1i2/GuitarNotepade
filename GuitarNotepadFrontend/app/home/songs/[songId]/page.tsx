@@ -536,16 +536,6 @@ export default function SongDetailPage() {
 
       const { segments, chords, patterns, text, comments } =
         convertSegmentsToUI(data);
-      console.log("Conversion result:", {
-        segments,
-        chords,
-        patterns,
-        textLength: text.length,
-        comments,
-        segmentsWithComments: segments.filter(
-          (s) => s.comments && s.comments.length > 0
-        ),
-      });
 
       setUiSegments(segments);
       setUiChords(chords);
