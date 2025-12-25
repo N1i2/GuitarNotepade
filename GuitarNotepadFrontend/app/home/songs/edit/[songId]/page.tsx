@@ -114,20 +114,20 @@ function SongDetails() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Детали песни</CardTitle>
-        <CardDescription>Редактируйте информацию о песне</CardDescription>
+        <CardTitle>Song details</CardTitle>
+        <CardDescription>Edit song information</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="title">
             <div className="flex items-center gap-2">
               <Music className="h-4 w-4" />
-              Название песни *
+              Song title *
             </div>
           </Label>
           <Input
             id="title"
-            placeholder="Введите название песни"
+            placeholder="Enter song title"
             value={state.title}
             onChange={(e) => handleChange("title", e.target.value)}
             required
@@ -138,12 +138,12 @@ function SongDetails() {
           <Label htmlFor="artist">
             <div className="flex items-center gap-2">
               <User className="h-4 w-4" />
-              Исполнитель
+              Actor
             </div>
           </Label>
           <Input
             id="artist"
-            placeholder="Введите исполнителя"
+            placeholder="Enter actor"
             value={state.artist || ""}
             onChange={(e) => handleChange("artist", e.target.value)}
           />
@@ -154,7 +154,7 @@ function SongDetails() {
             <Label htmlFor="genre">
               <div className="flex items-center gap-2">
                 <Tag className="h-4 w-4" />
-                Жанр
+                Genre
               </div>
             </Label>
             <Select
@@ -162,7 +162,7 @@ function SongDetails() {
               onValueChange={(value) => handleChange("genre", value)}
             >
               <SelectTrigger id="genre">
-                <SelectValue placeholder="Выберите жанр" />
+                <SelectValue placeholder="Chose genre" />
               </SelectTrigger>
               <SelectContent>
                 {genres.map((genre) => (
@@ -178,7 +178,7 @@ function SongDetails() {
             <Label htmlFor="theme">
               <div className="flex items-center gap-2">
                 <Hash className="h-4 w-4" />
-                Тема
+                Theme
               </div>
             </Label>
             <Select
@@ -186,7 +186,7 @@ function SongDetails() {
               onValueChange={(value) => handleChange("theme", value)}
             >
               <SelectTrigger id="theme">
-                <SelectValue placeholder="Выберите тему" />
+                <SelectValue placeholder="Chose theme" />
               </SelectTrigger>
               <SelectContent>
                 {themes.map((theme) => (
@@ -203,12 +203,12 @@ function SongDetails() {
           <Label htmlFor="description">
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Описание
+              Description
             </div>
           </Label>
           <Textarea
             id="description"
-            placeholder="Расскажите о вашей песне..."
+            placeholder="Tell us about your song..."
             value={state.description || ""}
             onChange={(e) => handleChange("description", e.target.value)}
             className="min-h-[100px]"
@@ -217,9 +217,9 @@ function SongDetails() {
 
         <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
           <div>
-            <Label className="font-medium cursor-pointer">Видимость</Label>
+            <Label className="font-medium cursor-pointer">Visibility</Label>
             <p className="text-sm text-muted-foreground">
-              {state.isPublic ? "Все пользователи" : "Только для вас"}
+              {state.isPublic ? "All users" : "Only for you"}
             </p>
           </div>
           <Switch
@@ -235,7 +235,7 @@ function SongDetails() {
                 {state.selectedChords.length}
               </div>
               <div className="text-xs text-blue-700 dark:text-blue-300">
-                Аккорды
+                Chords
               </div>
             </div>
             <div>
@@ -243,7 +243,7 @@ function SongDetails() {
                 {state.selectedPatterns.length}
               </div>
               <div className="text-xs text-purple-700 dark:text-purple-300">
-                Паттерны
+                Patterns
               </div>
             </div>
             <div>
@@ -251,7 +251,7 @@ function SongDetails() {
                 {state.segments.length}
               </div>
               <div className="text-xs text-green-700 dark:text-green-300">
-                Сегменты
+                Segments
               </div>
             </div>
             <div>
@@ -259,7 +259,7 @@ function SongDetails() {
                 {state.text.length}
               </div>
               <div className="text-xs text-amber-700 dark:text-amber-300">
-                Символов
+                Characters
               </div>
             </div>
           </div>
@@ -353,7 +353,7 @@ function EditSongContent() {
 
         setIsInitialized(true);
       } catch (error: any) {
-        toast.error(error.message || "Не удалось загрузить песню");
+        toast.error(error.message || "Failed to load song");
         router.push("/home/songs");
       } finally {
         setIsLoading(false);
@@ -365,27 +365,27 @@ function EditSongContent() {
 
   const handleSubmit = async () => {
     if (!user) {
-      toast.error("Пожалуйста, войдите в систему");
+      toast.error("Please log in");
       return;
     }
 
     if (!state.title.trim()) {
-      toast.error("Введите название песни");
+      toast.error("Enter song title");
       return;
     }
 
     if (!state.text.trim()) {
-      toast.error("Введите текст песни");
+      toast.error("Enter song lyrics");
       return;
     }
 
     if (state.selectedChords.length > 20) {
-      toast.error("Максимум 20 аккордов на песню");
+      toast.error("Maximum 20 chords per song");
       return;
     }
 
     if (state.selectedPatterns.length > 10) {
-      toast.error("Максимум 10 паттернов на песню");
+      toast.error("Maximum 10 patterns per song");
       return;
     }
 
@@ -395,7 +395,9 @@ function EditSongContent() {
     const uniqueColors = new Set(allColors);
 
     if (allColors.length !== uniqueColors.size) {
-      toast.error("Цвета аккордов и паттернов не должны повторяться.");
+      toast.error(
+        "The colors of the chords and patterns should not be repeated."
+      );
       return;
     }
 
@@ -409,11 +411,11 @@ function EditSongContent() {
 
       const updatedSong = await SongsService.updateSongWithSegments(updateData);
 
-      toast.success(`Песня "${updatedSong.title}" успешно обновлена!`);
+      toast.success(`Song "${updatedSong.title}" successfully updated!`);
 
       router.push(`/home/songs/${updatedSong.id}`);
     } catch (error: any) {
-      toast.error(error.message || "Не удалось обновить песню");
+      toast.error(error.message || "Failed to update song");
     } finally {
       setIsLoading(false);
     }
@@ -425,7 +427,7 @@ function EditSongContent() {
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Загрузка данных песни...</p>
+            <p className="text-muted-foreground">Loading Song Data...</p>
           </div>
         </div>
       </div>
@@ -443,11 +445,11 @@ function EditSongContent() {
             className="mb-4"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Назад к песне
+            Back to the song
           </Button>
-          <h1 className="text-3xl font-bold">Редактирование песни</h1>
+          <h1 className="text-3xl font-bold">Editing a Song</h1>
           <p className="text-muted-foreground mt-2">
-            Редактируйте информацию, но не текст песни
+            Edit the information, but not the lyrics.
           </p>
         </div>
 
@@ -461,10 +463,10 @@ function EditSongContent() {
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Текст песни</CardTitle>
+                <CardTitle>Lyrics</CardTitle>
                 <CardDescription>
-                  Только просмотр. Редактирование текста, аккордов и паттернов
-                  недоступно в режиме редактирования
+                  View only. Editing lyrics, chords, and patterns is not
+                  available in edit mode.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -482,7 +484,7 @@ function EditSongContent() {
             size="lg"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Отмена
+            Cancel
           </Button>
           <Button
             onClick={handleSubmit}
@@ -492,12 +494,12 @@ function EditSongContent() {
             {isLoading ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Сохранение...
+                Saving...
               </>
             ) : (
               <>
                 <Save className="h-4 w-4 mr-2" />
-                Сохранить изменения
+                Save changes
               </>
             )}
           </Button>

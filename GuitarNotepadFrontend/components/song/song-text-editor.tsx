@@ -290,7 +290,7 @@ export function SongTextEditor() {
         setCommentSegmentId(segment.id);
         setShowAddComment(true);
       } else {
-        toast.error("Не удалось найти сегмент для комментария");
+        toast.error("Unable to find segment for comment");
       }
     },
     [formattedText, state.segments, state.currentTool]
@@ -303,12 +303,12 @@ export function SongTextEditor() {
     const end = textareaRef.current.selectionEnd;
 
     if (start === end) {
-      toast.error("Пожалуйста, выделите текст сначала");
+      toast.error("Please select the text first");
       return;
     }
 
     if (!state.selectedChordId && !state.selectedPatternId) {
-      toast.error("Пожалуйста, выберите аккорд или паттерн сначала");
+      toast.error("Please select a chord or pattern first");
       return;
     }
 
@@ -450,8 +450,8 @@ export function SongTextEditor() {
             segment.segmentId && handleSegmentClick(segment.segmentId)
           }
           title={`${segment.content.trim()}\n${
-            chord ? `Аккорд: ${chord.name}` : ""
-          }\n${pattern ? `Паттерн: ${pattern.name}` : ""}`}
+            chord ? `Chord: ${chord.name}` : ""
+          }\n${pattern ? `Pattern: ${pattern.name}` : ""}`}
         >
           {segment.content}
           {segment.hasComments && (
@@ -495,9 +495,9 @@ export function SongTextEditor() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <Label>Редактировать текст</Label>
+            <Label>Edit Text</Label>
             <div className="text-sm text-muted-foreground">
-              {state.text.length} символов • {state.segments.length} сегментов
+              {state.text.length} characters • {state.segments.length} segments
             </div>
           </div>
           <div className="relative">
@@ -507,7 +507,7 @@ export function SongTextEditor() {
               onChange={(e) => handleTextChange(e.target.value)}
               onSelect={handleTextareaSelect}
               onClick={handleTextareaClick}
-              placeholder="Напишите текст песни здесь..."
+              placeholder="Write song lyrics here..."
               className="min-h-[400px] font-mono resize-none text-base leading-relaxed whitespace-pre-wrap"
               rows={20}
             />
@@ -520,16 +520,16 @@ export function SongTextEditor() {
               disabled={!state.selectedChordId && !state.selectedPatternId}
               className="flex-1"
             >
-              Применить{" "}
+              Apply{" "}
               {state.currentTool === "chord"
-                ? "аккорд"
+                ? "chord"
                 : state.currentTool === "pattern"
-                ? "паттерн"
+                ? "[pattern]"
                 : ""}
             </Button>
             <Button size="sm" variant="outline" onClick={addSpaceSegment}>
               <Plus className="h-4 w-4 mr-2" />
-              Добавить пробел
+              Add a space
             </Button>
             <Button
               size="sm"
@@ -540,7 +540,7 @@ export function SongTextEditor() {
                   const end = textareaRef.current.selectionEnd;
 
                   if (start === end) {
-                    toast.error("Выделите текст для комментария");
+                    toast.error("Please select text for comment");
                     return;
                   }
 
@@ -564,16 +564,16 @@ export function SongTextEditor() {
               }}
             >
               <MessageSquare className="h-4 w-4 mr-2" />
-              Добавить комментарий
+              Add a comment
             </Button>
           </div>
         </div>
 
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <Label>Предпросмотр</Label>
+            <Label>Preview</Label>
             <div className="text-sm text-muted-foreground">
-              Наведите на выделенный текст для информации
+              Hover over the highlighted text for information
             </div>
           </div>
           <div
@@ -585,7 +585,7 @@ export function SongTextEditor() {
               renderPreview
             ) : (
               <div className="text-muted-foreground italic h-full flex items-center justify-center">
-                Предпросмотр текста появится здесь...
+                A preview of the text will appear here...
               </div>
             )}
           </div>
@@ -595,9 +595,9 @@ export function SongTextEditor() {
       <div className="mt-8">
         <div className="flex items-center gap-2 mb-4">
           <ChevronRight className="h-5 w-5 text-primary" />
-          <h3 className="text-lg font-semibold">Список сегментов</h3>
+          <h3 className="text-lg font-semibold">List of segments</h3>
           <span className="text-sm text-muted-foreground ml-2">
-            ({state.segments.length} сегментов)
+            ({state.segments.length} segments)
           </span>
         </div>
         <SegmentsList

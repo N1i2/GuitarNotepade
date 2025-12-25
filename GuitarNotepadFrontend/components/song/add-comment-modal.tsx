@@ -62,12 +62,12 @@ export function AddCommentModal({
 
   const handleSubmit = () => {
     if (!comment.trim() || !segmentId) {
-      toast.error("Введите текст комментария");
+      toast.error("Enter comment text");
       return;
     }
 
     if (!user) {
-      toast.error("Для добавления комментария необходимо войти в систему");
+      toast.error("You must be logged in to add a comment");
       return;
     }
 
@@ -80,7 +80,7 @@ export function AddCommentModal({
         type: "UPDATE_COMMENT",
         payload: { ...existingComment, text: comment.trim() },
       });
-      toast.success("Комментарий обновлен");
+      toast.success("Comment updated");
     } else {
       const newComment = {
         id: `comment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -92,7 +92,7 @@ export function AddCommentModal({
       };
 
       dispatch({ type: "ADD_COMMENT", payload: newComment });
-      toast.success("Комментарий добавлен");
+      toast.success("Comment added");
     }
 
     handleClose();
@@ -105,7 +105,7 @@ export function AddCommentModal({
 
     if (existingComment) {
       dispatch({ type: "DELETE_COMMENT", payload: existingComment.id });
-      toast.success("Комментарий удален");
+      toast.success("Comment deleted");
       handleClose();
     }
   };
@@ -123,44 +123,42 @@ export function AddCommentModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {existingComment
-              ? "Редактировать комментарий"
-              : "Добавить комментарий"}
+            {existingComment ? "Edit comment" : "Add comment"}
           </DialogTitle>
           <DialogDescription>
             {existingComment
-              ? "Редактирование комментария к выделенному сегменту"
-              : "Добавьте комментарий к выделенному сегменту"}
+              ? "Editing a comment for a selected segment"
+              : "Add a comment to the selected segment"}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Текст сегмента</Label>
+            <Label>Segment Text</Label>
             <div className="p-3 bg-muted rounded-md border text-sm">
               {segmentText.length > 200
                 ? `${segmentText.substring(0, 200)}...`
                 : segmentText}
               {segmentText.length > 200 && (
                 <div className="text-xs text-muted-foreground mt-1">
-                  {segmentText.length} символов
+                  {segmentText.length} characters
                 </div>
               )}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="comment">Комментарий *</Label>
+            <Label htmlFor="comment">Comment *</Label>
             <Textarea
               id="comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Например: В этом месте играем чуть быстрее..."
+              placeholder="For example: At this point we play a little faster..."
               className="min-h-[120px] resize-none"
               maxLength={1000}
             />
             <div className="text-xs text-muted-foreground flex justify-between">
-              <span>Максимум 1000 символов</span>
+              <span>Maximum 1000 characters</span>
               <span>{comment.length}/1000</span>
             </div>
           </div>
@@ -176,24 +174,24 @@ export function AddCommentModal({
                       className="text-destructive border-destructive/20 hover:bg-destructive/10 hover:text-destructive"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Удалить
+                      Delete
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Удалить комментарий</AlertDialogTitle>
+                      <AlertDialogTitle>Delete comments</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Вы уверены, что хотите удалить этот комментарий? Это
-                        действие нельзя отменить.
+                        Are you sure you want to delete this comment? This
+                        action cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Отмена</AlertDialogCancel>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={handleDelete}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
-                        Удалить
+                        Delete
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -203,10 +201,10 @@ export function AddCommentModal({
 
             <div className="flex gap-3">
               <Button variant="outline" onClick={handleClose}>
-                Отмена
+                Cancel
               </Button>
               <Button onClick={handleSubmit} disabled={!comment.trim()}>
-                {existingComment ? "Обновить" : "Добавить"}
+                {existingComment ? "Update" : "Add"}
               </Button>
             </div>
           </div>

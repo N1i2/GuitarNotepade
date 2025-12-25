@@ -138,8 +138,8 @@ export function SongTextViewer() {
           onMouseEnter={() => setHoveredSegmentId(segment.segmentId || null)}
           onMouseLeave={() => setHoveredSegmentId(null)}
           title={`${segment.content.trim()}\n${
-            chord ? `Аккорд: ${chord.name}` : ""
-          }\n${pattern ? `Паттерн: ${pattern.name}` : ""}`}
+            chord ? `Chord: ${chord.name}` : ""
+          }\n${pattern ? `Pattern: ${pattern.name}` : ""}`}
         >
           {segment.content}
           {segment.hasComments && (
@@ -180,9 +180,9 @@ export function SongTextViewer() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <Label>Текст песни (только просмотр)</Label>
+        <Label>Lyrics (view only)</Label>
         <div className="text-sm text-muted-foreground">
-          {state.text.length} символов • {state.segments.length} сегментов
+          {state.text.length} characters • {state.segments.length} segments
         </div>
       </div>
       <div
@@ -193,7 +193,7 @@ export function SongTextViewer() {
           renderViewer
         ) : (
           <div className="text-muted-foreground italic h-full flex items-center justify-center">
-            Текст песни...
+            Lyrics...
           </div>
         )}
       </div>

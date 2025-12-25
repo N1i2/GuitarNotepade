@@ -197,10 +197,9 @@ export function SegmentsList({
         <CardContent className="p-6">
           <div className="text-center py-8">
             <Music className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-medium mb-2">Нет сегментов</h3>
+            <h3 className="text-lg font-medium mb-2">No segments</h3>
             <p className="text-muted-foreground text-sm">
-              Добавьте аккорды или паттерны к тексту, чтобы увидеть сегменты
-              здесь
+              Add chords or patterns to the lyrics to see the segments here
             </p>
           </div>
         </CardContent>
@@ -213,11 +212,11 @@ export function SegmentsList({
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <Hash className="h-4 w-4" />
-          Группы сегментов
+          Segment groups
           {commentsStats.totalComments > 0 && (
             <Badge variant="secondary" className="ml-2">
               <MessageSquare className="h-3 w-3 mr-1" />
-              {commentsStats.totalComments} коммент.
+              {commentsStats.totalComments} comment.
             </Badge>
           )}
         </CardTitle>
@@ -236,11 +235,11 @@ export function SegmentsList({
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <div className="text-sm font-medium bg-muted px-2 py-1 rounded">
-                          Группа {index + 1}
+                          Group {index + 1}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {group.segments.length} сегмент
-                          {group.segments.length !== 1 ? "ов" : ""}
+                          {group.segments.length} segment
+                          {group.segments.length !== 1 ? "ov" : ""}
                         </div>
                         {group.segmentsWithCommentsCount > 0 && (
                           <Badge
@@ -248,7 +247,7 @@ export function SegmentsList({
                             className="flex items-center gap-1"
                           >
                             <MessageSquare className="h-3 w-3" />
-                            {group.segmentsWithCommentsCount} с комментариями
+                            {group.segmentsWithCommentsCount} with comment
                           </Badge>
                         )}
                       </div>
@@ -269,7 +268,7 @@ export function SegmentsList({
                                     <div
                                       key={segment.id}
                                       className="relative group/comment"
-                                      title={`${segmentComments.length} комментариев`}
+                                      title={`${segmentComments.length} Comments`}
                                     >
                                       <MessageSquare className="h-4 w-4 text-blue-500" />
                                       <span className="absolute -top-1 -right-1 text-[8px] font-bold text-white bg-blue-500 rounded-full w-3 h-3 flex items-center justify-center">
@@ -278,7 +277,7 @@ export function SegmentsList({
 
                                       <div className="absolute top-full right-0 mt-1 w-48 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover/comment:opacity-100 transition-opacity z-50 pointer-events-none">
                                         <div className="font-medium">
-                                          Комментарии:
+                                          Comments:
                                         </div>
                                         {segmentComments
                                           .slice(0, 2)
@@ -290,7 +289,7 @@ export function SegmentsList({
                                           ))}
                                         {segmentComments.length > 2 && (
                                           <div>
-                                            ...и ещё{" "}
+                                            ...and more{" "}
                                             {segmentComments.length - 2}
                                           </div>
                                         )}
@@ -305,7 +304,7 @@ export function SegmentsList({
                         </div>
                         {group.text.length > 100 && (
                           <div className="text-xs text-muted-foreground mt-1">
-                            {group.text.length} символов
+                            {group.text.length} characters
                           </div>
                         )}
                       </div>
@@ -328,7 +327,7 @@ export function SegmentsList({
                               className="text-xs text-primary hover:underline flex items-center gap-1"
                             >
                               <ExternalLink className="h-3 w-3" />
-                              перейти
+                              go
                             </Link>
                           </div>
                         )}
@@ -350,7 +349,7 @@ export function SegmentsList({
                               className="text-xs text-primary hover:underline flex items-center gap-1"
                             >
                               <ExternalLink className="h-3 w-3" />
-                              перейти
+                              go
                             </Link>
                             {group.pattern.isFingerStyle && (
                               <Badge variant="secondary" className="text-xs">
@@ -362,7 +361,7 @@ export function SegmentsList({
 
                         {!group.chord && !group.pattern && (
                           <div className="text-sm text-muted-foreground">
-                            Текст без аккордов и паттернов
+                            Lyrics without chords and patterns
                           </div>
                         )}
                       </div>
@@ -383,7 +382,7 @@ export function SegmentsList({
                       <div className="flex items-center gap-2 mb-2">
                         <MessageSquare className="h-4 w-4 text-muted-foreground" />
                         <h4 className="text-sm font-medium">
-                          Комментарии в этой группе
+                          Comments in this group
                         </h4>
                         <Badge variant="outline" className="text-xs">
                           {group.allComments.length}
@@ -410,16 +409,16 @@ export function SegmentsList({
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>
-                                      Удалить комментарий
+                                      Delete comment
                                     </AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Вы уверены, что хотите удалить этот
-                                      комментарий? Это действие нельзя отменить.
+                                      Are you sure you want to delete this
+                                      comment? This action cannot be undone.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>
-                                      Отмена
+                                      Cancel
                                     </AlertDialogCancel>
                                     <AlertDialogAction
                                       onClick={() =>
@@ -427,7 +426,7 @@ export function SegmentsList({
                                       }
                                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                     >
-                                      Удалить
+                                      Delete
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
@@ -448,7 +447,7 @@ export function SegmentsList({
                               {comment.text}
                             </p>
                             <div className="text-xs text-muted-foreground mt-2">
-                              ID комментария: {comment.id.substring(0, 8)}...
+                              Comment ID: {comment.id.substring(0, 8)}...
                             </div>
                           </div>
                         ))}
@@ -459,12 +458,11 @@ export function SegmentsList({
                   <div className="mt-3 pt-3 border-t">
                     <div className="flex justify-between items-center mb-2">
                       <div className="text-xs text-muted-foreground">
-                        Позиции в тексте:
+                        Positions in the text:
                       </div>
                       {group.segmentsWithCommentsCount > 0 && (
                         <div className="text-xs text-blue-600 dark:text-blue-400">
-                          {group.segmentsWithCommentsCount} сегм. с
-                          комментариями
+                          {group.segmentsWithCommentsCount} segm comments
                         </div>
                       )}
                     </div>
@@ -489,7 +487,7 @@ export function SegmentsList({
                               segment.startIndex + segment.length
                             }${
                               hasComments
-                                ? ` (${segmentComments.length} коммент.)`
+                                ? ` (${segmentComments.length} comment.)`
                                 : ""
                             }`}
                           >
@@ -521,19 +519,17 @@ export function SegmentsList({
             <div>
               <div className="text-2xl font-bold">{segments.length}</div>
               <div className="text-xs text-muted-foreground">
-                Всего сегментов
+                Total segments
               </div>
             </div>
             <div>
               <div className="text-2xl font-bold">{chords.length}</div>
-              <div className="text-xs text-muted-foreground">
-                Уникальных аккордов
-              </div>
+              <div className="text-xs text-muted-foreground">Unique chords</div>
             </div>
             <div>
               <div className="text-2xl font-bold">{patterns.length}</div>
               <div className="text-xs text-muted-foreground">
-                Уникальных паттернов
+                Unique patterns
               </div>
             </div>
             <div>
@@ -541,7 +537,7 @@ export function SegmentsList({
                 {commentsStats.totalComments}
               </div>
               <div className="text-xs text-muted-foreground">
-                Комментариев ({commentsStats.segmentsWithComments} сегм.)
+                Comments ({commentsStats.segmentsWithComments} segm.)
               </div>
             </div>
           </div>

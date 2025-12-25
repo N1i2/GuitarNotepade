@@ -149,20 +149,20 @@ export function AddPatternModal({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Добавить паттерн</DialogTitle>
+          <DialogTitle>Add Pattern</DialogTitle>
           <DialogDescription>
-            Выберите паттерн и цвет для фона
+            Select a pattern and color for the background
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col space-y-4">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Поиск паттернов</Label>
+              <Label>Search for patterns</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Введите название паттерна..."
+                  placeholder="Enter the pattern name..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -175,7 +175,7 @@ export function AddPatternModal({
               onValueChange={(v: any) => setPatternType(v)}
             >
               <TabsList className="grid grid-cols-3">
-                <TabsTrigger value="all">Все</TabsTrigger>
+                <TabsTrigger value="all">All</TabsTrigger>
                 <TabsTrigger value="strumming">
                   <Music className="h-3 w-3 mr-2" />
                   Strumming
@@ -189,7 +189,7 @@ export function AddPatternModal({
           </div>
 
           <div className="flex-1 overflow-hidden flex flex-col space-y-3">
-            <Label>Доступные паттерны ({filteredPatterns.length})</Label>
+            <Label>Available patterns ({filteredPatterns.length})</Label>
             <ScrollArea className="flex-1 border rounded-md p-2">
               {isLoading ? (
                 <div className="grid grid-cols-2 gap-2">
@@ -212,7 +212,7 @@ export function AddPatternModal({
                         <div className="text-left">
                           <div className="font-medium">{pattern.name}</div>
                           <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                            {pattern.description || "Без описания"}
+                            {pattern.description || "No description"}
                           </div>
                           <Badge variant="outline" className="mt-2 text-xs">
                             {pattern.isFingerStyle
@@ -230,10 +230,10 @@ export function AddPatternModal({
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   {existingPatternIds.length >= 10
-                    ? "Достигнут максимум 10 паттернов"
+                    ? "The maximum of 10 patterns has been reached."
                     : searchTerm || patternType !== "all"
-                    ? "Паттерны не найдены"
-                    : "Все доступные паттерны уже добавлены"}
+                    ? "No patterns found."
+                    : "All available patterns have already been added."}
                 </div>
               )}
             </ScrollArea>
@@ -241,7 +241,7 @@ export function AddPatternModal({
 
           {selectedPatternId && (
             <div className="space-y-3 border-t pt-4">
-              <Label>Выберите цвет для фона</Label>
+              <Label>Choose a background color</Label>
               <div className="grid grid-cols-5 gap-2">
                 {availableColors.map((color) => (
                   <button
@@ -269,17 +269,15 @@ export function AddPatternModal({
                     className="w-4 h-4 rounded border"
                     style={{ backgroundColor: selectedColor }}
                   />
-                  <span>Так будет выглядеть фон текста</span>
+                  <span>This is what the text background will look like</span>
                 </div>
               )}
 
               <div className="text-sm text-muted-foreground">
+                <div>• Patterns can only use the last 10 colors</div>
                 <div>
-                  • Паттерны могут использовать только последние 10 цветов
-                </div>
-                <div>
-                  • Каждый цвет может использоваться только один раз (ни
-                  аккордами, ни паттернами)
+                  • Each color can only be used once (neither chords nor
+                  patterns)
                 </div>
               </div>
             </div>
@@ -287,13 +285,13 @@ export function AddPatternModal({
 
           <div className="flex gap-3 justify-end pt-4 border-t">
             <Button variant="outline" onClick={onClose}>
-              Отмена
+              Cancel
             </Button>
             <Button
               onClick={handleAddPattern}
               disabled={!selectedPatternId || !selectedColor}
             >
-              Добавить паттерн
+              Add a pattern
             </Button>
           </div>
         </div>

@@ -113,19 +113,19 @@ export function ReplaceChordModal({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Заменить аккорд</DialogTitle>
+          <DialogTitle>Replace Chord</DialogTitle>
           <DialogDescription>
-            Выберите новый аккорд для замены "{currentChord?.name}"
+            Select a new chord to replace "{currentChord?.name}"
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col space-y-4">
           <div className="space-y-2">
-            <Label>Поиск аккордов</Label>
+            <Label>Chord Search</Label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Введите название аккорда..."
+                placeholder="Enter the name of the chord..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -134,7 +134,7 @@ export function ReplaceChordModal({
           </div>
 
           <div className="flex-1 overflow-hidden flex flex-col space-y-3">
-            <Label>Доступные аккорды ({filteredChords.length})</Label>
+            <Label>Available chords ({filteredChords.length})</Label>
             <ScrollArea className="flex-1 border rounded-md p-2">
               {isLoading ? (
                 <div className="grid grid-cols-3 gap-2">
@@ -165,8 +165,8 @@ export function ReplaceChordModal({
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   {searchTerm
-                    ? "Аккорды не найдены"
-                    : "Нет доступных аккордов для замены"}
+                    ? "No chords found"
+                    : "No available replacement chords"}
                 </div>
               )}
             </ScrollArea>
@@ -184,11 +184,11 @@ export function ReplaceChordModal({
                   )}
                   <div>
                     <div className="font-medium">
-                      Замена: {currentChord?.name} →{" "}
+                      Replacement: {currentChord?.name} →{" "}
                       {chords.find((c) => c.id === selectedChordId)?.name}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      Цвет аккорда останется прежним
+                      The chord color will remain the same
                     </div>
                   </div>
                 </div>
@@ -198,10 +198,10 @@ export function ReplaceChordModal({
 
           <div className="flex gap-3 justify-end pt-4 border-t">
             <Button variant="outline" onClick={onClose}>
-              Отмена
+              Cancel
             </Button>
             <Button onClick={handleReplaceChord} disabled={!selectedChordId}>
-              Заменить аккорд
+              Replace chord
             </Button>
           </div>
         </div>

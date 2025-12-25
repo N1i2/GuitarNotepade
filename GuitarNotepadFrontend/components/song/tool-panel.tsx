@@ -43,7 +43,10 @@ import { Pattern } from "@/types/patterns";
 import { SVGChordDiagram } from "@/components/chords/svg-chord-diagram";
 import { PatternDiagram } from "@/components/patterns/pattern-diagram";
 import { FingerStyleDiagram } from "@/components/patterns/finger-style-diagram";
-import { getDefaultChordColor, getDefaultPatternColor } from "@/lib/song-converter";
+import {
+  getDefaultChordColor,
+  getDefaultPatternColor,
+} from "@/lib/song-converter";
 import { useSongCreation } from "@/app/contexts/song-creation-context";
 
 function ChordModal({
@@ -522,8 +525,8 @@ export function ToolPanel() {
     if (state.currentTool === "chord" && state.selectedChordId) {
       if (state.selectedChordId === "empty") {
         return {
-          title: "Режим очистки аккордов",
-          description: "Выделите текст для удаления аккордов",
+          Title: "Clear Chords Mode",
+          Description: "Select text to delete chords",
           icon: <Eraser className="h-4 w-4" />,
         };
       } else {
@@ -531,8 +534,8 @@ export function ToolPanel() {
           (c) => c.id === state.selectedChordId
         );
         return {
-          title: `Аккорд: ${chord?.name}`,
-          description: "Выделите текст для применения аккорда",
+          Title: `Chord: ${chord?.name}`,
+          Description: "Select text to apply the chord",
           color: chord?.color,
           icon: <Brush className="h-4 w-4" />,
         };
@@ -540,8 +543,8 @@ export function ToolPanel() {
     } else if (state.currentTool === "pattern" && state.selectedPatternId) {
       if (state.selectedPatternId === "empty") {
         return {
-          title: "Режим очистки паттернов",
-          description: "Выделите текст для удаления паттернов",
+          Title: "Pattern Clear Mode",
+          Description: "Select text to clear patterns",
           icon: <Eraser className="h-4 w-4" />,
         };
       } else {
@@ -549,22 +552,22 @@ export function ToolPanel() {
           (p) => p.id === state.selectedPatternId
         );
         return {
-          title: `Паттерн: ${pattern?.name}`,
-          description: "Выделите текст для применения паттерна",
+          title: `Pattern: ${pattern?.name}`,
+          description: "Select text to apply the pattern",
           color: pattern?.color,
           icon: <Brush className="h-4 w-4" />,
         };
       }
     } else if (state.currentTool === "comment") {
       return {
-        title: "Режим комментариев",
-        description: "Кликните по тексту для добавления комментария",
+        Title: "Comment Mode",
+        Description: "Click on the text to add a comment",
         icon: <MessageSquare className="h-4 w-4" />,
       };
     } else if (state.currentTool === "select") {
       return {
-        title: "Режим выбора",
-        description: "Выделяйте текст для редактирования",
+        Title: "Selection Mode",
+        Description: "Select text for editing",
         icon: <MousePointer className="h-4 w-4" />,
       };
     }
@@ -577,10 +580,8 @@ export function ToolPanel() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Инструменты</CardTitle>
-          <CardDescription>
-            Выберите инструмент для работы с текстом
-          </CardDescription>
+          <CardTitle>Tools</CardTitle>
+          <CardDescription>Select a text tool</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-4 gap-2">
@@ -589,7 +590,7 @@ export function ToolPanel() {
               size="sm"
               onClick={() => handleToolSelect("select")}
               className="h-10"
-              title="Режим выбора"
+              title="Selection mode"
             >
               <MousePointer className="h-4 w-4" />
             </Button>
@@ -598,7 +599,7 @@ export function ToolPanel() {
               size="sm"
               onClick={() => handleToolSelect("chord")}
               className="h-10"
-              title="Режим аккордов"
+              title="Chord Mode"
             >
               <Music className="h-4 w-4" />
             </Button>
@@ -607,7 +608,7 @@ export function ToolPanel() {
               size="sm"
               onClick={() => handleToolSelect("pattern")}
               className="h-10"
-              title="Режим паттернов"
+              title="Pattern Mode"
             >
               <ListMusic className="h-4 w-4" />
             </Button>
@@ -616,7 +617,7 @@ export function ToolPanel() {
               size="sm"
               onClick={() => handleToolSelect("comment")}
               className="h-10"
-              title="Режим комментариев"
+              title="Comment Mode"
             >
               <MessageSquare className="h-4 w-4" />
             </Button>
@@ -631,7 +632,7 @@ export function ToolPanel() {
               className="flex items-center justify-center gap-2"
             >
               <Plus className="h-4 w-4" />
-              Добавить аккорд
+              Add chord
               <Badge variant="secondary" className="ml-1">
                 {state.selectedChords.length}/20
               </Badge>
@@ -644,7 +645,7 @@ export function ToolPanel() {
               className="flex items-center justify-center gap-2"
             >
               <Plus className="h-4 w-4" />
-              Добавить паттерн
+              Add pattern
               <Badge variant="secondary" className="ml-1">
                 {state.selectedPatterns.length}/10
               </Badge>
@@ -664,7 +665,7 @@ export function ToolPanel() {
               className="flex-1"
             >
               <Eraser className="h-4 w-4 mr-2" />
-              Очистить аккорды
+              Clear chords
             </Button>
             <Button
               variant={
@@ -678,13 +679,13 @@ export function ToolPanel() {
               className="flex-1"
             >
               <Eraser className="h-4 w-4 mr-2" />
-              Очистить паттерны
+              Clear patterns
             </Button>
           </div>
 
           {state.selectedChords.length > 0 && (
             <div className="space-y-2">
-              <div className="text-sm font-medium">Аккорды в песне</div>
+              <div className="text-sm font-medium">Chords in the song</div>
               <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                 {state.selectedChords.map((chord) => (
                   <div
@@ -750,7 +751,7 @@ export function ToolPanel() {
                         variant="ghost"
                         onClick={(e) => handleRemoveChord(chord.id, e)}
                         className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        title="Удалить аккорд"
+                        title="Delete Chord"
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -763,7 +764,7 @@ export function ToolPanel() {
 
           {state.selectedPatterns.length > 0 && (
             <div className="space-y-2">
-              <div className="text-sm font-medium">Паттерны в песне</div>
+              <div className="text-sm font-medium">Patterns in the song</div>
               <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                 {state.selectedPatterns.map((pattern) => (
                   <div
@@ -813,7 +814,7 @@ export function ToolPanel() {
                           setShowReplacePattern(pattern.id);
                         }}
                         className="h-6 w-6 p-0"
-                        title="Заменить паттерн"
+                        title="Replace Pattern"
                       >
                         <Replace className="h-3 w-3" />
                       </Button>
@@ -825,7 +826,7 @@ export function ToolPanel() {
                           setEditingPatternId(pattern.id);
                         }}
                         className="h-6 w-6 p-0"
-                        title="Изменить цвет"
+                        title="Change color"
                       >
                         <Palette className="h-3 w-3" />
                       </Button>
@@ -834,7 +835,7 @@ export function ToolPanel() {
                         variant="ghost"
                         onClick={(e) => handleRemovePattern(pattern.id, e)}
                         className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        title="Удалить паттерн"
+                        title="Delete pattern"
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -867,7 +868,7 @@ export function ToolPanel() {
                     dispatch({ type: "SELECT_PATTERN", payload: undefined! });
                   }}
                   className="h-6 w-6 p-0"
-                  title="Отменить инструмент"
+                  title="Cancel Tool"
                 >
                   <X className="h-3 w-3" />
                 </Button>
@@ -921,12 +922,12 @@ export function ToolPanel() {
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Изменить цвет аккорда</DialogTitle>
+            <DialogTitle>Change Chord Color</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-sm text-muted-foreground mb-2">
-              Выберите новый цвет. Цвета не могут повторяться ни у аккордов, ни
-              у паттернов.
+              Select a new color. Colors cannot be repeated across chords or
+              patterns.
             </div>
             <div className="grid grid-cols-5 gap-2">
               {CHORD_COLORS.map((color) => {
@@ -970,12 +971,12 @@ export function ToolPanel() {
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Изменить цвет паттерна</DialogTitle>
+            <DialogTitle>Change Pattern Color</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-sm text-muted-foreground mb-2">
-              Выберите новый цвет. Цвета не могут повторяться ни у аккордов, ни
-              у паттернов.
+              Select a new color. Colors cannot be repeated across chords or
+              patterns.
             </div>
             <div className="grid grid-cols-5 gap-2">
               {PATTERN_COLORS.map((color) => {

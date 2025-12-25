@@ -55,14 +55,14 @@ export function RatingDisplay({
 
         <div className="text-xs text-muted-foreground mt-1">
           {rating >= 4.5
-            ? "Отлично"
+            ? "Excellent"
             : rating >= 4.0
-            ? "Очень хорошо"
+            ? "Very good"
             : rating >= 3.0
-            ? "Хорошо"
+            ? "Good"
             : rating >= 2.0
-            ? "Нормально"
-            : "Плохо"}
+            ? "Okay"
+            : "Bad"}
         </div>
       </div>
     </div>
@@ -123,11 +123,11 @@ export function RatingSelector({
               </div>
 
               <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                {ratingValue === 1 && "Очень плохо"}
-                {ratingValue === 2 && "Плохо"}
-                {ratingValue === 3 && "Нормально"}
-                {ratingValue === 4 && "Хорошо"}
-                {ratingValue === 5 && "Отлично"}
+                {ratingValue === 1 && "Very Poor"}
+                {ratingValue === 2 && "Poor"}
+                {ratingValue === 3 && "Okay"}
+                {ratingValue === 4 && "Good"}
+                {ratingValue === 5 && "Excellent"}
               </div>
             </button>
           );
@@ -136,11 +136,11 @@ export function RatingSelector({
 
       {value && (
         <div className="text-xs text-muted-foreground text-center">
-          {value === 1 && "Очень плохо"}
-          {value === 2 && "Плохо"}
-          {value === 3 && "Нормально"}
-          {value === 4 && "Хорошо"}
-          {value === 5 && "Отлично"}
+          {value === 1 && "Very bad"}
+          {value === 2 && "Bad"}
+          {value === 3 && "Okay"}
+          {value === 4 && "Good"}
+          {value === 5 && "Excellent"}
         </div>
       )}
     </div>

@@ -27,10 +27,7 @@ import {
 import { ProfileService } from "@/lib/api/profile-service";
 import { updateUserInfo } from "@/types/profile";
 import { PasswordStrength } from "../forms/password-strength";
-import {
-  validatePassword,
-  getPasswordStrength,
-} from "@/lib/utils/password-validation";
+import { validatePassword } from "@/lib/utils/password-validation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -49,13 +46,13 @@ const profileSchema = z
   })
   .refine(
     (data) => !data.password || (!!data.password && !!data.currentPassword),
-    { message: "Введите текущий пароль", path: ["currentPassword"] }
+    { message: "Enter your current password", path: ["currentPassword"] }
   )
   .refine(
     (data) =>
       (!data.currentPassword && !data.password) ||
       data.password === data.confirmPassword,
-    { message: "Пароли не совпадают", path: ["confirmPassword"] }
+    { message: "The passwords don't match", path: ["confirmPassword"] }
   )
   .refine(
     (data) => {
@@ -66,7 +63,7 @@ const profileSchema = z
       return true;
     },
     {
-      message: "Слишком слабый пароль",
+      message: "Password is too weak",
       path: ["password"],
     }
   );
@@ -148,7 +145,7 @@ export function ProfilePanel() {
       if (!avatarFile.type.startsWith("image/")) {
         setError("nikName", {
           type: "manual",
-          message: "Аватар должен быть изображением",
+          message: "Avatar must be an image",
         });
         toast.error("Please select an image file");
         return;

@@ -42,9 +42,7 @@ export function ReplacePatternModal({
   >("all");
   const [isLoading, setIsLoading] = useState(true);
 
-  const currentPattern = state.selectedPatterns.find(
-    (p) => p.id === patternId
-  );
+  const currentPattern = state.selectedPatterns.find((p) => p.id === patternId);
 
   useEffect(() => {
     if (open) {
@@ -92,50 +90,50 @@ export function ReplacePatternModal({
     }
   };
 
-const handleReplacePattern = () => {
-  if (!selectedPatternId || !currentPattern) return;
+  const handleReplacePattern = () => {
+    if (!selectedPatternId || !currentPattern) return;
 
-  const newPattern = patterns.find((p) => p.id === selectedPatternId);
-  if (!newPattern) return;
+    const newPattern = patterns.find((p) => p.id === selectedPatternId);
+    if (!newPattern) return;
 
-  const newPatternDto: SongPatternDto = {
-    id: newPattern.id,
-    name: newPattern.name,
-    pattern: newPattern.pattern, 
-    isFingerStyle: newPattern.isFingerStyle,
-    color: currentPattern.color,
-    description: newPattern.description, 
+    const newPatternDto: SongPatternDto = {
+      id: newPattern.id,
+      name: newPattern.name,
+      pattern: newPattern.pattern,
+      isFingerStyle: newPattern.isFingerStyle,
+      color: currentPattern.color,
+      description: newPattern.description,
+    };
+
+    dispatch({
+      type: "REPLACE_PATTERN",
+      payload: {
+        oldId: patternId,
+        newId: newPattern.id,
+        pattern: newPatternDto,
+      },
+    });
+
+    onClose();
   };
-
-  dispatch({
-    type: "REPLACE_PATTERN",
-    payload: {
-      oldId: patternId,
-      newId: newPattern.id,
-      pattern: newPatternDto,
-    },
-  });
-
-  onClose();
-};
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Заменить паттерн</DialogTitle>
+          <DialogTitle>Replace Pattern</DialogTitle>
           <DialogDescription>
-            Выберите новый паттерн для замены "{currentPattern?.name}"
+            Select a new pattern to replace "{currentPattern?.name}"
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col space-y-4">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Поиск паттернов</Label>
+              <Label>Search for patterns</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Введите название паттерна..."
+                  placeholder="Enter the pattern name..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -148,7 +146,7 @@ const handleReplacePattern = () => {
               onValueChange={(v: any) => setPatternType(v)}
             >
               <TabsList className="grid grid-cols-3">
-                <TabsTrigger value="all">Все</TabsTrigger>
+                <TabsTrigger value="all">All</TabsTrigger>
                 <TabsTrigger value="strumming">
                   <Music className="h-3 w-3 mr-2" />
                   Strumming
@@ -162,7 +160,7 @@ const handleReplacePattern = () => {
           </div>
 
           <div className="flex-1 overflow-hidden flex flex-col space-y-3">
-            <Label>Доступные паттерны ({filteredPatterns.length})</Label>
+            <Label>Available patterns ({filteredPatterns.length})</Label>
             <ScrollArea className="flex-1 border rounded-md p-2">
               {isLoading ? (
                 <div className="grid grid-cols-2 gap-2">
@@ -185,7 +183,7 @@ const handleReplacePattern = () => {
                         <div className="text-left">
                           <div className="font-medium">{pattern.name}</div>
                           <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                            {pattern.description || "Без описания"}
+                            {pattern.description || "No description"}
                           </div>
                           <Badge variant="outline" className="mt-2 text-xs">
                             {pattern.isFingerStyle
@@ -203,8 +201,8 @@ const handleReplacePattern = () => {
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   {searchTerm || patternType !== "all"
-                    ? "Паттерны не найдены"
-                    : "Нет доступных паттернов для замены"}
+                    ? "No patterns found"
+                    : "No replacement patterns available"}
                 </div>
               )}
             </ScrollArea>
@@ -222,11 +220,11 @@ const handleReplacePattern = () => {
                   )}
                   <div>
                     <div className="font-medium">
-                      Замена: {currentPattern?.name} →{" "}
+                      Replacement: {currentPattern?.name} →{" "}
                       {patterns.find((p) => p.id === selectedPatternId)?.name}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      Цвет паттерна останется прежним
+                      The pattern color will remain the same
                     </div>
                   </div>
                 </div>
@@ -236,13 +234,13 @@ const handleReplacePattern = () => {
 
           <div className="flex gap-3 justify-end pt-4 border-t">
             <Button variant="outline" onClick={onClose}>
-              Отмена
+              Cancel
             </Button>
             <Button
               onClick={handleReplacePattern}
               disabled={!selectedPatternId}
             >
-              Заменить паттерн
+              Replace pattern
             </Button>
           </div>
         </div>

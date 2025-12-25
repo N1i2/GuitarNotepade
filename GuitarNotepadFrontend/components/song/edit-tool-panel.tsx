@@ -489,25 +489,26 @@ export function EditToolPanel() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Инструменты</CardTitle>
+          <CardTitle>Tools</CardTitle>
           <CardDescription>
-            Редактирование аккордов и паттернов (текст нельзя изменить)
+            Editing chords and patterns (lyrics cannot be changed)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="p-3 rounded-lg border bg-muted/30">
             <div className="flex items-center gap-2">
               <Brush className="h-4 w-4" />
-              <span className="font-medium">Режим просмотра текста</span>
+              <span className="font-medium">Text View Mode</span>
             </div>
             <div className="text-xs text-muted-foreground mt-1">
-              Текст нельзя изменить. Можно редактировать только аккорды и паттерны
+              The lyrics can't be changed. Only chords and patterns can be
+              edited.
             </div>
           </div>
 
           {state.selectedChords.length > 0 && (
             <div className="space-y-2">
-              <div className="text-sm font-medium">Аккорды в песне</div>
+              <div className="text-sm font-medium">Chords in the song</div>
               <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                 {state.selectedChords.map((chord) => (
                   <div
@@ -532,7 +533,7 @@ export function EditToolPanel() {
                         variant="ghost"
                         onClick={() => setSelectedChordName(chord.name)}
                         className="h-6 w-6 p-0"
-                        title="Показать аккорд"
+                        title="Show chord"
                       >
                         <ExternalLink className="h-3 w-3" />
                       </Button>
@@ -544,7 +545,7 @@ export function EditToolPanel() {
                           setShowReplaceChord(chord.id);
                         }}
                         className="h-6 w-6 p-0"
-                        title="Заменить аккорд"
+                        title="Replace Chord"
                       >
                         <Replace className="h-3 w-3" />
                       </Button>
@@ -556,7 +557,7 @@ export function EditToolPanel() {
                           setEditingChordId(chord.id);
                         }}
                         className="h-6 w-6 p-0"
-                        title="Изменить цвет"
+                        title="Change color"
                       >
                         <Palette className="h-3 w-3" />
                       </Button>
@@ -565,7 +566,7 @@ export function EditToolPanel() {
                         variant="ghost"
                         onClick={(e) => handleRemoveChord(chord.id, e)}
                         className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        title="Удалить аккорд"
+                        title="Delete Chord"
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -578,7 +579,7 @@ export function EditToolPanel() {
 
           {state.selectedPatterns.length > 0 && (
             <div className="space-y-2">
-              <div className="text-sm font-medium">Паттерны в песне</div>
+              <div className="text-sm font-medium">Patterns in the song</div>
               <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                 {state.selectedPatterns.map((pattern) => (
                   <div
@@ -608,7 +609,7 @@ export function EditToolPanel() {
                         variant="ghost"
                         onClick={() => setSelectedPatternName(pattern.name)}
                         className="h-6 w-6 p-0"
-                        title="Показать паттерн"
+                        title="Show pattern"
                       >
                         <ExternalLink className="h-3 w-3" />
                       </Button>
@@ -620,7 +621,7 @@ export function EditToolPanel() {
                           setShowReplacePattern(pattern.id);
                         }}
                         className="h-6 w-6 p-0"
-                        title="Заменить паттерн"
+                        title="Replace Pattern"
                       >
                         <Replace className="h-3 w-3" />
                       </Button>
@@ -632,7 +633,7 @@ export function EditToolPanel() {
                           setEditingPatternId(pattern.id);
                         }}
                         className="h-6 w-6 p-0"
-                        title="Изменить цвет"
+                        title="Change color"
                       >
                         <Palette className="h-3 w-3" />
                       </Button>
@@ -641,7 +642,7 @@ export function EditToolPanel() {
                         variant="ghost"
                         onClick={(e) => handleRemovePattern(pattern.id, e)}
                         className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        title="Удалить паттерн"
+                        title="Delete pattern"
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -679,12 +680,12 @@ export function EditToolPanel() {
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Изменить цвет аккорда</DialogTitle>
+            <DialogTitle>Change Chord Color</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-sm text-muted-foreground mb-2">
-              Выберите новый цвет. Цвета не могут повторяться ни у аккордов, ни
-              у паттернов.
+              Select a new color. Colors cannot be repeated across chords or
+              patterns.
             </div>
             <div className="grid grid-cols-5 gap-2">
               {CHORD_COLORS.map((color) => {
@@ -728,12 +729,12 @@ export function EditToolPanel() {
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Изменить цвет паттерна</DialogTitle>
+            <DialogTitle>Change Pattern Color</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-sm text-muted-foreground mb-2">
-              Выберите новый цвет. Цвета не могут повторяться ни у аккордов, ни
-              у паттернов.
+              Select a new color. Colors cannot be repeated across chords or
+              patterns.
             </div>
             <div className="grid grid-cols-5 gap-2">
               {PATTERN_COLORS.map((color) => {

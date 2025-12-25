@@ -142,19 +142,19 @@ export function AddChordModal({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Добавить аккорд</DialogTitle>
+          <DialogTitle>Add Chord</DialogTitle>
           <DialogDescription>
-            Выберите аккорд и цвет для подчеркивания
+            Select a chord and color to highlight
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col space-y-4">
           <div className="space-y-2">
-            <Label>Поиск аккордов</Label>
+            <Label>Chord Search</Label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Введите название аккорда..."
+                placeholder="Enter the name of the chord..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -163,7 +163,7 @@ export function AddChordModal({
           </div>
 
           <div className="flex-1 overflow-hidden flex flex-col space-y-3">
-            <Label>Доступные аккорды ({filteredChords.length})</Label>
+            <Label>Available chords ({filteredChords.length})</Label>
             <ScrollArea className="flex-1 border rounded-md p-2">
               {isLoading ? (
                 <div className="grid grid-cols-3 gap-2">
@@ -194,10 +194,10 @@ export function AddChordModal({
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   {existingChordIds.length >= 20
-                    ? "Достигнут максимум 20 аккордов"
+                    ? "Maximum 20 chords reached"
                     : searchTerm
-                    ? "Аккорды не найдены"
-                    : "Все доступные аккорды уже добавлены"}
+                    ? "No chords found"
+                    : "All available chords have already been added"}
                 </div>
               )}
             </ScrollArea>
@@ -205,7 +205,7 @@ export function AddChordModal({
 
           {selectedChordId && (
             <div className="space-y-3 border-t pt-4">
-              <Label>Выберите цвет для подчеркивания</Label>
+              <Label>Select a color for the underline</Label>
               <div className="grid grid-cols-5 gap-2">
                 {availableColors.map((color) => (
                   <button
@@ -233,15 +233,15 @@ export function AddChordModal({
                     className="w-4 h-1 rounded"
                     style={{ backgroundColor: selectedColor }}
                   />
-                  <span>Так будет выглядеть подчеркивание</span>
+                  <span>This is what the underline will look like</span>
                 </div>
               )}
 
               <div className="text-sm text-muted-foreground">
-                <div>• Аккорды могут использовать только первые 20 цветов</div>
+                <div>• Chords can only use the first 20 colors</div>
                 <div>
-                  • Каждый цвет может использоваться только один раз (ни
-                  аккордами, ни паттернами)
+                  • Each color can only be used once (neither chords nor
+                  patterns)
                 </div>
               </div>
             </div>
@@ -249,13 +249,13 @@ export function AddChordModal({
 
           <div className="flex gap-3 justify-end pt-4 border-t">
             <Button variant="outline" onClick={onClose}>
-              Отмена
+              Cancel
             </Button>
             <Button
               onClick={handleAddChord}
               disabled={!selectedChordId || !selectedColor}
             >
-              Добавить аккорд
+              Add a chord
             </Button>
           </div>
         </div>
