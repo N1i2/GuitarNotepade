@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -15,13 +15,16 @@ import { useSongCreation } from "@/app/contexts/song-creation-context";
 import {
   applyToolToSelection,
   findSegmentAtPosition,
+  updateSegmentsForTextChange,
+  generateSegmentId,
 } from "@/lib/song-segment-utils";
 import { AddCommentModal } from "./add-comment-modal";
 import { toast } from "sonner";
 import { SegmentsList } from "./segments-list";
 
 interface TextSegment {
-  type: "text" | "segment" | "space";
+  id: string;
+  type: "text" | "segment";
   content: string;
   startIndex?: number;
   length?: number;
@@ -37,41 +40,40 @@ export function SongTextEditor() {
   const { state, dispatch } = useSongCreation();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
-  const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [showAddComment, setShowAddComment] = useState(false);
   const [commentSegmentId, setCommentSegmentId] = useState<string>("");
-  const [hoveredSegment, setHoveredSegment] = useState<number | null>(null);
-  const [displayText, setDisplayText] = useState("");
+  const [hoveredSegmentId, setHoveredSegmentId] = useState<string | null>(null);
 
-  const [isInitialized, setIsInitialized] = useState(false);
+  const formattedText = useMemo(() => {
+    if (!state.text) return "";
 
-  const formatTextWithSpaces = useCallback((segments: any[], text: string) => {
-    if (!text || segments.length === 0) return text;
-
-    const sortedSegments = [...segments].sort(
+    const sortedSegments = [...state.segments].sort(
       (a, b) => a.startIndex - b.startIndex
     );
-
     let result = "";
     let currentLine = "";
-    let lastEndIndex = 0;
 
-    for (let i = 0; i < sortedSegments.length; i++) {
-      const segment = sortedSegments[i];
-
-      if (segment.startIndex > lastEndIndex) {
-        const gap = text.substring(lastEndIndex, segment.startIndex);
-        if (gap) {
-          currentLine += gap;
-        }
-      }
-
-      let segmentText =
+    sortedSegments.forEach((segment, index) => {
+      const segmentText =
         segment.text ||
-        text.substring(segment.startIndex, segment.startIndex + segment.length);
+        state.text.substring(
+          segment.startIndex,
+          segment.startIndex + segment.length
+        );
 
-      if (i > 0 && !segmentText.startsWith(" ")) {
-        segmentText = " " + segmentText;
+      const textBeforeSegment =
+        index === 0 ? state.text.substring(0, segment.startIndex) : "";
+
+      if (textBeforeSegment) {
+        if (
+          currentLine.length + textBeforeSegment.length > 30 &&
+          currentLine.length > 0
+        ) {
+          result += currentLine.trimEnd() + "\n";
+          currentLine = textBeforeSegment;
+        } else {
+          currentLine += textBeforeSegment;
+        }
       }
 
       if (
@@ -83,23 +85,38 @@ export function SongTextEditor() {
       } else {
         currentLine += segmentText;
       }
+    });
 
-      lastEndIndex = segment.startIndex + segment.length;
-    }
+    if (sortedSegments.length > 0) {
+      const lastSegment = sortedSegments[sortedSegments.length - 1];
+      const remainingText = state.text.substring(
+        lastSegment.startIndex + lastSegment.length
+      );
 
-    if (lastEndIndex < text.length) {
-      const remaining = text.substring(lastEndIndex);
-      if (remaining) {
+      if (remainingText) {
         if (
-          currentLine.length + remaining.length > 30 &&
+          currentLine.length + remainingText.length > 30 &&
           currentLine.length > 0
         ) {
           result += currentLine.trimEnd() + "\n";
-          currentLine = remaining;
+          currentLine = remainingText;
         } else {
-          currentLine += remaining;
+          currentLine += remainingText;
         }
       }
+    } else if (state.text) {
+      const words = state.text.split(" ");
+      words.forEach((word) => {
+        if (
+          currentLine.length + word.length + 1 > 30 &&
+          currentLine.length > 0
+        ) {
+          result += currentLine.trimEnd() + "\n";
+          currentLine = word + " ";
+        } else {
+          currentLine += word + " ";
+        }
+      });
     }
 
     if (currentLine) {
@@ -107,195 +124,179 @@ export function SongTextEditor() {
     }
 
     return result;
-  }, []);
+  }, [state.text, state.segments]);
 
-  const updateSegmentsForTextChange = useCallback(
-    (oldText: string, newText: string, oldSegments: any[]) => {
-      if (oldText === newText) return oldSegments;
+  const textSegments = useMemo(() => {
+    const segments: TextSegment[] = [];
+    if (!state.text || !formattedText) return segments;
 
-      let changeStart = 0;
-      while (
-        changeStart < oldText.length &&
-        changeStart < newText.length &&
-        oldText[changeStart] === newText[changeStart]
-      ) {
-        changeStart++;
-      }
+    const plainText = formattedText.replace(/\n/g, " ");
+    let segmentCounter = 0;
 
-      let oldEnd = oldText.length - 1;
-      let newEnd = newText.length - 1;
-      while (
-        oldEnd >= changeStart &&
-        newEnd >= changeStart &&
-        oldText[oldEnd] === newText[newEnd]
-      ) {
-        oldEnd--;
-        newEnd--;
-      }
-
-      const changeLength = oldEnd - changeStart + 1;
-      const newLength = newEnd - changeStart + 1;
-      const lengthDiff = newLength - changeLength;
-
-      const updatedSegments = oldSegments
-        .map((segment) => {
-          if (segment.startIndex + segment.length <= changeStart) {
-            return segment;
-          }
-
-          if (segment.startIndex > oldEnd) {
-            return {
-              ...segment,
-              startIndex: segment.startIndex + lengthDiff,
-            };
-          }
-
-          if (
-            segment.startIndex < changeStart &&
-            segment.startIndex + segment.length > changeStart
-          ) {
-            const newSegment = { ...segment };
-
-            if (
-              newSegment.startIndex + newSegment.length >
-              changeStart + changeLength
-            ) {
-              newSegment.length += lengthDiff;
-              newSegment.text = newText.substring(
-                newSegment.startIndex,
-                newSegment.startIndex + newSegment.length
-              );
-            }
-
-            return newSegment;
-          }
-
-          return null;
-        })
-        .filter((segment) => segment !== null);
-
-      return updatedSegments;
-    },
-    []
-  );
-
-  useEffect(() => {
-    if (!isInitialized && state.text && state.segments.length > 0) {
-      const formattedText = formatTextWithSpaces(state.segments, state.text);
-      setDisplayText(formattedText);
-      setIsInitialized(true);
-    }
-  }, [state.text, state.segments, isInitialized, formatTextWithSpaces]);
-
-  const handleTextChange = (value: string) => {
-    const oldPlainText = state.text;
-    const newDisplayText = value;
-    const newPlainText = value.replace(/\n/g, " ");
-
-    setDisplayText(newDisplayText);
-
-    dispatch({ type: "SET_TEXT", payload: newPlainText });
-
-    const updatedSegments = updateSegmentsForTextChange(
-      oldPlainText,
-      newPlainText,
-      state.segments
+    const sortedSegments = [...state.segments].sort(
+      (a, b) => a.startIndex - b.startIndex
     );
+    let lastIndex = 0;
 
-    if (JSON.stringify(updatedSegments) !== JSON.stringify(state.segments)) {
-      dispatch({ type: "SET_SEGMENTS", payload: updatedSegments });
+    sortedSegments.forEach((segment, index) => {
+      if (segment.startIndex > lastIndex) {
+        const textBefore = state.text.substring(lastIndex, segment.startIndex);
+        if (textBefore) {
+          segments.push({
+            id: `text-before-${index}-${segmentCounter++}`,
+            type: "text",
+            content: textBefore,
+          });
+        }
+      }
+
+      const segmentText =
+        segment.text ||
+        state.text.substring(
+          segment.startIndex,
+          segment.startIndex + segment.length
+        );
+
+      if (segmentText) {
+        const hasComments = segment.comments && segment.comments.length > 0;
+        segments.push({
+          id: segment.id || `segment-${segmentCounter++}`,
+          type: "segment",
+          content: segmentText,
+          startIndex: segment.startIndex,
+          length: segment.length,
+          segmentId: segment.id,
+          color: segment.color,
+          backgroundColor: segment.backgroundColor,
+          hasComments,
+          chordId: segment.chordId,
+          patternId: segment.patternId,
+        });
+      }
+
+      lastIndex = segment.startIndex + segment.length;
+    });
+
+    if (lastIndex < state.text.length) {
+      const remainingText = state.text.substring(lastIndex);
+      if (remainingText) {
+        segments.push({
+          id: `text-end-${segmentCounter++}`,
+          type: "text",
+          content: remainingText,
+        });
+      }
     }
-  };
+
+    return segments;
+  }, [state.text, state.segments, formattedText]);
+
+  const handleTextChange = useCallback(
+    (value: string) => {
+      const newPlainText = value.replace(/\n/g, " ");
+
+      const updatedSegments = updateSegmentsForTextChange(
+        state.text,
+        newPlainText,
+        state.segments
+      );
+
+      dispatch({ type: "SET_TEXT", payload: newPlainText });
+      dispatch({ type: "SET_SEGMENTS", payload: updatedSegments });
+    },
+    [state.text, state.segments, dispatch]
+  );
 
   const handleTextareaSelect = useCallback(() => {
     if (!textareaRef.current) return;
 
     const start = textareaRef.current.selectionStart;
     const end = textareaRef.current.selectionEnd;
-    setSelection({ start, end });
 
-    if (start !== end) {
-      applyToSelection(start, end);
+    if (start !== end && (state.selectedChordId || state.selectedPatternId)) {
+      const selectedDisplayText = formattedText.substring(start, end);
+      if (selectedDisplayText.trim()) {
+        applyToSelection(start, end);
+      }
     }
-  }, [
-    state.selectedChordId,
-    state.selectedPatternId,
-    state.currentTool,
-    state.segments,
-    state.text,
-    state.selectedChords,
-    state.selectedPatterns,
-  ]);
+  }, [formattedText, state.selectedChordId, state.selectedPatternId]);
 
-  const applyToSelection = (start: number, end: number) => {
-    const selectedDisplayText = displayText.substring(start, end);
-    if (!selectedDisplayText.trim() && selectedDisplayText !== "[SPACE]")
-      return;
+  const applyToSelection = useCallback(
+    (start: number, end: number) => {
+      if (!textareaRef.current || !formattedText) return;
 
-    const plainText = displayText.replace(/\n/g, " ");
-    const displayTextBeforeStart = displayText.substring(0, start);
-    const plainTextBeforeStart = displayTextBeforeStart.replace(/\n/g, " ");
+      const selectedDisplayText = formattedText.substring(start, end);
+      if (!selectedDisplayText.trim()) return;
 
-    const displayTextBeforeEnd = displayText.substring(0, end);
-    const plainTextBeforeEnd = displayTextBeforeEnd.replace(/\n/g, " ");
+      const plainText = formattedText.replace(/\n/g, " ");
+      const displayTextBeforeStart = formattedText.substring(0, start);
+      const plainTextBeforeStart = displayTextBeforeStart.replace(/\n/g, " ");
+      const displayTextBeforeEnd = formattedText.substring(0, end);
+      const plainTextBeforeEnd = displayTextBeforeEnd.replace(/\n/g, " ");
 
-    const plainStart = plainTextBeforeStart.length;
-    const plainEnd = plainTextBeforeEnd.length;
+      const plainStart = plainTextBeforeStart.length;
+      const plainEnd = plainTextBeforeEnd.length;
 
-    let tool: "chord" | "pattern" | null = null;
-    let selectedId: string | undefined;
+      let tool: "chord" | "pattern" | null = null;
+      let selectedId: string | undefined;
 
-    if (state.currentTool === "chord" && state.selectedChordId) {
-      tool = "chord";
-      selectedId = state.selectedChordId;
-    } else if (state.currentTool === "pattern" && state.selectedPatternId) {
-      tool = "pattern";
-      selectedId = state.selectedPatternId;
-    }
+      if (state.currentTool === "chord" && state.selectedChordId) {
+        tool = "chord";
+        selectedId = state.selectedChordId;
+      } else if (state.currentTool === "pattern" && state.selectedPatternId) {
+        tool = "pattern";
+        selectedId = state.selectedPatternId;
+      }
 
-    if (!tool || !selectedId) return;
+      if (!tool || !selectedId) return;
 
-    const newSegments = applyToolToSelection(
-      state.segments,
-      state.text,
-      plainStart,
-      plainEnd,
-      tool,
-      selectedId,
-      state.selectedChords,
-      state.selectedPatterns
-    );
+      const newSegments = applyToolToSelection(
+        state.segments,
+        state.text,
+        plainStart,
+        plainEnd,
+        tool,
+        selectedId,
+        state.selectedChords,
+        state.selectedPatterns
+      );
 
-    dispatch({ type: "SET_SEGMENTS", payload: newSegments });
+      dispatch({ type: "SET_SEGMENTS", payload: newSegments });
 
-    if (textareaRef.current) {
-      textareaRef.current.setSelectionRange(start, start);
-      textareaRef.current.focus();
-    }
-  };
+      if (textareaRef.current) {
+        textareaRef.current.setSelectionRange(start, start);
+        textareaRef.current.focus();
+      }
+    },
+    [formattedText, state, dispatch]
+  );
 
-  const handleTextareaClick = (e: React.MouseEvent<HTMLTextAreaElement>) => {
-    if (!textareaRef.current || state.currentTool !== "comment") return;
+  const handleTextareaClick = useCallback(
+    (e: React.MouseEvent<HTMLTextAreaElement>) => {
+      if (!textareaRef.current || state.currentTool !== "comment") return;
 
-    const textarea = textareaRef.current;
-    const cursorPosition = textarea.selectionStart;
+      const cursorPosition = textareaRef.current.selectionStart;
+      const displayTextBeforeCursor = formattedText.substring(
+        0,
+        cursorPosition
+      );
+      const plainTextPosition = displayTextBeforeCursor.replace(
+        /\n/g,
+        " "
+      ).length;
 
-    const displayTextBeforeCursor = displayText.substring(0, cursorPosition);
-    const plainTextPosition = displayTextBeforeCursor.replace(
-      /\n/g,
-      " "
-    ).length;
+      const segment = findSegmentAtPosition(state.segments, plainTextPosition);
+      if (segment) {
+        setCommentSegmentId(segment.id);
+        setShowAddComment(true);
+      } else {
+        toast.error("Не удалось найти сегмент для комментария");
+      }
+    },
+    [formattedText, state.segments, state.currentTool]
+  );
 
-    const segment = findSegmentAtPosition(state.segments, plainTextPosition);
-    if (segment) {
-      setCommentSegmentId(segment.id);
-      setShowAddComment(true);
-    } else {
-      toast.error("Не удалось найти сегмент для комментария");
-    }
-  };
-
-  const handleManualApply = () => {
+  const handleManualApply = useCallback(() => {
     if (!textareaRef.current) return;
 
     const start = textareaRef.current.selectionStart;
@@ -312,283 +313,87 @@ export function SongTextEditor() {
     }
 
     applyToSelection(start, end);
-  };
+  }, [applyToSelection, state.selectedChordId, state.selectedPatternId]);
 
-  const addSpaceSegment = () => {
+  const addSpaceSegment = useCallback(() => {
     const spaceText = "[SPACE]";
-    const newDisplayText =
-      displayText +
-      (displayText && !displayText.endsWith("\n") && !displayText.endsWith(" ")
-        ? " "
-        : "") +
-      spaceText +
-      " ";
+    const newPlainText = state.text + (state.text ? " " : "") + spaceText + " ";
 
-    setDisplayText(newDisplayText);
-
-    const plainText = newDisplayText.replace(/\n/g, " ");
-    dispatch({ type: "SET_TEXT", payload: plainText });
-
-    const plainTextBeforeSpace = plainText.length - spaceText.length - 1;
     const newSegment = {
-      id: `space-${Date.now()}`,
+      id: generateSegmentId(
+        state.text.length + (state.text ? 1 : 0),
+        spaceText.length
+      ),
       order: state.segments.length,
-      startIndex: plainTextBeforeSpace,
+      startIndex: state.text.length + (state.text ? 1 : 0),
       length: spaceText.length,
       text: spaceText,
       chordId: undefined,
       patternId: undefined,
       backgroundColor: "#f0f0f0",
     };
+
+    dispatch({ type: "SET_TEXT", payload: newPlainText });
     dispatch({ type: "ADD_SEGMENT", payload: newSegment });
-  };
+  }, [state.text, state.segments.length, dispatch]);
 
-  const createTextSegments = (): TextSegment[] => {
-    if (!state.text) return [];
+  const handleSegmentClick = useCallback(
+    (segmentId: string) => {
+      const segment = state.segments.find((s) => s.id === segmentId);
+      if (!segment || !textareaRef.current) return;
 
-    const segments = [...state.segments].sort(
-      (a, b) => a.startIndex - b.startIndex
-    );
-    const result: TextSegment[] = [];
-    let lastIndex = 0;
-
-    segments.forEach((segment) => {
-      if (segment.startIndex > state.text.length) return;
-
-      if (segment.startIndex > lastIndex) {
-        const betweenText = state.text.substring(lastIndex, segment.startIndex);
-        if (betweenText) {
-          result.push({
-            type: "text",
-            content: betweenText,
-          });
-        }
-      }
-
-      const segmentEnd = Math.min(
-        segment.startIndex + segment.length,
-        state.text.length
+      const plainTextBeforeSegment = state.text.substring(
+        0,
+        segment.startIndex
       );
-      const segmentText = state.text.substring(segment.startIndex, segmentEnd);
+      const displayPosition = countDisplayPosition(plainTextBeforeSegment);
 
-      if (!segmentText) {
-        lastIndex = segmentEnd;
-        return;
-      }
-
-      const hasComments = segment.comments && segment.comments.length > 0;
-
-      result.push({
-        type: "segment",
-        content: segmentText,
-        startIndex: segment.startIndex,
-        length: segment.length,
-        segmentId: segment.id,
-        color: segment.color,
-        backgroundColor: segment.backgroundColor,
-        hasComments,
-        chordId: segment.chordId,
-        patternId: segment.patternId,
-      });
-
-      lastIndex = segmentEnd;
-    });
-
-    if (lastIndex < state.text.length) {
-      const remaining = state.text.substring(lastIndex);
-      if (remaining) {
-        result.push({
-          type: "text",
-          content: remaining,
-        });
-      }
-    }
-
-    return result;
-  };
-
-  const renderTextWithSegments = () => {
-    const textSegments = createTextSegments();
-    if (textSegments.length === 0) return null;
-
-    const result: React.ReactNode[] = [];
-    let currentLine: TextSegment[] = [];
-    let currentLineLength = 0;
-
-    textSegments.forEach((segment) => {
-      const segmentLength = segment.content.length;
-
-      const spaceLength = currentLine.length > 0 ? 1 : 0;
-
-      if (
-        currentLineLength + segmentLength + spaceLength > 30 &&
-        currentLineLength > 0
-      ) {
-        renderLine(currentLine, result);
-        result.push(<br key={`br-${result.length}`} />);
-        currentLine = [];
-        currentLineLength = 0;
-      }
-
-      currentLine.push(segment);
-      currentLineLength += segmentLength + (currentLine.length > 1 ? 1 : 0);
-    });
-
-    if (currentLine.length > 0) {
-      renderLine(currentLine, result);
-    }
-
-    return result;
-  };
-
-  const renderLine = (segments: TextSegment[], result: React.ReactNode[]) => {
-    segments.forEach((segment, i) => {
-      let content = segment.content;
-
-      if (segment.type === "text") {
-        result.push(
-          <span key={`text-${i}`} className="whitespace-pre-wrap">
-            {content}
-          </span>
+      const segmentText =
+        segment.text ||
+        state.text.substring(
+          segment.startIndex,
+          segment.startIndex + segment.length
         );
-      } else if (segment.type === "segment") {
-        const segmentStyles: React.CSSProperties = {
-          position: "relative" as "relative",
-          display: "inline-block",
-        };
+      const plainTextIncludingSegment = state.text.substring(
+        0,
+        segment.startIndex + segmentText.length
+      );
+      const displayEndPosition = countDisplayPosition(
+        plainTextIncludingSegment
+      );
 
-        if (segment.color) {
-          segmentStyles.borderBottom = `3px solid ${segment.color}`;
-        }
+      textareaRef.current.focus();
+      textareaRef.current.setSelectionRange(
+        displayPosition,
+        displayEndPosition
+      );
+    },
+    [state.segments, state.text]
+  );
 
-        if (segment.backgroundColor) {
-          segmentStyles.backgroundColor = segment.backgroundColor;
-          segmentStyles.paddingLeft = "3px";
-          segmentStyles.paddingRight = "3px";
-          segmentStyles.paddingTop = "1px";
-          segmentStyles.paddingBottom = "1px";
-          segmentStyles.borderRadius = "3px";
-          segmentStyles.marginLeft = "1px";
-          segmentStyles.marginRight = "1px";
-          if (segment.color) {
-            segmentStyles.marginBottom = "3px";
+  const countDisplayPosition = useCallback(
+    (plainText: string): number => {
+      if (!formattedText) return 0;
+
+      let displayPos = 0;
+      let plainPos = 0;
+      const plainTextWithoutNewlines = formattedText.replace(/\n/g, " ");
+
+      while (plainPos < plainText.length && displayPos < formattedText.length) {
+        if (formattedText[displayPos] === "\n") {
+          displayPos++;
+        } else {
+          if (plainPos < plainText.length) {
+            plainPos++;
           }
+          displayPos++;
         }
-
-        result.push(
-          <span
-            key={`segment-${segment.segmentId}`}
-            style={segmentStyles}
-            className="relative inline-block group cursor-pointer whitespace-pre-wrap"
-            onMouseEnter={() => {
-              const index = state.segments.findIndex(
-                (s) => s.id === segment.segmentId
-              );
-              if (index !== -1) setHoveredSegment(index);
-            }}
-            onMouseLeave={() => setHoveredSegment(null)}
-            onClick={() => handleSegmentClick(segment.segmentId!)}
-            title={`${segment.content.trim()}\n${
-              segment.chordId
-                ? "Аккорд: " +
-                  state.selectedChords.find((c) => c.id === segment.chordId)
-                    ?.name
-                : ""
-            }\n${
-              segment.patternId
-                ? "Паттерн: " +
-                  state.selectedPatterns.find((p) => p.id === segment.patternId)
-                    ?.name
-                : ""
-            }`}
-          >
-            {content}
-            {segment.hasComments && (
-              <span className="absolute -top-1 -right-1">
-                <MessageSquare className="h-3 w-3 text-blue-500" />
-              </span>
-            )}
-
-            {hoveredSegment !== null &&
-              state.segments[hoveredSegment]?.id === segment.segmentId &&
-              (segment.chordId || segment.patternId) && (
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md shadow-lg z-50 whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                    {segment.chordId && (
-                      <>
-                        <Music className="h-3 w-3" />
-                        <span>
-                          {
-                            state.selectedChords.find(
-                              (c) => c.id === segment.chordId
-                            )?.name
-                          }
-                        </span>
-                      </>
-                    )}
-                    {segment.patternId && (
-                      <>
-                        <ListMusic className="h-3 w-3" />
-                        <span>
-                          {
-                            state.selectedPatterns.find(
-                              (p) => p.id === segment.patternId
-                            )?.name
-                          }
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900"></div>
-                </div>
-              )}
-          </span>
-        );
       }
-    });
-  };
 
-  const handleSegmentClick = (segmentId: string) => {
-    const segment = state.segments.find((s) => s.id === segmentId);
-    if (!segment || !textareaRef.current) return;
-
-    const plainTextBeforeSegment = state.text.substring(0, segment.startIndex);
-    const displayTextPosition = findPositionInDisplayText(
-      plainTextBeforeSegment
-    );
-
-    const plainTextEnd = segment.startIndex + segment.length;
-    const plainTextBeforeEnd = state.text.substring(0, plainTextEnd);
-    const displayEndPosition = findPositionInDisplayText(plainTextBeforeEnd);
-
-    textareaRef.current.focus();
-    textareaRef.current.setSelectionRange(
-      displayTextPosition,
-      displayEndPosition
-    );
-  };
-
-  const findPositionInDisplayText = (plainTextFragment: string): number => {
-    let displayPos = 0;
-    let plainPos = 0;
-
-    for (
-      let i = 0;
-      i < displayText.length && plainPos < plainTextFragment.length;
-      i++
-    ) {
-      if (displayText[i] === "\n") {
-        displayPos++;
-      } else {
-        if (plainPos < plainTextFragment.length) {
-          plainPos++;
-        }
-        displayPos++;
-      }
-    }
-
-    return displayPos;
-  };
+      return displayPos;
+    },
+    [formattedText]
+  );
 
   const handleDeleteComment = useCallback(
     (commentId: string) => {
@@ -597,10 +402,93 @@ export function SongTextEditor() {
     [dispatch]
   );
 
-  const handleCloseCommentModal = () => {
-    setShowAddComment(false);
-    setCommentSegmentId("");
-  };
+  const renderPreview = useMemo(() => {
+    return textSegments.map((segment) => {
+      if (segment.type === "text") {
+        return (
+          <span key={segment.id} className="whitespace-pre-wrap">
+            {segment.content}
+          </span>
+        );
+      }
+
+      const segmentStyles: React.CSSProperties = {
+        position: "relative",
+        display: "inline-block",
+        whiteSpace: "pre-wrap",
+      };
+
+      if (segment.color) {
+        segmentStyles.borderBottom = `3px solid ${segment.color}`;
+      }
+
+      if (segment.backgroundColor) {
+        segmentStyles.backgroundColor = segment.backgroundColor;
+        segmentStyles.padding = "1px 3px";
+        segmentStyles.borderRadius = "3px";
+        segmentStyles.margin = "0 1px";
+        if (segment.color) {
+          segmentStyles.marginBottom = "3px";
+        }
+      }
+
+      const chord = segment.chordId
+        ? state.selectedChords.find((c) => c.id === segment.chordId)
+        : null;
+      const pattern = segment.patternId
+        ? state.selectedPatterns.find((p) => p.id === segment.patternId)
+        : null;
+
+      return (
+        <span
+          key={segment.id}
+          style={segmentStyles}
+          className="relative inline-block group cursor-pointer"
+          onMouseEnter={() => setHoveredSegmentId(segment.segmentId || null)}
+          onMouseLeave={() => setHoveredSegmentId(null)}
+          onClick={() =>
+            segment.segmentId && handleSegmentClick(segment.segmentId)
+          }
+          title={`${segment.content.trim()}\n${
+            chord ? `Аккорд: ${chord.name}` : ""
+          }\n${pattern ? `Паттерн: ${pattern.name}` : ""}`}
+        >
+          {segment.content}
+          {segment.hasComments && (
+            <span className="absolute -top-1 -right-1">
+              <MessageSquare className="h-3 w-3 text-blue-500" />
+            </span>
+          )}
+
+          {hoveredSegmentId === segment.segmentId && (chord || pattern) && (
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md shadow-lg z-50 whitespace-nowrap">
+              <div className="flex items-center gap-2">
+                {chord && (
+                  <>
+                    <Music className="h-3 w-3" />
+                    <span>{chord.name}</span>
+                  </>
+                )}
+                {pattern && (
+                  <>
+                    <ListMusic className="h-3 w-3" />
+                    <span>{pattern.name}</span>
+                  </>
+                )}
+              </div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900"></div>
+            </div>
+          )}
+        </span>
+      );
+    });
+  }, [
+    textSegments,
+    state.selectedChords,
+    state.selectedPatterns,
+    hoveredSegmentId,
+    handleSegmentClick,
+  ]);
 
   return (
     <div className="space-y-6">
@@ -615,7 +503,7 @@ export function SongTextEditor() {
           <div className="relative">
             <Textarea
               ref={textareaRef}
-              value={displayText}
+              value={formattedText}
               onChange={(e) => handleTextChange(e.target.value)}
               onSelect={handleTextareaSelect}
               onClick={handleTextareaClick}
@@ -656,7 +544,7 @@ export function SongTextEditor() {
                     return;
                   }
 
-                  const displayTextBeforeCursor = displayText.substring(
+                  const displayTextBeforeCursor = formattedText.substring(
                     0,
                     start
                   );
@@ -693,7 +581,9 @@ export function SongTextEditor() {
             className="min-h-[400px] p-4 border rounded-lg bg-background whitespace-pre-wrap font-mono overflow-y-auto leading-relaxed text-base"
             style={{ wordBreak: "break-word" }}
           >
-            {renderTextWithSegments() || (
+            {renderPreview.length > 0 ? (
+              renderPreview
+            ) : (
               <div className="text-muted-foreground italic h-full flex items-center justify-center">
                 Предпросмотр текста появится здесь...
               </div>
@@ -723,7 +613,10 @@ export function SongTextEditor() {
       {showAddComment && (
         <AddCommentModal
           open={showAddComment}
-          onClose={handleCloseCommentModal}
+          onClose={() => {
+            setShowAddComment(false);
+            setCommentSegmentId("");
+          }}
           segmentId={commentSegmentId}
         />
       )}

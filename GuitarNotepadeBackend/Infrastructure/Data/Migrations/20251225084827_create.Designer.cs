@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251224185046_createv3")]
-    partial class createv3
+    [Migration("20251225084827_create")]
+    partial class create
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -43,7 +43,6 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("character varying(2000)");
 
                     b.Property<string>("Genre")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
@@ -56,7 +55,6 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Theme")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
@@ -151,9 +149,6 @@ namespace Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("AlbumId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("Artist")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
@@ -221,8 +216,6 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AlbumId");
-
                     b.HasIndex("CreatedAt");
 
                     b.HasIndex("Genre");
@@ -253,6 +246,8 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AlbumId");
 
                     b.HasIndex("SongId");
 
@@ -649,10 +644,6 @@ namespace Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Domain.Entities.Song", b =>
                 {
-                    b.HasOne("Domain.Entities.Album", null)
-                        .WithMany("Songs")
-                        .HasForeignKey("AlbumId");
-
                     b.HasOne("Domain.Entities.User", "Owner")
                         .WithMany("Songs")
                         .HasForeignKey("OwnerId")
@@ -841,8 +832,6 @@ namespace Infrastructure.Data.Migrations
             modelBuilder.Entity("Domain.Entities.Album", b =>
                 {
                     b.Navigation("SongAlbums");
-
-                    b.Navigation("Songs");
                 });
 
             modelBuilder.Entity("Domain.Entities.Chord", b =>

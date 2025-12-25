@@ -3,7 +3,7 @@ using Application.DTOs.Chords;
 using Application.DTOs.Song;
 using Application.DTOs.StrummingPatterns;
 using Application.DTOs.Users;
-using Application.Features.Commands.Albums;
+using Application.Features.Commands.Alboms;
 using Application.Features.Commands.Users;
 using AutoMapper;
 using Domain.Entities;
@@ -139,8 +139,9 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Segments, opt => opt.MapFrom(src => MapSegmentsWithPositions(src)));
 
         CreateMap<Album, AlbumDto>()
-               .ForMember(dest => dest.OwnerName, opt => opt.Ignore())
-               .ForMember(dest => dest.CountOfSongs, opt => opt.Ignore());
+    .ForMember(dest => dest.OwnerName, opt => opt.Ignore())
+    .ForMember(dest => dest.CountOfSongs, opt => opt.Ignore())
+    .ForMember(dest => dest.CoverUrl, opt => opt.MapFrom<AlbumCoverUrlResolver>());
 
         CreateMap<Album, AlbumWithSongsDto>()
                .IncludeBase<Album, AlbumDto>();
@@ -151,8 +152,8 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.PatternCount, opt => opt.MapFrom(src => src.SongPatterns.Count))
             .ForMember(dest => dest.ReviewCount, opt => opt.MapFrom(src => src.Reviews.Count))
             .ForMember(dest => dest.CommentsCount, opt => opt.MapFrom(src => src.Comments.Count))
-            .ForMember(dest => dest.AverageBeautifulRating, opt => opt.Ignore()) 
-            .ForMember(dest => dest.AverageDifficultyRating, opt => opt.Ignore()); 
+            .ForMember(dest => dest.AverageBeautifulRating, opt => opt.Ignore())
+            .ForMember(dest => dest.AverageDifficultyRating, opt => opt.Ignore());
 
         CreateMap<Song, SongInAlbumDto>()
                .ForMember(dest => dest.OwnerName, opt => opt.Ignore())
@@ -163,6 +164,9 @@ public class MappingProfile : Profile
                .ForMember(dest => dest.AverageBeautifulRating, opt => opt.Ignore())
                .ForMember(dest => dest.AverageDifficultyRating, opt => opt.Ignore())
                .ForMember(dest => dest.HasAudio, opt => opt.Ignore());
+
+        CreateMap<UpdateAlbumDto, UpdateAlbumCommand>()
+    .ForMember(dest => dest.CoverBase64, opt => opt.MapFrom(src => src.CoverUrl));
 
         CreateMap<CreateAlbumDto, CreateAlbumCommand>()
             .ForMember(dest => dest.CoverBase64, opt => opt.MapFrom(src => src.CoverUrl));

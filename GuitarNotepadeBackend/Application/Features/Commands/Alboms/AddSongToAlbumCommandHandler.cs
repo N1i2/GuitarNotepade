@@ -1,5 +1,4 @@
-﻿using Application.Features.Commands.Albums;
-using Application.Features.Queries.Songs;
+﻿using Application.Features.Queries.Songs;
 using Domain.Entities;
 using Domain.Interfaces;
 using MediatR;

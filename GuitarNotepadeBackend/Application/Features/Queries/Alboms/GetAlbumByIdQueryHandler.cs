@@ -5,13 +5,13 @@ using Domain.Interfaces.Services;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Application.Features.Queries.Albums;
+namespace Application.Features.Queries.Alboms;
 
 public class GetAlbumByIdQueryHandler : IRequestHandler<GetAlbumByIdQuery, AlbumDto>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
-    private readonly IWebDavService _webDavService; 
+    private readonly IWebDavService _webDavService;
 
     public GetAlbumByIdQueryHandler(
         IUnitOfWork unitOfWork,

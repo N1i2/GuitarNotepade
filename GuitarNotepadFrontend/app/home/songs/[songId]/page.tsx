@@ -43,6 +43,7 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
+  Heart,
 } from "lucide-react";
 import {
   Dialog,
@@ -74,6 +75,7 @@ import { FingerStyleDiagram } from "@/components/patterns/finger-style-diagram";
 import { SongDetailDto } from "@/types/song-detail";
 import { AudioInputType } from "@/types/audio";
 import { AudioPlayerPanel } from "@/components/song/audio-player-panel";
+import { AlbumService } from "@/lib/api/albom-service";
 
 function ChordModal({
   chordName,
@@ -519,6 +521,9 @@ export default function SongDetailPage() {
     null
   );
 
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isCheckingFavorite, setIsCheckingFavorite] = useState(false);
+
   const loadSong = async () => {
     setIsLoading(true);
     try {
@@ -569,11 +574,33 @@ export default function SongDetailPage() {
     }
   };
 
+  const checkFavoriteStatus = async () => {
+    if (!user) {
+      setIsFavorite(false);
+      return;
+    }
+
+    setIsCheckingFavorite(true);
+    try {
+      const isFav = await AlbumService.isSongInFavorite(songId);
+      setIsFavorite(isFav);
+    } catch (error) {
+      console.error('Error checking favorite status:', error);
+      setIsFavorite(false);
+    } finally {
+      setIsCheckingFavorite(false);
+    }
+  };
+
   useEffect(() => {
     if (!authLoading && songId) {
       loadSong();
     }
   }, [songId, user, authLoading]);
+
+  useEffect(() => {
+    checkFavoriteStatus();
+  }, [songId, user]);
 
   const handleEdit = () => {
     router.push(`/home/songs/edit/${songId}`);
@@ -634,6 +661,27 @@ export default function SongDetailPage() {
       loadReviews();
       loadSong();
     } catch (error: any) {}
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!user) {
+      toast.error("Please log in to add to favorites");
+      return;
+    }
+
+    try {
+      if (isFavorite) {
+        await AlbumService.removeSongFromFavorite(songId);
+        setIsFavorite(false);
+        toast.success("Removed from favorites");
+      } else {
+        await AlbumService.addSongToFavorite(songId);
+        setIsFavorite(true);
+        toast.success("Added to favorites");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update favorites");
+    }
   };
 
   const canEdit = song && user?.id === song.ownerId;
@@ -842,6 +890,21 @@ export default function SongDetailPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleToggleFavorite}
+              disabled={isCheckingFavorite || !user}
+              className={isFavorite ? "bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100 hover:text-yellow-800" : ""}
+            >
+              {isCheckingFavorite ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+              ) : (
+                <Heart className={`h-4 w-4 mr-2 ${isFavorite ? "fill-current text-yellow-600" : ""}`} />
+              )}
+              {isFavorite ? "In Favorites" : "Add to Favorites"}
+            </Button>
+
             {canEdit && (
               <Button variant="outline" size="sm" onClick={handleEdit}>
                 <Edit className="h-4 w-4 mr-2" />

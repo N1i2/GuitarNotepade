@@ -4,8 +4,10 @@ import {
   AlbumSearchResultDto,
   AlbumWithSongsDto,
   CreateAlbumDto,
+  UpdateAlbumDto,
 } from "@/types/albom";
 import { apiClient } from "./client";
+import { AuthService } from "./auth-service";
 
 export class AlbumService {
   private static readonly DEFAULT_PAGE_SIZE = 20;
@@ -88,31 +90,19 @@ export class AlbumService {
     }
   }
 
-  //   static async updateAlbum(id: string, data: UpdateAlbumDto): Promise<AlbumDto> {
-  //     return await apiClient.put<UpdateAlbumDto, AlbumDto>(
-  //       `${this.BASE_PATH}/${id}`,
-  //       data
-  //     );
-  //   }
+  static async updateAlbum(
+    id: string,
+    data: UpdateAlbumDto
+  ): Promise<AlbumDto> {
+    return await apiClient.put<UpdateAlbumDto, AlbumDto>(
+      `${this.BASE_PATH}/${id}`,
+      data
+    );
+  }
 
-  //   static async deleteAlbum(id: string): Promise<void> {
-  //     await apiClient.delete<void>(`${this.BASE_PATH}/${id}`);
-  //   }
-
-  //   static async getAlbumSongs(albumId: string): Promise<any[]> {
-  //     return await apiClient.get<any[]>(`${this.BASE_PATH}/${albumId}/songs`);
-  //   }
-
-  //   static async addSongToAlbum(albumId: string, songId: string): Promise<void> {
-  //     await apiClient.post<void, void>(
-  //       `${this.BASE_PATH}/${albumId}/songs/${songId}`,
-  //       undefined
-  //     );
-  //   }
-
-  //   static async removeSongFromAlbum(albumId: string, songId: string): Promise<void> {
-  //     await apiClient.delete<void>(`${this.BASE_PATH}/${albumId}/songs/${songId}`);
-  //   }
+  static async deleteAlbum(id: string): Promise<void> {
+    await apiClient.delete<void>(`${this.BASE_PATH}/${id}`);
+  }
 
   static async getMyAlbums(
     includePrivate: boolean = true,
@@ -149,5 +139,35 @@ export class AlbumService {
     await apiClient.delete<void>(
       `${this.BASE_PATH}/${albumId}/songs/${songId}`
     );
+  }
+
+  static async isSongInFavorite(songId: string): Promise<boolean> {
+    try {
+      const response = await apiClient.get<boolean>(
+        `${this.BASE_PATH}/favorite/${songId}`
+      );
+      return response;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return false;
+      }
+      console.error("Error checking favorite status:", error);
+      return false;
+    }
+  }
+
+  static async addSongToFavorite(songId: string): Promise<void> {
+    await apiClient.post<void, void>(
+      `${this.BASE_PATH}/favorite/${songId}`,
+      undefined
+    );
+  }
+
+  static async removeSongFromFavorite(songId: string): Promise<void> {
+    await apiClient.delete<void>(`${this.BASE_PATH}/favorite/${songId}`);
+  }
+
+  static async getFavoriteAlbum(): Promise<AlbumWithSongsDto> {
+    return await apiClient.get<AlbumWithSongsDto>(`${this.BASE_PATH}/favorite`);
   }
 }

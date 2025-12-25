@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
-import { AlbumDto, AlbumGridItem, AlbumSearchResultDto } from "@/types/albom";
+import { AlbumDto, AlbumSearchResultDto } from "@/types/albom";
 import { AlbumService } from "@/lib/api/albom-service";
 import {
   Card,
@@ -39,6 +39,8 @@ import {
   Music2,
   Tag,
   Hash,
+  AtSign,
+  UserCircle,
 } from "lucide-react";
 import { Pagination } from "@/components/user-management/pagination";
 import { genres, themes } from "@/lib/validations/album";
@@ -51,6 +53,7 @@ export default function AlbumsPage() {
   const [allAlbums, setAllAlbums] = useState<AlbumDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [ownerNicknameFilter, setOwnerNicknameFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalAlbumsCount, setTotalAlbumsCount] = useState(0);
   const [showOnlyMyAlbums, setShowOnlyMyAlbums] = useState(false);
@@ -61,6 +64,13 @@ export default function AlbumsPage() {
   const [selectedTheme, setSelectedTheme] = useState<string>("all");
 
   const pageSize = 12;
+
+  const uniqueOwnerNicknames = useMemo(() => {
+    const nicknames = allAlbums
+      .map((album) => album.ownerName || album.ownerId)
+      .filter((name): name is string => !!name);
+    return Array.from(new Set(nicknames)).sort();
+  }, [allAlbums]);
 
   const filteredAlbums = useMemo(() => {
     let albumsArray = [...allAlbums];
@@ -95,6 +105,14 @@ export default function AlbumsPage() {
       });
     }
 
+    if (ownerNicknameFilter !== "all") {
+      const nicknameLower = ownerNicknameFilter.toLowerCase();
+      albumsArray = albumsArray.filter((album) => {
+        const ownerName = album.ownerName || album.ownerId || "";
+        return ownerName.toLowerCase().includes(nicknameLower);
+      });
+    }
+
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
       albumsArray = albumsArray.filter((album) => {
@@ -111,6 +129,12 @@ export default function AlbumsPage() {
     }
 
     albumsArray.sort((a, b) => {
+      const aIsFavorite = a.title.toLowerCase() === "favorite";
+      const bIsFavorite = b.title.toLowerCase() === "favorite";
+
+      if (aIsFavorite && !bIsFavorite) return -1;
+      if (!aIsFavorite && bIsFavorite) return 1;
+
       let aValue: any, bValue: any;
 
       switch (sortBy) {
@@ -129,6 +153,10 @@ export default function AlbumsPage() {
         case "countOfSongs":
           aValue = a.countOfSongs || 0;
           bValue = b.countOfSongs || 0;
+          break;
+        case "ownerName":
+          aValue = (a.ownerName || a.ownerId || "").toLowerCase();
+          bValue = (b.ownerName || b.ownerId || "").toLowerCase();
           break;
         default:
           aValue = new Date(a.createdAt);
@@ -156,6 +184,7 @@ export default function AlbumsPage() {
   }, [
     allAlbums,
     searchTerm,
+    ownerNicknameFilter,
     currentPage,
     showOnlyMyAlbums,
     visibilityFilter,
@@ -184,8 +213,6 @@ export default function AlbumsPage() {
           sortBy: "createdAt",
           sortOrder: "desc",
         });
-
-        console.log(data);
 
         allAlbumsData = [...allAlbumsData, ...(data.albums || [])];
 
@@ -243,6 +270,7 @@ export default function AlbumsPage() {
     return () => clearTimeout(timer);
   }, [
     searchTerm,
+    ownerNicknameFilter,
     showOnlyMyAlbums,
     visibilityFilter,
     selectedGenre,
@@ -265,30 +293,6 @@ export default function AlbumsPage() {
   const handleEditAlbum = (albumId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     router.push(`/home/albums/edit/${albumId}`);
-  };
-
-  const getAlbumItemsForGrid = (): AlbumGridItem[] => {
-    return filteredAlbums.items.map((album) => {
-      const canEdit = user
-        ? user.id === album.ownerId || user.role === "Admin"
-        : false;
-
-      return {
-        id: album.id,
-        title: album.title,
-        isPublic: album.isPublic,
-        ownerId: album.ownerId,
-        ownerNickname: album.ownerName || "Unknown",
-        createdAt: album.createdAt,
-        updatedAt: album.updatedAt,
-        canEdit,
-        genre: album.genre,
-        theme: album.theme,
-        countOfSongs: album.countOfSongs || 0,
-        coverUrl: album.coverUrl,
-        description: album.description,
-      };
-    });
   };
 
   const getAlbumGradient = (title: string) => {
@@ -324,6 +328,7 @@ export default function AlbumsPage() {
     setSelectedGenre("all");
     setSelectedTheme("all");
     setSearchTerm("");
+    setOwnerNicknameFilter("all");
   };
 
   const hasActiveFilters = () => {
@@ -332,7 +337,8 @@ export default function AlbumsPage() {
       visibilityFilter !== "all" ||
       selectedGenre !== "all" ||
       selectedTheme !== "all" ||
-      searchTerm
+      searchTerm ||
+      ownerNicknameFilter !== "all"
     );
   };
 
@@ -385,12 +391,19 @@ export default function AlbumsPage() {
 
         <Card>
           <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-              <div className="flex-1 w-full md:w-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="space-y-2">
+                <Label htmlFor="search" className="text-sm font-medium">
+                  <div className="flex items-center gap-2">
+                    <Search className="h-4 w-4" />
+                    Search Albums
+                  </div>
+                </Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search albums by title, description, or creator..."
+                    id="search"
+                    placeholder="Search by title, description, genre..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10 w-full"
@@ -398,51 +411,85 @@ export default function AlbumsPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="showOnlyMyAlbums"
-                    checked={showOnlyMyAlbums}
-                    onCheckedChange={(checked) =>
-                      setShowOnlyMyAlbums(checked as boolean)
+              <div className="space-y-2">
+                <Label htmlFor="ownerFilter" className="text-sm font-medium">
+                  <div className="flex items-center gap-2">
+                    <AtSign className="h-4 w-4" />
+                    Filter by Owner
+                  </div>
+                </Label>
+                <div className="relative">
+                  <UserCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="ownerFilter"
+                    placeholder="Filter by owner nickname..."
+                    value={
+                      ownerNicknameFilter === "all" ? "" : ownerNicknameFilter
                     }
-                    disabled={!user}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setOwnerNicknameFilter(value || "all");
+                    }}
+                    className="pl-10 w-full"
                   />
-                  <Label
-                    htmlFor="showOnlyMyAlbums"
-                    className={`text-sm font-medium cursor-pointer ${
-                      !user ? "text-muted-foreground" : ""
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      {showOnlyMyAlbums ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                      <span>Only my albums</span>
+                  {ownerNicknameFilter !== "all" && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <button
+                        onClick={() => setOwnerNicknameFilter("all")}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        ×
+                      </button>
                     </div>
-                  </Label>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="hidden md:flex">
-                    <Disc className="h-3 w-3 mr-1" />
-                    {isLoading ? "..." : filteredAlbums.totalCount} albums
-                  </Badge>
-                  <Button
-                    onClick={handleCreateNew}
-                    variant="default"
-                    className="w-full sm:w-auto"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create New Album
-                  </Button>
+                  )}
                 </div>
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-6 gap-4">
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="showOnlyMyAlbums"
+                  checked={showOnlyMyAlbums}
+                  onCheckedChange={(checked) =>
+                    setShowOnlyMyAlbums(checked as boolean)
+                  }
+                  disabled={!user}
+                />
+                <Label
+                  htmlFor="showOnlyMyAlbums"
+                  className={`text-sm font-medium cursor-pointer ${
+                    !user ? "text-muted-foreground" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {showOnlyMyAlbums ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                    <span>Only my albums</span>
+                  </div>
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="hidden md:flex">
+                  <Disc className="h-3 w-3 mr-1" />
+                  {isLoading ? "..." : filteredAlbums.totalCount} albums
+                </Badge>
+                <Button
+                  onClick={handleCreateNew}
+                  variant="default"
+                  className="w-full sm:w-auto"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create New Album
+                </Button>
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-7 gap-4">
               <div className="space-y-2">
                 <Label
                   htmlFor="visibilityFilter"
@@ -524,6 +571,7 @@ export default function AlbumsPage() {
                     <SelectItem value="createdAt">Date Created</SelectItem>
                     <SelectItem value="updatedAt">Date Updated</SelectItem>
                     <SelectItem value="title">Title</SelectItem>
+                    <SelectItem value="ownerName">Owner Name</SelectItem>
                     <SelectItem value="countOfSongs">Song Count</SelectItem>
                   </SelectContent>
                 </Select>
@@ -540,6 +588,31 @@ export default function AlbumsPage() {
                   <SelectContent>
                     <SelectItem value="desc">Descending</SelectItem>
                     <SelectItem value="asc">Ascending</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ownerSelect" className="text-sm font-medium">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Select Owner
+                  </div>
+                </Label>
+                <Select
+                  value={ownerNicknameFilter}
+                  onValueChange={(value) => setOwnerNicknameFilter(value)}
+                >
+                  <SelectTrigger id="ownerSelect">
+                    <SelectValue placeholder="All owners..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Owners</SelectItem>
+                    {uniqueOwnerNicknames.map((nickname) => (
+                      <SelectItem key={nickname} value={nickname}>
+                        {nickname}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -601,6 +674,12 @@ export default function AlbumsPage() {
                     : "Private Only"}
                 </Badge>
               )}
+              {ownerNicknameFilter !== "all" && (
+                <Badge variant="secondary" className="text-xs">
+                  <User className="h-3 w-3 mr-1" />
+                  Owner: {ownerNicknameFilter}
+                </Badge>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -647,157 +726,239 @@ export default function AlbumsPage() {
             ) : filteredAlbums.items.length > 0 ? (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {getAlbumItemsForGrid().map((album) => (
-                    <div
-                      key={album.id}
-                      className="cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg relative group"
-                      onClick={() => handleAlbumClick(album.id)}
-                    >
-                      <div className="h-full rounded-lg border-2 overflow-hidden relative">
-                        {album.coverUrl ? (
-                          <div className="absolute inset-0">
-                            <img
-                              src={album.coverUrl}
-                              alt={album.title}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display =
-                                  "none";
-                                const parent = (e.target as HTMLImageElement)
-                                  .parentElement;
-                                if (parent) {
-                                  parent.innerHTML = `
-                        <div class="w-full h-full ${getAlbumGradient(
-                          album.title
-                        )}"></div>
-                    `;
-                                }
-                              }}
+                  {filteredAlbums.items.map((album) => {
+                    const isFavorite = album.title.toLowerCase() === "favorite";
+                    const canEdit =
+                      !isFavorite && user
+                        ? user.id === album.ownerId || user.role === "Admin"
+                        : false;
+
+                    const displayOwnerName =
+                      album.ownerName || album.ownerId || "Unknown";
+
+                    return (
+                      <div
+                        key={album.id}
+                        className={`cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg relative group ${
+                          isFavorite ? "opacity-100" : ""
+                        }`}
+                        onClick={() => handleAlbumClick(album.id)}
+                      >
+                        <div
+                          className={`h-full rounded-lg border-2 overflow-hidden relative ${
+                            isFavorite
+                              ? "border-amber-500/50 shadow-lg shadow-amber-500/20"
+                              : ""
+                          }`}
+                        >
+                          {album.coverUrl ? (
+                            <div className="absolute inset-0">
+                              <img
+                                src={album.coverUrl}
+                                alt={album.title}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display =
+                                    "none";
+                                  const parent = (e.target as HTMLImageElement)
+                                    .parentElement;
+                                  if (parent) {
+                                    parent.innerHTML = `
+                                      <div class="w-full h-full ${getAlbumGradient(
+                                        album.title
+                                      )}"></div>
+                                    `;
+                                  }
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                            </div>
+                          ) : (
+                            <div
+                              className={`absolute inset-0 ${getAlbumGradient(
+                                album.title
+                              )} ${
+                                isFavorite
+                                  ? "bg-gradient-to-br from-amber-500 to-orange-600"
+                                  : ""
+                              }`}
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                          </div>
-                        ) : (
-                          <div
-                            className={`absolute inset-0 ${getAlbumGradient(
-                              album.title
-                            )}`}
-                          />
-                        )}
+                          )}
 
-                        <div className="relative h-full p-6 flex flex-col">
-                          <div className="flex justify-between items-start mb-4">
-                            <div className="flex flex-wrap gap-2">
-                              {!album.isPublic && (
-                                <Badge
-                                  variant="outline"
-                                  className="bg-black/40 backdrop-blur-sm border-white/30 text-white"
+                          {isFavorite && (
+                            <div className="absolute top-3 right-3 z-10">
+                              <div className="bg-amber-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                                <svg
+                                  className="h-3 w-3"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
                                 >
-                                  <Lock className="h-3 w-3 mr-1" />
-                                  Private
-                                </Badge>
-                              )}
-                              {album.canEdit && (
-                                <Badge
-                                  variant="secondary"
-                                  className="bg-white/20 backdrop-blur-sm border-white/30 text-white"
-                                >
-                                  <User className="h-3 w-3 mr-1" />
-                                  Owner
-                                </Badge>
-                              )}
-                              {album.genre && album.genre !== "Empty" && (
-                                <Badge
-                                  variant="outline"
-                                  className="bg-black/40 backdrop-blur-sm border-white/30 text-white"
-                                >
-                                  <Tag className="h-3 w-3 mr-1" />
-                                  {album.genre}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="mb-4">
-                            <h3 className="text-xl font-bold text-white mb-2">
-                              {album.title}
-                            </h3>
-
-                            {album.description && (
-                              <p className="text-white/80 text-sm line-clamp-2 mb-3">
-                                {album.description}
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="mb-4">
-                            <div className="grid grid-cols-2 gap-2">
-                              <div className="text-center p-2 bg-white/10 backdrop-blur-sm rounded-md border border-white/20">
-                                <div className="text-lg font-bold text-white">
-                                  {album.countOfSongs}
-                                </div>
-                                <div className="text-xs text-white/70">
-                                  <Music2 className="h-3 w-3 inline mr-1" />
-                                  Songs
-                                </div>
-                              </div>
-                              <div className="text-center p-2 bg-white/10 backdrop-blur-sm rounded-md border border-white/20">
-                                <div className="text-lg font-bold text-white">
-                                  {album.theme && album.theme !== "Empty"
-                                    ? "✓"
-                                    : "—"}
-                                </div>
-                                <div className="text-xs text-white/70">
-                                  <Hash className="h-3 w-3 inline mr-1" />
-                                  Theme
-                                </div>
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                                Favorite
                               </div>
                             </div>
-                          </div>
+                          )}
 
-                          <div className="mt-auto pt-3 border-t border-white/20">
-                            <div className="flex items-center justify-between">
-                              <div className="text-sm">
-                                <div className="text-white/70">
-                                  By {album.ownerNickname || "Unknown"}
-                                </div>
-                                <div className="text-xs text-white/50">
-                                  {formatDate(album.createdAt)}
-                                </div>
-                              </div>
-
-                              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                {album.canEdit && (
-                                  <Button
-                                    size="sm"
+                          <div className="relative h-full p-6 flex flex-col">
+                            <div className="flex justify-between items-start mb-4">
+                              <div className="flex flex-wrap gap-2">
+                                {!album.isPublic && (
+                                  <Badge
                                     variant="outline"
-                                    className="h-8 w-8 p-0 rounded-full bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30"
-                                    onClick={(e) =>
-                                      handleEditAlbum(album.id, e)
-                                    }
-                                    title="Edit album"
+                                    className="bg-black/40 backdrop-blur-sm border-white/30 text-white"
                                   >
-                                    <svg
-                                      className="h-4 w-4"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                      />
-                                    </svg>
-                                  </Button>
+                                    <Lock className="h-3 w-3 mr-1" />
+                                    Private
+                                  </Badge>
                                 )}
+                                {canEdit && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="bg-white/20 backdrop-blur-sm border-white/30 text-white"
+                                  >
+                                    <User className="h-3 w-3 mr-1" />
+                                    Owner
+                                  </Badge>
+                                )}
+                                {album.genre && album.genre !== "Empty" && (
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-black/40 backdrop-blur-sm border-white/30 text-white"
+                                  >
+                                    <Tag className="h-3 w-3 mr-1" />
+                                    {album.genre}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="mb-4">
+                              <h3 className="text-xl font-bold text-white mb-2">
+                                {album.title}
+                                {isFavorite && (
+                                  <span className="ml-2 text-xs font-normal text-amber-200">
+                                    (System)
+                                  </span>
+                                )}
+                              </h3>
+
+                              {album.description && (
+                                <p className="text-white/80 text-sm line-clamp-2 mb-3">
+                                  {album.description}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="mb-4">
+                              <div className="grid grid-cols-3 gap-2">
+                                <div className="text-center p-2 bg-white/10 backdrop-blur-sm rounded-md border border-white/20">
+                                  <div className="text-lg font-bold text-white">
+                                    {album.countOfSongs || 0}
+                                  </div>
+                                  <div className="text-xs text-white/70">
+                                    <Music2 className="h-3 w-3 inline mr-1" />
+                                    Songs
+                                  </div>
+                                </div>
+                                <div className="text-center p-2 bg-white/10 backdrop-blur-sm rounded-md border border-white/20">
+                                  <div className="text-lg font-bold text-white">
+                                    {album.theme && album.theme !== "Empty"
+                                      ? "✓"
+                                      : "—"}
+                                  </div>
+                                  <div className="text-xs text-white/70">
+                                    <Hash className="h-3 w-3 inline mr-1" />
+                                    Theme
+                                  </div>
+                                </div>
+                                <div className="text-center p-2 bg-white/10 backdrop-blur-sm rounded-md border border-white/20">
+                                  <div className="text-sm font-medium text-white truncate">
+                                    <AtSign className="h-3 w-3 inline mr-1" />
+                                    {displayOwnerName.length > 8
+                                      ? `${displayOwnerName.substring(0, 8)}...`
+                                      : displayOwnerName}
+                                  </div>
+                                  <div className="text-xs text-white/70">
+                                    Owner
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="mt-auto pt-3 border-t border-white/20">
+                              <div className="flex items-center justify-between">
+                                <div className="text-sm">
+                                  <div className="text-white/70 flex items-center gap-1">
+                                    <UserCircle className="h-3 w-3" />
+                                    {isFavorite
+                                      ? "System album"
+                                      : displayOwnerName}
+                                  </div>
+                                  <div className="text-xs text-white/50">
+                                    Created: {formatDate(album.createdAt)}
+                                  </div>
+                                </div>
+
+                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                  {canEdit && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-8 w-8 p-0 rounded-full bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30"
+                                      onClick={(e) =>
+                                        handleEditAlbum(album.id, e)
+                                      }
+                                      title="Edit album"
+                                    >
+                                      <svg
+                                        className="h-4 w-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                        />
+                                      </svg>
+                                    </Button>
+                                  )}
+
+                                  {isFavorite && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-8 w-8 p-0 rounded-full bg-amber-500/20 backdrop-blur-sm border-amber-500/30 text-amber-200 hover:bg-amber-500/30 cursor-default"
+                                      title="System album - cannot be edited"
+                                      disabled
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <svg
+                                        className="h-4 w-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                        />
+                                      </svg>
+                                    </Button>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {filteredAlbums.totalPages > 1 && (
@@ -819,13 +980,16 @@ export default function AlbumsPage() {
                   {showOnlyMyAlbums ? "No albums found" : "No albums available"}
                 </h3>
                 <p className="text-muted-foreground mt-2">
-                  {searchTerm
-                    ? `No albums matching "${searchTerm}"`
+                  {searchTerm || ownerNicknameFilter !== "all"
+                    ? `No albums matching "${
+                        searchTerm || ownerNicknameFilter
+                      }"`
                     : showOnlyMyAlbums
                     ? "You haven't created any albums yet. Create your first one!"
                     : "No albums available yet. Create the first one!"}
                 </p>
                 {(searchTerm ||
+                  ownerNicknameFilter !== "all" ||
                   showOnlyMyAlbums ||
                   visibilityFilter !== "all" ||
                   selectedGenre !== "all" ||

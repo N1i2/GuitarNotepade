@@ -1,7 +1,7 @@
 ﻿using Application.DTOs.Alboms;
 using MediatR;
 
-namespace Application.Features.Commands.Albums
+namespace Application.Features.Commands.Alboms
 {
     public class CreateAlbumCommand : IRequest<AlbumDto>
     {
@@ -16,9 +16,9 @@ namespace Application.Features.Commands.Albums
         public CreateAlbumCommand(
             Guid userId,
             string title,
-            string? genre,
-            string? theme,
-            bool isPublic,
+            bool isPublic = false,
+            string? genre = null,
+            string? theme = null,
             string? coverBase64 = null,
             string? description = null)
         {

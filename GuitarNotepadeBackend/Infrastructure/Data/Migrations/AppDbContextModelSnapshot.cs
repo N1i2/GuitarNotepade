@@ -40,7 +40,6 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("character varying(2000)");
 
                     b.Property<string>("Genre")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
@@ -53,7 +52,6 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Theme")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 

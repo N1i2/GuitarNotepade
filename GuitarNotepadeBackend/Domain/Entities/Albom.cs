@@ -29,8 +29,8 @@ public class Album : BaseEntityWithId
     public static Album Create(
         Guid ownerId,
         string title,
-        string? genre,
-        string? theme,
+        string? genre = null,
+        string? theme = null,
         bool isPublic = false,
         string? coverUrl = null,
         string? description = null)

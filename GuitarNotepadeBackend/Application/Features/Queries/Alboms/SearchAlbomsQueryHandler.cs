@@ -6,18 +6,18 @@ using Domain.Interfaces.Services;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Application.Features.Queries.Albums;
+namespace Application.Features.Queries.Alboms;
 
 public class SearchAlbumsQueryHandler : IRequestHandler<SearchAlbumsQuery, AlbumSearchResultDto>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
-    private readonly IWebDavService _webDavService; 
+    private readonly IWebDavService _webDavService;
 
     public SearchAlbumsQueryHandler(
         IUnitOfWork unitOfWork,
         IMapper mapper,
-        IWebDavService webDavService) 
+        IWebDavService webDavService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
@@ -38,7 +38,7 @@ public class SearchAlbumsQueryHandler : IRequestHandler<SearchAlbumsQuery, Album
         var user = await _unitOfWork.Users.GetByIdAsync(filters.UserId);
         if (user!.Role != Constants.Roles.Admin)
         {
-            query = query.Where(q => (q.OwnerId != user.Id) ? (q.IsPublic == true) : true);
+            query = query.Where(q => q.OwnerId != user.Id ? q.IsPublic == true : true);
         }
 
         if (filters.IsPublic.HasValue)

@@ -36,6 +36,7 @@ export function AddChordModal({
 }: AddChordModalProps) {
   const { state, dispatch } = useSongCreation();
   const [chords, setChords] = useState<Chord[]>([]);
+  const [uniqueChords, setUniqueChords] = useState<Chord[]>([]);
   const [filteredChords, setFilteredChords] = useState<Chord[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedChordId, setSelectedChordId] = useState<string>("");
@@ -68,7 +69,7 @@ export function AddChordModal({
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
       setFilteredChords(
-        chords.filter(
+        uniqueChords.filter(
           (chord) =>
             chord.name.toLowerCase().includes(searchLower) &&
             !existingChordIds.includes(chord.id)
@@ -76,10 +77,10 @@ export function AddChordModal({
       );
     } else {
       setFilteredChords(
-        chords.filter((chord) => !existingChordIds.includes(chord.id))
+        uniqueChords.filter((chord) => !existingChordIds.includes(chord.id))
       );
     }
-  }, [searchTerm, chords, existingChordIds]);
+  }, [searchTerm, uniqueChords, existingChordIds]);
 
   const loadChords = async () => {
     try {
@@ -91,15 +92,16 @@ export function AddChordModal({
         sortOrder: "asc",
       });
 
-      const result = new Map<string, Chord>();
-
+      const uniqueByName = new Map<string, Chord>();
       data.items.forEach((item) => {
-        if (!result.has(item.name)) {
-          result.set(item.name, item);
+        if (!uniqueByName.has(item.name)) {
+          uniqueByName.set(item.name, item);
         }
       });
 
-      setChords(Array.from(result.values()));
+      const uniqueChordsArray = Array.from(uniqueByName.values());
+      setChords(data.items);
+      setUniqueChords(uniqueChordsArray);
     } catch (error) {
     } finally {
       setIsLoading(false);

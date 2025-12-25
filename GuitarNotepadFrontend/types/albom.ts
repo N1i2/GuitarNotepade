@@ -1,34 +1,25 @@
 export interface AlbumDto {
-    id: string;
-    title: string;
-    coverUrl?: string;
-    description?: string;
-    isPublic: boolean;
-    genre?: string;
-    theme?: string;
-    ownerId: string;
-    ownerName?: string;
-    createdAt: string;
-    updatedAt?: string;
-    countOfSongs: number;
+  id: string;
+  title: string;
+  coverUrl?: string;
+  description?: string;
+  isPublic: boolean;
+  genre?: string;
+  theme?: string;
+  ownerId: string;
+  ownerName?: string;
+  createdAt: string;
+  updatedAt?: string;
+  countOfSongs: number;
 }
 
 export interface CreateAlbumDto {
-    title: string;
-    coverUrl?: string;
-    description?: string;
-    isPublic: boolean;
-    genre?: string;
-    theme?: string;
-}
-
-export interface UpdateAlbumDto {
-    title?: string;
-    coverUrl?: string;
-    description?: string;
-    isPublic?: boolean;
-    genre?: string;
-    theme?: string;
+  title: string;
+  coverUrl?: string;
+  description?: string;
+  isPublic: boolean;
+  genre?: string;
+  theme?: string;
 }
 
 export interface AlbumSearchResultDto {
@@ -68,8 +59,21 @@ export interface AlbumSearchFilters {
   pageSize?: number;
 }
 
+export interface UpdateAlbumDto {
+  title?: string | null;
+  coverUrl?: string | null;
+  description?: string | null;
+  isPublic?: boolean | null;
+  genre?: string | null;
+  theme?: string | null;
+}
+
 export interface AlbumWithSongsDto extends AlbumDto {
   songs: SongInAlbumDto[];
+}
+
+export interface SongIdDto {
+  songId: string;
 }
 
 export interface SongInAlbumDto {

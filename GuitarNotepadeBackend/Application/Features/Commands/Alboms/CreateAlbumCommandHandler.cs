@@ -6,7 +6,7 @@ using Domain.Interfaces.Services;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace Application.Features.Commands.Albums
+namespace Application.Features.Commands.Alboms
 {
     public class CreateAlbumCommandHandler : IRequestHandler<CreateAlbumCommand, AlbumDto>
     {
@@ -56,7 +56,7 @@ namespace Application.Features.Commands.Albums
                             request.CoverBase64,
                             tempAlbumId);
 
-                        coverUrl = fileName; 
+                        coverUrl = fileName;
 
                         _logger.LogInformation("Album cover uploaded successfully: {FileName}", fileName);
                     }

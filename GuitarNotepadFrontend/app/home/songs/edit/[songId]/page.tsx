@@ -26,8 +26,8 @@ import {
   Tag,
   FileText,
 } from "lucide-react";
-import { SongTextEditor } from "@/components/song/song-text-editor";
-import { ToolPanel } from "@/components/song/tool-panel";
+import { SongTextViewer } from "@/components/song/song-text-viewer";
+import { EditToolPanel } from "@/components/song/edit-tool-panel";
 import {
   Select,
   SelectContent,
@@ -114,20 +114,20 @@ function SongDetails() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Song Details</CardTitle>
-        <CardDescription>Edit song information</CardDescription>
+        <CardTitle>Детали песни</CardTitle>
+        <CardDescription>Редактируйте информацию о песне</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="title">
             <div className="flex items-center gap-2">
               <Music className="h-4 w-4" />
-              Song Name *
+              Название песни *
             </div>
           </Label>
           <Input
             id="title"
-            placeholder="Enter song name"
+            placeholder="Введите название песни"
             value={state.title}
             onChange={(e) => handleChange("title", e.target.value)}
             required
@@ -138,12 +138,12 @@ function SongDetails() {
           <Label htmlFor="artist">
             <div className="flex items-center gap-2">
               <User className="h-4 w-4" />
-              Artist
+              Исполнитель
             </div>
           </Label>
           <Input
             id="artist"
-            placeholder="Enter Artist"
+            placeholder="Введите исполнителя"
             value={state.artist || ""}
             onChange={(e) => handleChange("artist", e.target.value)}
           />
@@ -154,7 +154,7 @@ function SongDetails() {
             <Label htmlFor="genre">
               <div className="flex items-center gap-2">
                 <Tag className="h-4 w-4" />
-                Genre
+                Жанр
               </div>
             </Label>
             <Select
@@ -162,7 +162,7 @@ function SongDetails() {
               onValueChange={(value) => handleChange("genre", value)}
             >
               <SelectTrigger id="genre">
-                <SelectValue placeholder="Select genre" />
+                <SelectValue placeholder="Выберите жанр" />
               </SelectTrigger>
               <SelectContent>
                 {genres.map((genre) => (
@@ -178,7 +178,7 @@ function SongDetails() {
             <Label htmlFor="theme">
               <div className="flex items-center gap-2">
                 <Hash className="h-4 w-4" />
-                Theme
+                Тема
               </div>
             </Label>
             <Select
@@ -186,7 +186,7 @@ function SongDetails() {
               onValueChange={(value) => handleChange("theme", value)}
             >
               <SelectTrigger id="theme">
-                <SelectValue placeholder="Select theme" />
+                <SelectValue placeholder="Выберите тему" />
               </SelectTrigger>
               <SelectContent>
                 {themes.map((theme) => (
@@ -203,12 +203,12 @@ function SongDetails() {
           <Label htmlFor="description">
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Description
+              Описание
             </div>
           </Label>
           <Textarea
             id="description"
-            placeholder="Tell me about your song..."
+            placeholder="Расскажите о вашей песне..."
             value={state.description || ""}
             onChange={(e) => handleChange("description", e.target.value)}
             className="min-h-[100px]"
@@ -217,9 +217,9 @@ function SongDetails() {
 
         <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
           <div>
-            <Label className="font-medium cursor-pointer">Visibility</Label>
+            <Label className="font-medium cursor-pointer">Видимость</Label>
             <p className="text-sm text-muted-foreground">
-              {state.isPublic ? "All users" : "Only for you"}
+              {state.isPublic ? "Все пользователи" : "Только для вас"}
             </p>
           </div>
           <Switch
@@ -235,7 +235,7 @@ function SongDetails() {
                 {state.selectedChords.length}
               </div>
               <div className="text-xs text-blue-700 dark:text-blue-300">
-                Chords
+                Аккорды
               </div>
             </div>
             <div>
@@ -243,7 +243,7 @@ function SongDetails() {
                 {state.selectedPatterns.length}
               </div>
               <div className="text-xs text-purple-700 dark:text-purple-300">
-                Patterns
+                Паттерны
               </div>
             </div>
             <div>
@@ -251,7 +251,7 @@ function SongDetails() {
                 {state.segments.length}
               </div>
               <div className="text-xs text-green-700 dark:text-green-300">
-                Segments
+                Сегменты
               </div>
             </div>
             <div>
@@ -259,7 +259,7 @@ function SongDetails() {
                 {state.text.length}
               </div>
               <div className="text-xs text-amber-700 dark:text-amber-300">
-                Sym
+                Символов
               </div>
             </div>
           </div>
@@ -353,7 +353,7 @@ function EditSongContent() {
 
         setIsInitialized(true);
       } catch (error: any) {
-        toast.error(error.message || "Failed to load song");
+        toast.error(error.message || "Не удалось загрузить песню");
         router.push("/home/songs");
       } finally {
         setIsLoading(false);
@@ -365,27 +365,27 @@ function EditSongContent() {
 
   const handleSubmit = async () => {
     if (!user) {
-      toast.error("Please, log in");
+      toast.error("Пожалуйста, войдите в систему");
       return;
     }
 
     if (!state.title.trim()) {
-      toast.error("You need to enter song name");
+      toast.error("Введите название песни");
       return;
     }
 
     if (!state.text.trim()) {
-      toast.error("You need to enter song text");
+      toast.error("Введите текст песни");
       return;
     }
 
     if (state.selectedChords.length > 20) {
-      toast.error("Maximum 20 chords per song");
+      toast.error("Максимум 20 аккордов на песню");
       return;
     }
 
     if (state.selectedPatterns.length > 10) {
-      toast.error("Maximum 10 patterns per song");
+      toast.error("Максимум 10 паттернов на песню");
       return;
     }
 
@@ -395,9 +395,7 @@ function EditSongContent() {
     const uniqueColors = new Set(allColors);
 
     if (allColors.length !== uniqueColors.size) {
-      toast.error(
-        "The colors of the chords and patterns should not be repeated."
-      );
+      toast.error("Цвета аккордов и паттернов не должны повторяться.");
       return;
     }
 
@@ -411,11 +409,11 @@ function EditSongContent() {
 
       const updatedSong = await SongsService.updateSongWithSegments(updateData);
 
-      toast.success(`Song "${updatedSong.title}" successfully updated!`);
+      toast.success(`Песня "${updatedSong.title}" успешно обновлена!`);
 
       router.push(`/home/songs/${updatedSong.id}`);
     } catch (error: any) {
-      toast.error(error.message || "Failed to update song");
+      toast.error(error.message || "Не удалось обновить песню");
     } finally {
       setIsLoading(false);
     }
@@ -427,7 +425,7 @@ function EditSongContent() {
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading song data...</p>
+            <p className="text-muted-foreground">Загрузка данных песни...</p>
           </div>
         </div>
       </div>
@@ -445,32 +443,32 @@ function EditSongContent() {
             className="mb-4"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to song
+            Назад к песне
           </Button>
-          <h1 className="text-3xl font-bold">Edit song</h1>
+          <h1 className="text-3xl font-bold">Редактирование песни</h1>
           <p className="text-muted-foreground mt-2">
-            Edit your song, chords, patterns, and comments
+            Редактируйте информацию, но не текст песни
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="space-y-6">
             <SongDetails />
-            <ToolPanel />
+            <EditToolPanel />
             <AudioInputPanel />
           </div>
 
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Song text</CardTitle>
+                <CardTitle>Текст песни</CardTitle>
                 <CardDescription>
-                  Edit lyrics and use the tools on the left to modify chords and
-                  patterns
+                  Только просмотр. Редактирование текста, аккордов и паттернов
+                  недоступно в режиме редактирования
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <SongTextEditor />
+                <SongTextViewer />
               </CardContent>
             </Card>
           </div>
@@ -484,7 +482,7 @@ function EditSongContent() {
             size="lg"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Cancel
+            Отмена
           </Button>
           <Button
             onClick={handleSubmit}
@@ -494,12 +492,12 @@ function EditSongContent() {
             {isLoading ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Saving...
+                Сохранение...
               </>
             ) : (
               <>
                 <Save className="h-4 w-4 mr-2" />
-                Save changes
+                Сохранить изменения
               </>
             )}
           </Button>

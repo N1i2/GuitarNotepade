@@ -58,6 +58,7 @@ export default function AlbumDetailPage() {
   const [album, setAlbum] = useState<AlbumWithSongsDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [addSongsDialogOpen, setAddSongsDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(9);
@@ -123,11 +124,18 @@ export default function AlbumDetailPage() {
   };
 
   const handleDelete = async () => {
+    if (!album) return;
+
+    setIsDeleting(true);
     try {
-      toast.success(`Album "${album?.title}" deleted successfully`);
+      await AlbumService.deleteAlbum(albumId);
+      toast.success(`Album "${album.title}" deleted successfully`);
       router.push("/home/albums");
     } catch (error: any) {
       toast.error(error.message || "Failed to delete album");
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -173,9 +181,12 @@ export default function AlbumDetailPage() {
     );
   };
 
-  const canEdit = album && user?.id === album.ownerId;
+  const isFavoriteAlbum = album?.title.toLowerCase() === "favorite";
   const canDelete =
-    album && (user?.id === album.ownerId || user?.role === "Admin");
+    album &&
+    (user?.id === album.ownerId || user?.role === "Admin") &&
+    !isFavoriteAlbum;
+  const canManage = album && user?.id === album.ownerId && !isFavoriteAlbum;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -326,20 +337,28 @@ export default function AlbumDetailPage() {
                   </>
                 )}
               </Badge>
+              {isFavoriteAlbum && (
+                <Badge
+                  variant="outline"
+                  className="bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300"
+                >
+                  Favorite
+                </Badge>
+              )}
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {canEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAddSongsDialogOpen(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Songs
+            </Button>
+            {canManage && (
               <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setAddSongsDialogOpen(true)}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Songs
-                </Button>
                 <Button variant="outline" size="sm" onClick={handleEdit}>
                   <Edit className="h-4 w-4 mr-2" />
                   Edit
@@ -352,6 +371,7 @@ export default function AlbumDetailPage() {
                 variant="destructive"
                 size="sm"
                 onClick={() => setDeleteDialogOpen(true)}
+                disabled={isDeleting}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete
@@ -491,15 +511,13 @@ export default function AlbumDetailPage() {
                     <p className="text-muted-foreground mt-2">
                       This album doesn't have any songs yet.
                     </p>
-                    {canEdit && (
-                      <Button
-                        onClick={() => setAddSongsDialogOpen(true)}
-                        className="mt-4"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Your First Song
-                      </Button>
-                    )}
+                    <Button
+                      onClick={() => setAddSongsDialogOpen(true)}
+                      className="mt-4"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Your First Song
+                    </Button>
                   </div>
                 ) : (
                   <>
@@ -513,19 +531,17 @@ export default function AlbumDetailPage() {
                             onClick={() => handleSongClick(song.id)}
                           >
                             <CardContent className="p-4">
-                              {canEdit && (
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRemoveSong(song.id, song.title);
-                                  }}
-                                >
-                                  <X className="h-3 w-3" />
-                                </Button>
-                              )}
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveSong(song.id, song.title);
+                                }}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
 
                               <div className="flex flex-wrap gap-1 mb-2">
                                 {!song.isPublic && (
@@ -679,11 +695,23 @@ export default function AlbumDetailPage() {
             <Button
               variant="outline"
               onClick={() => setDeleteDialogOpen(false)}
+              disabled={isDeleting}
             >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

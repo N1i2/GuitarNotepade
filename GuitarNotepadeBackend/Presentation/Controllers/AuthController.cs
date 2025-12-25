@@ -3,6 +3,8 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Application.DTOs.Users;
 using Application.Features.Commands.Users;
+using Application.Features.Commands.Alboms;
+using Application.DTOs.Alboms;
 
 namespace Presentation.Controllers;
 

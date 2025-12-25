@@ -3,9 +3,9 @@ using Application.DTOs.Alboms;
 using Domain.Interfaces;
 using Domain.Interfaces.Services;
 using AutoMapper;
-using Microsoft.EntityFrameworkCore; 
+using Microsoft.EntityFrameworkCore;
 
-namespace Application.Features.Queries.Albums;
+namespace Application.Features.Queries.Alboms;
 
 public class GetAlbumByIdWithSongsQueryHandler :
     IRequestHandler<GetAlbumByIdWithSongsQuery, AlbumWithSongsDto>

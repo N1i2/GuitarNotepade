@@ -562,11 +562,9 @@ namespace Infrastructure.Data
                     .HasMaxLength(2000);
 
                 entity.Property(e => e.Genre)
-                    .IsRequired()
                     .HasMaxLength(100);
 
                 entity.Property(e => e.Theme)
-                    .IsRequired()
                     .HasMaxLength(100);
 
                 entity.Property(e => e.IsPublic)
