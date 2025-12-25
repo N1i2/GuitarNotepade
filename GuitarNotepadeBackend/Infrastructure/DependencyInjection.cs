@@ -44,6 +44,8 @@ public static class DependencyInjection
         services.AddScoped<ISongChordRepository, SongChordRepository>();
         services.AddScoped<ISongPatternRepository, SongPatternRepository>();
         services.AddScoped<ISongRepository, SongRepository>();
+        services.AddScoped<IAlbomRepository, AlbomRepository>();
+        services.AddScoped<ISongAlbomRepository, SongAlbomRepository>();
 
         services.AddScoped<IExecutionStrategy, ExecutionStrategy>();
         services.AddScoped<UnitOfWork>();

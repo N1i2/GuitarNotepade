@@ -1,4 +1,4 @@
-﻿namespace Infrastructure.Data
+﻿namespace Domain.Interfaces.Services
 {
     public interface IExecutionStrategy
     {

@@ -399,6 +399,31 @@ export interface SongSearchFilters {
   pageSize?: number;
 }
 
+export interface SongGridItem {
+  id: string;
+  title: string;
+  artist?: string;
+  isPublic: boolean;
+  ownerId: string;
+  ownerNickname: string;
+  chordCount: number;
+  patternCount: number;
+  createdAt: string;
+  updatedAt?: string;
+  canEdit: boolean;
+  isForked: boolean;
+  averageBeautifulRating?: number;
+  averageDifficultyRating?: number;
+  reviewCount: number;
+  commentCount: number;
+  genre?: string;
+  theme?: string;
+  key?: string;
+  difficulty?: string;
+  hasAudio?: boolean;
+  customAudioType?: string;
+}
+
 export interface SongSearchResultDto {
   songs: SongDto[];
   totalCount: number;

@@ -24,6 +24,8 @@ namespace Infrastructure.Data
         public DbSet<SegmentLabel> SegmentLabels { get; set; }
         public DbSet<SongComment> SongComments { get; set; }
         public DbSet<SongChord> SongChords { get; set; }
+        public DbSet<Album> Albums { get; set; }
+        public DbSet<SongAlbum> SongAlbums { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -109,6 +111,9 @@ namespace Infrastructure.Data
                     .IsRequired()
                     .HasMaxLength(100);
 
+                entity.Property(e => e.MyProperty)
+                    .HasMaxLength(100);
+
                 entity.Property(e => e.CustomAudioUrl)
                     .HasMaxLength(1000);
 
@@ -120,6 +125,8 @@ namespace Infrastructure.Data
 
                 entity.Property(e => e.CreatedAt)
                     .IsRequired();
+
+                entity.Property(e => e.UpdatedAt);
 
                 entity.Property(e => e.ReviewCount)
                     .IsRequired()
@@ -172,6 +179,7 @@ namespace Infrastructure.Data
                 entity.HasIndex(e => e.Title);
                 entity.HasIndex(e => e.Genre);
                 entity.HasIndex(e => e.Theme);
+                entity.HasIndex(e => e.CreatedAt);
             });
 
             modelBuilder.Entity<Chord>(entity =>
@@ -191,6 +199,8 @@ namespace Infrastructure.Data
 
                 entity.Property(e => e.CreatedAt)
                     .IsRequired();
+
+                entity.Property(e => e.UpdatedAt);
 
                 entity.HasOne(e => e.CreatedBy)
                     .WithMany(e => e.Chords)
@@ -249,6 +259,9 @@ namespace Infrastructure.Data
             {
                 entity.HasKey(e => e.Id);
 
+                entity.Property(e => e.SongId)
+                    .IsRequired();
+
                 entity.HasOne(e => e.Song)
                     .WithOne(e => e.Structure)
                     .HasForeignKey<SongStructure>(e => e.SongId)
@@ -289,6 +302,8 @@ namespace Infrastructure.Data
                     .HasConversion<string>()
                     .HasMaxLength(20);
 
+                entity.Property(e => e.Duration);
+
                 entity.HasOne(e => e.Chord)
                     .WithMany()
                     .HasForeignKey(e => e.ChordId)
@@ -324,6 +339,15 @@ namespace Infrastructure.Data
             {
                 entity.HasKey(e => e.Id);
 
+                entity.Property(e => e.SongId)
+                    .IsRequired();
+
+                entity.Property(e => e.SegmentId)
+                    .IsRequired();
+
+                entity.Property(e => e.PositionIndex)
+                    .IsRequired();
+
                 entity.Property(e => e.RepeatGroup)
                     .HasMaxLength(100);
 
@@ -354,6 +378,12 @@ namespace Infrastructure.Data
             modelBuilder.Entity<SongReview>(entity =>
             {
                 entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.SongId)
+                    .IsRequired();
+
+                entity.Property(e => e.UserId)
+                    .IsRequired();
 
                 entity.Property(e => e.ReviewText)
                     .IsRequired()
@@ -392,6 +422,12 @@ namespace Infrastructure.Data
             {
                 entity.HasKey(e => e.Id);
 
+                entity.Property(e => e.SongId)
+                    .IsRequired();
+
+                entity.Property(e => e.StrummingPatternId)
+                    .IsRequired();
+
                 entity.HasIndex(e => new { e.SongId, e.StrummingPatternId })
                     .IsUnique();
 
@@ -409,6 +445,12 @@ namespace Infrastructure.Data
             modelBuilder.Entity<SongChord>(entity =>
             {
                 entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.SongId)
+                    .IsRequired();
+
+                entity.Property(e => e.ChordId)
+                    .IsRequired();
 
                 entity.HasIndex(e => new { e.SongId, e.ChordId })
                     .IsUnique();
@@ -447,6 +489,12 @@ namespace Infrastructure.Data
             {
                 entity.HasKey(e => e.Id);
 
+                entity.Property(e => e.SegmentId)
+                    .IsRequired();
+
+                entity.Property(e => e.LabelId)
+                    .IsRequired();
+
                 entity.HasIndex(e => new { e.SegmentId, e.LabelId })
                     .IsUnique();
 
@@ -464,6 +512,12 @@ namespace Infrastructure.Data
             modelBuilder.Entity<SongComment>(entity =>
             {
                 entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.UserId)
+                    .IsRequired();
+
+                entity.Property(e => e.SongId)
+                    .IsRequired();
 
                 entity.Property(e => e.Text)
                     .IsRequired()
@@ -491,6 +545,82 @@ namespace Infrastructure.Data
                 entity.HasIndex(e => e.UserId);
                 entity.HasIndex(e => e.SegmentId);
                 entity.HasIndex(e => e.CreatedAt);
+            });
+
+            modelBuilder.Entity<Album>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Title)
+                    .IsRequired()
+                    .HasMaxLength(200);
+
+                entity.Property(e => e.CoverUrl)
+                    .HasMaxLength(1000);
+
+                entity.Property(e => e.Description)
+                    .HasMaxLength(2000);
+
+                entity.Property(e => e.Genre)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.Theme)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.IsPublic)
+                    .IsRequired()
+                    .HasDefaultValue(false);
+
+                entity.Property(e => e.CreatedAt)
+                    .IsRequired();
+
+                entity.Property(e => e.UpdatedAt);
+
+                entity.HasOne(e => e.Owner)
+                    .WithMany()
+                    .HasForeignKey(e => e.OwnerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasMany(e => e.SongAlbums)
+                    .WithOne(e => e.Album)
+                    .HasForeignKey(e => e.AlbumId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(e => e.OwnerId);
+                entity.HasIndex(e => e.Title);
+                entity.HasIndex(e => e.IsPublic);
+                entity.HasIndex(e => e.Genre);
+                entity.HasIndex(e => e.Theme);
+                entity.HasIndex(e => e.CreatedAt);
+            });
+
+            modelBuilder.Entity<SongAlbum>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.AlbumId)
+                    .IsRequired();
+
+                entity.Property(e => e.SongId)
+                    .IsRequired();
+
+                entity.HasIndex(e => new { e.AlbumId, e.SongId })
+                    .IsUnique();
+
+                entity.HasOne(e => e.Album)
+                    .WithMany(e => e.SongAlbums)
+                    .HasForeignKey(e => e.AlbumId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Song)
+                    .WithMany() 
+                    .HasForeignKey(e => e.SongId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(e => e.AlbumId);
+                entity.HasIndex(e => e.SongId);
             });
         }
     }

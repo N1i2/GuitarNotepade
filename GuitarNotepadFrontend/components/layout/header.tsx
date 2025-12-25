@@ -13,6 +13,13 @@ import {
   ListMusic,
   Hand,
   FileMusic,
+  Music2,
+  CircleDashed,
+  Music,
+  Sigma,
+  Repeat,
+  AudioWaveform,
+  FileText,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -23,7 +30,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "../ui/separator";
 
 export function Header() {
   const { user, logout } = useAuth();
@@ -98,6 +104,18 @@ export function Header() {
                 <Link href="/home/songs">
                   <FileMusic className="h-4 w-4" />
                   Songs
+                </Link>
+              </Button>
+
+              <Button
+                asChild
+                variant={pathname === "/home/albums" ? "default" : "ghost"}
+                size="sm"
+                className="gap-2"
+              >
+                <Link href="/home/albums">
+                  <FileText className="h-4 w-4" />
+                  Albums
                 </Link>
               </Button>
 
@@ -220,3 +238,5 @@ export function Header() {
     </header>
   );
 }
+
+

@@ -1,16 +1,11 @@
-﻿namespace Application.DTOs.Song;
+﻿namespace Application.DTOs.Alboms;
 
-public class SongSearchFilters
+public record AlbomsSearchFilters
 {
-    public Guid UserId { get; set; }
+    public Guid userId { get; set; }
     public string? SearchTerm { get; set; }
     public Guid? OwnerId { get; set; }
     public bool? IsPublic { get; set; }
-    public Guid? ChordId { get; set; }
-    public Guid? PatternId { get; set; }
-    public Guid? ParentSongId { get; set; }
-    public decimal? MinRating { get; set; }
-    public decimal? MaxRating { get; set; }
     public DateTime? CreatedFrom { get; set; }
     public DateTime? CreatedTo { get; set; }
     public string SortBy { get; set; } = "createdAt";

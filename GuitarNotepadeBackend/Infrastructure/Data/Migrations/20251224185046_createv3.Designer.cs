@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251223090654_createv3")]
+    [Migration("20251224185046_createv3")]
     partial class createv3
     {
         /// <inheritdoc />
@@ -24,6 +24,66 @@ namespace Infrastructure.Data.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("Domain.Entities.Album", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CoverUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Genre")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("IsPublic")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Theme")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("Genre");
+
+                    b.HasIndex("IsPublic");
+
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("Theme");
+
+                    b.HasIndex("Title");
+
+                    b.ToTable("Albums");
+                });
 
             modelBuilder.Entity("Domain.Entities.Chord", b =>
                 {
@@ -91,6 +151,9 @@ namespace Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("AlbumId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Artist")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
@@ -129,7 +192,8 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("MyProperty")
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<Guid>("OwnerId")
                         .HasColumnType("uuid");
@@ -157,6 +221,10 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AlbumId");
+
+                    b.HasIndex("CreatedAt");
+
                     b.HasIndex("Genre");
 
                     b.HasIndex("IsPublic");
@@ -170,6 +238,28 @@ namespace Infrastructure.Data.Migrations
                     b.HasIndex("Title");
 
                     b.ToTable("Songs");
+                });
+
+            modelBuilder.Entity("Domain.Entities.SongAlbum", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AlbumId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SongId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SongId");
+
+                    b.HasIndex("AlbumId", "SongId")
+                        .IsUnique();
+
+                    b.ToTable("SongAlbums");
                 });
 
             modelBuilder.Entity("Domain.Entities.SongChord", b =>
@@ -516,6 +606,17 @@ namespace Infrastructure.Data.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Album", b =>
+                {
+                    b.HasOne("Domain.Entities.User", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Owner");
+                });
+
             modelBuilder.Entity("Domain.Entities.Chord", b =>
                 {
                     b.HasOne("Domain.Entities.User", "CreatedBy")
@@ -548,6 +649,10 @@ namespace Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Domain.Entities.Song", b =>
                 {
+                    b.HasOne("Domain.Entities.Album", null)
+                        .WithMany("Songs")
+                        .HasForeignKey("AlbumId");
+
                     b.HasOne("Domain.Entities.User", "Owner")
                         .WithMany("Songs")
                         .HasForeignKey("OwnerId")
@@ -562,6 +667,25 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Owner");
 
                     b.Navigation("ParentSong");
+                });
+
+            modelBuilder.Entity("Domain.Entities.SongAlbum", b =>
+                {
+                    b.HasOne("Domain.Entities.Album", "Album")
+                        .WithMany("SongAlbums")
+                        .HasForeignKey("AlbumId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Song", "Song")
+                        .WithMany()
+                        .HasForeignKey("SongId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Album");
+
+                    b.Navigation("Song");
                 });
 
             modelBuilder.Entity("Domain.Entities.SongChord", b =>
@@ -712,6 +836,13 @@ namespace Infrastructure.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("CreatedBy");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Album", b =>
+                {
+                    b.Navigation("SongAlbums");
+
+                    b.Navigation("Songs");
                 });
 
             modelBuilder.Entity("Domain.Entities.Chord", b =>

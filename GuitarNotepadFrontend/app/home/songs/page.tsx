@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
-import { SongDto, SongSearchResultDto } from "@/types/songs";
+import { SongDto, SongGridItem, SongSearchResultDto } from "@/types/songs";
 import { SongsService } from "@/lib/api/song-service";
 import {
   Card,
@@ -16,6 +16,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Search,
   Plus,
@@ -31,44 +42,9 @@ import {
   GitBranch,
   Tag,
   Hash,
+  Music,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { Pagination } from "@/components/user-management/pagination";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-
-interface SongGridItem {
-  id: string;
-  title: string;
-  artist?: string;
-  isPublic: boolean;
-  ownerId: string;
-  ownerNickname: string;
-  chordCount: number;
-  patternCount: number;
-  createdAt: string;
-  updatedAt?: string;
-  canEdit: boolean;
-  isForked: boolean;
-  averageBeautifulRating?: number;
-  averageDifficultyRating?: number;
-  reviewCount: number;
-  commentCount: number;
-  genre?: string;
-  theme?: string;
-  key?: string;
-  difficulty?: string;
-  hasAudio?: boolean;
-  customAudioType?: string;
-}
 
 const genres = [
   "Rock",
@@ -408,35 +384,6 @@ export default function SongsPage() {
     router.push(`/home/songs/edit/${songId}`);
   };
 
-  const handleForkSong = (songId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    router.push(`/home/songs/fork/${songId}`);
-  };
-
-  const handleToggleVisibility = async (
-    songId: string,
-    e: React.MouseEvent
-  ) => {
-    e.stopPropagation();
-    try {
-      const song = allSongs.find((s) => s.id === songId);
-      if (!song) return;
-
-      const updatedSong = await SongsService.toggleSongVisibility(
-        songId,
-        !song.isPublic
-      );
-      setAllSongs((prev) =>
-        prev.map((song) => (song.id === songId ? updatedSong : song))
-      );
-      toast.success(
-        `Song is now ${updatedSong.isPublic ? "public" : "private"}`
-      );
-    } catch (error: any) {
-      toast.error(error.message || "Failed to toggle visibility");
-    }
-  };
-
   const getSongItemsForGrid = (): SongGridItem[] => {
     return filteredSongs.items.map((song) => {
       const canEdit = user
@@ -698,19 +645,13 @@ export default function SongsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label
-                  htmlFor="genreFilter"
-                  className="text-sm font-medium"
-                >
+                <Label htmlFor="genreFilter" className="text-sm font-medium">
                   <div className="flex items-center gap-2">
                     <Tag className="h-4 w-4" />
                     Genre
                   </div>
                 </Label>
-                <Select
-                  value={selectedGenre}
-                  onValueChange={setSelectedGenre}
-                >
+                <Select value={selectedGenre} onValueChange={setSelectedGenre}>
                   <SelectTrigger id="genreFilter">
                     <SelectValue placeholder="Filter by genre" />
                   </SelectTrigger>
@@ -726,19 +667,13 @@ export default function SongsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label
-                  htmlFor="themeFilter"
-                  className="text-sm font-medium"
-                >
+                <Label htmlFor="themeFilter" className="text-sm font-medium">
                   <div className="flex items-center gap-2">
                     <Hash className="h-4 w-4" />
                     Theme
                   </div>
                 </Label>
-                <Select
-                  value={selectedTheme}
-                  onValueChange={setSelectedTheme}
-                >
+                <Select value={selectedTheme} onValueChange={setSelectedTheme}>
                   <SelectTrigger id="themeFilter">
                     <SelectValue placeholder="Filter by theme" />
                   </SelectTrigger>
@@ -760,7 +695,10 @@ export default function SongsPage() {
                     Audio
                   </div>
                 </Label>
-                <Select value={hasAudioFilter} onValueChange={setHasAudioFilter}>
+                <Select
+                  value={hasAudioFilter}
+                  onValueChange={setHasAudioFilter}
+                >
                   <SelectTrigger id="audioFilter">
                     <SelectValue placeholder="Audio filter" />
                   </SelectTrigger>
@@ -930,7 +868,8 @@ export default function SongsPage() {
               {hasAudioFilter !== "all" && (
                 <Badge variant="secondary" className="text-xs">
                   <Music2 className="h-3 w-3 mr-1" />
-                  Audio: {hasAudioFilter === "yes" ? "With audio" : "Without audio"}
+                  Audio:{" "}
+                  {hasAudioFilter === "yes" ? "With audio" : "Without audio"}
                 </Badge>
               )}
               {useBeautyFilter && (
@@ -1051,10 +990,9 @@ export default function SongsPage() {
                           {song.hasAudio && (
                             <Badge
                               variant="outline"
-                              className="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/30"
-                              title={`Audio type: ${song.customAudioType || 'Unknown'}`}
+                              className="flex items-center gap-1 text-xs bg-blue-50 dark:bg-blue-900/30"
                             >
-                              <Music2 className="h-3 w-3" />
+                              <Music className="h-2.5 w-2.5" />
                               Audio
                             </Badge>
                           )}

@@ -15,10 +15,14 @@ public class SongChord : BaseEntityWithId
     public static SongChord Create(Guid songId, Guid chordId)
     {
         if (songId == Guid.Empty)
+        {
             throw new ArgumentException("SongId is required", nameof(songId));
+        }
 
         if (chordId == Guid.Empty)
+        {
             throw new ArgumentException("ChordId is required", nameof(chordId));
+        }
 
         return new SongChord
         {

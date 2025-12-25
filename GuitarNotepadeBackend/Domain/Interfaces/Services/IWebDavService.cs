@@ -17,4 +17,11 @@ public interface IWebDavService
     Task<bool> AudioExistsAsync(string fileName);
     Task<Stream> GetAudioStreamAsync(string fileName);
     Task<byte[]> GetAudioBytesAsync(string fileName);
+
+    Task<string> UploadAlbumCoverAsync(string base64Content, Guid albumId);
+    Task<string> GetAlbumCoverUrlAsync(string fileName);
+    Task<bool> DeleteAlbumCoverAsync(string fileName);
+    Task<bool> AlbumCoverExistsAsync(string fileName);
+    Task<Stream> GetAlbumCoverStreamAsync(string fileName);
+    Task<byte[]> GetAlbumCoverBytesAsync(string fileName);
 }

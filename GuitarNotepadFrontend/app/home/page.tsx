@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowRight, FileMusic, Hand, ListMusic, Music } from "lucide-react";
+import { ArrowRight, FileMusic, FileText, Hand, ListMusic } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect } from "react";
@@ -126,7 +126,7 @@ export default function HomePage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <ListMusic className="h-5 w-5" />
+                <FileMusic className="h-5 w-5" />
                 Song Library
               </CardTitle>
               <CardDescription>
@@ -148,13 +148,23 @@ export default function HomePage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileMusic className="h-5 w-5" />
-                <CardTitle>My Albom</CardTitle>
+                <FileText className="h-5 w-5" />
+                Albums
               </CardTitle>
-              <CardDescription>Manage your guitar tabs</CardDescription>
+              <CardDescription>
+                Browse and create albums
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">Coming soon...</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                Access a comprehensive library of albums
+              </p>
+              <Button asChild className="w-full">
+                <Link href="/home/albums">
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  Go to Albums
+                </Link>
+              </Button>
             </CardContent>
           </Card>
         </div>

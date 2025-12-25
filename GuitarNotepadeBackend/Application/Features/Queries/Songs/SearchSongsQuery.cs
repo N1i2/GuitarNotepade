@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using Application.DTOs.Song;
+using MediatR;
 
 namespace Application.Features.Queries.Songs;
 

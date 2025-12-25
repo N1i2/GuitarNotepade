@@ -1,15 +1,25 @@
-﻿using Application.DTOs.Chords;
+﻿using Application.DTOs.Alboms;
+using Application.DTOs.Chords;
 using Application.DTOs.Song;
 using Application.DTOs.StrummingPatterns;
 using Application.DTOs.Users;
+using Application.Features.Commands.Albums;
 using Application.Features.Commands.Users;
 using AutoMapper;
 using Domain.Entities;
+using Domain.Interfaces.Services;
 
 namespace Application.Mappings;
 
 public class MappingProfile : Profile
 {
+    private readonly IWebDavService? _webDavService;
+
+    public MappingProfile(IWebDavService webDavService) : this()
+    {
+        _webDavService = webDavService;
+    }
+
     public MappingProfile()
     {
         CreateMap<RegisterUserDto, RegisterUserCommand>();
@@ -127,6 +137,63 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Patterns, opt => opt.MapFrom(src => src.SongPatterns.Select(sp => sp.StrummingPattern)))
             .ForMember(dest => dest.Comments, opt => opt.MapFrom(src => src.Comments))
             .ForMember(dest => dest.Segments, opt => opt.MapFrom(src => MapSegmentsWithPositions(src)));
+
+        CreateMap<Album, AlbumDto>()
+               .ForMember(dest => dest.OwnerName, opt => opt.Ignore())
+               .ForMember(dest => dest.CountOfSongs, opt => opt.Ignore());
+
+        CreateMap<Album, AlbumWithSongsDto>()
+               .IncludeBase<Album, AlbumDto>();
+
+        CreateMap<Song, SongInAlbumDto>()
+            .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => src.Owner != null ? src.Owner.NikName : string.Empty))
+            .ForMember(dest => dest.ChordCount, opt => opt.MapFrom(src => src.SongChords.Count))
+            .ForMember(dest => dest.PatternCount, opt => opt.MapFrom(src => src.SongPatterns.Count))
+            .ForMember(dest => dest.ReviewCount, opt => opt.MapFrom(src => src.Reviews.Count))
+            .ForMember(dest => dest.CommentsCount, opt => opt.MapFrom(src => src.Comments.Count))
+            .ForMember(dest => dest.AverageBeautifulRating, opt => opt.Ignore()) 
+            .ForMember(dest => dest.AverageDifficultyRating, opt => opt.Ignore()); 
+
+        CreateMap<Song, SongInAlbumDto>()
+               .ForMember(dest => dest.OwnerName, opt => opt.Ignore())
+               .ForMember(dest => dest.ChordCount, opt => opt.Ignore())
+               .ForMember(dest => dest.PatternCount, opt => opt.Ignore())
+               .ForMember(dest => dest.ReviewCount, opt => opt.Ignore())
+               .ForMember(dest => dest.CommentsCount, opt => opt.Ignore())
+               .ForMember(dest => dest.AverageBeautifulRating, opt => opt.Ignore())
+               .ForMember(dest => dest.AverageDifficultyRating, opt => opt.Ignore())
+               .ForMember(dest => dest.HasAudio, opt => opt.Ignore());
+
+        CreateMap<CreateAlbumDto, CreateAlbumCommand>()
+            .ForMember(dest => dest.CoverBase64, opt => opt.MapFrom(src => src.CoverUrl));
+    }
+
+    public class AlbumCoverUrlResolver : IValueResolver<Album, AlbumDto, string?>
+    {
+        private readonly IWebDavService _webDavService;
+
+        public AlbumCoverUrlResolver(IWebDavService webDavService)
+        {
+            _webDavService = webDavService;
+        }
+
+        public string? Resolve(Album source, AlbumDto destination, string? destMember, ResolutionContext context)
+        {
+            if (string.IsNullOrEmpty(source.CoverUrl))
+            {
+                return null;
+            }
+
+            try
+            {
+                var base64Cover = _webDavService.GetAlbumCoverUrlAsync(source.CoverUrl).GetAwaiter().GetResult();
+                return base64Cover;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
     }
 
     private List<SegmentDataWithPositionDto> MapSegmentsWithPositions(Song song)

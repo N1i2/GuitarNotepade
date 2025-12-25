@@ -17,6 +17,8 @@ public interface IUnitOfWork : IDisposable
     ISongCommentRepository SongComments { get; }
     ISongChordRepository SongChords { get; }
     ISongPatternRepository SongPatterns { get; }
+    IAlbomRepository Alboms { get; }
+    ISongAlbomRepository SongAlboms { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task BeginTransactionAsync(CancellationToken cancellationToken = default);

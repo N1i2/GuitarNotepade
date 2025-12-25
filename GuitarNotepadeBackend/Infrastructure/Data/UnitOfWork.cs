@@ -1,5 +1,6 @@
 ﻿using Domain.Interfaces;
 using Domain.Interfaces.Repositories;
+using Domain.Interfaces.Services;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -12,7 +13,6 @@ public class UnitOfWork : IUnitOfWork
     private readonly AppDbContext _context;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<UnitOfWork> _logger;
-    private IExecutionStrategy? _executionStrategy;
     private IDbContextTransaction? _currentTransaction;
 
     public UnitOfWork(
@@ -39,6 +39,8 @@ public class UnitOfWork : IUnitOfWork
         SongComments = new SongCommentRepository(context);
         SongChords = new SongChordRepository(context);
         SongPatterns = new SongPatternRepository(context);
+        Alboms = new AlbomRepository(context);
+        SongAlboms = new SongAlbomRepository(context);
     }
 
     public IUserRepository Users { get; }
@@ -54,6 +56,8 @@ public class UnitOfWork : IUnitOfWork
     public ISongCommentRepository SongComments { get; }
     public ISongChordRepository SongChords { get; }
     public ISongPatternRepository SongPatterns { get; }
+    public IAlbomRepository Alboms { get; }
+    public ISongAlbomRepository SongAlboms { get; }
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

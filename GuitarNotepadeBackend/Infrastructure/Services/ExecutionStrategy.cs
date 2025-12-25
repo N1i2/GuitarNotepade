@@ -1,10 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Domain.Interfaces.Services;
+using Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 
-namespace Infrastructure.Data
+namespace Infrastructure.Services
 {
-    public class ExecutionStrategy : IExecutionStrategy
+    public class ExecutionStrategy : Domain.Interfaces.Services.IExecutionStrategy
     {
         private readonly AppDbContext _context;
         private readonly ILogger<ExecutionStrategy> _logger;
