@@ -48,6 +48,7 @@ import {
   getDefaultPatternColor,
 } from "@/lib/song-converter";
 import { useSongCreation } from "@/app/contexts/song-creation-context";
+import { toast } from "sonner";
 
 function ChordModal({
   chordName,
@@ -622,7 +623,6 @@ export function ToolPanel() {
               <MessageSquare className="h-4 w-4" />
             </Button>
           </div>
-
           <div className="grid grid-cols-2 gap-2">
             <Button
               variant="outline"
@@ -651,7 +651,6 @@ export function ToolPanel() {
               </Badge>
             </Button>
           </div>
-
           <div className="flex gap-2">
             <Button
               variant={
@@ -682,7 +681,6 @@ export function ToolPanel() {
               Clear patterns
             </Button>
           </div>
-
           {state.selectedChords.length > 0 && (
             <div className="space-y-2">
               <div className="text-sm font-medium">Chords in the song</div>
@@ -695,14 +693,19 @@ export function ToolPanel() {
                         ? "ring-2 ring-primary bg-primary/5"
                         : ""
                     }`}
-                    onClick={() => handleChordSelect(chord.id)}
+                    onClick={() => {
+                      dispatch({ type: "SELECT_CHORD", payload: chord.id });
+                      dispatch({ type: "SET_TOOL", payload: "chord" });
+                      toast.info(
+                        `Click on words to assign chord "${chord.name}"`
+                      );
+                    }}
                   >
                     <div className="flex items-center gap-2">
                       <div
                         className="w-3 h-3 rounded-full border"
                         style={{
-                          backgroundColor:
-                            chord.color || getDefaultChordColor(chord.id),
+                          backgroundColor: chord.color,
                           borderColor: chord.color
                             ? "transparent"
                             : "currentColor",
@@ -714,7 +717,8 @@ export function ToolPanel() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setSelectedChordName(chord.name);
                         }}
                         className="h-6 w-6 p-0"
@@ -749,7 +753,10 @@ export function ToolPanel() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={(e) => handleRemoveChord(chord.id, e)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveChord(chord.id, e);
+                        }}
                         className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                         title="Delete Chord"
                       >
@@ -761,7 +768,6 @@ export function ToolPanel() {
               </div>
             </div>
           )}
-
           {state.selectedPatterns.length > 0 && (
             <div className="space-y-2">
               <div className="text-sm font-medium">Patterns in the song</div>
@@ -774,14 +780,19 @@ export function ToolPanel() {
                         ? "ring-2 ring-primary bg-primary/5"
                         : ""
                     }`}
-                    onClick={() => handlePatternSelect(pattern.id)}
+                    onClick={() => {
+                      dispatch({ type: "SELECT_PATTERN", payload: pattern.id });
+                      dispatch({ type: "SET_TOOL", payload: "pattern" });
+                      toast.info(
+                        `Select text and click "Apply" or click on words to assign pattern "${pattern.name}"`
+                      );
+                    }}
                   >
                     <div className="flex items-center gap-2">
                       <div
                         className="w-4 h-4 rounded border"
                         style={{
-                          backgroundColor:
-                            pattern.color || getDefaultPatternColor(pattern.id),
+                          backgroundColor: pattern.color,
                           borderColor: pattern.color
                             ? "transparent"
                             : "currentColor",
@@ -798,7 +809,8 @@ export function ToolPanel() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setSelectedPatternName(pattern.name);
                         }}
                         className="h-6 w-6 p-0"
@@ -845,7 +857,6 @@ export function ToolPanel() {
               </div>
             </div>
           )}
-
           {activeToolInfo && (
             <div className="p-3 rounded-lg border bg-muted/30">
               <div className="flex items-center justify-between">

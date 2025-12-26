@@ -93,9 +93,9 @@ const handleToggleBlock = async (user: User, reason?: string, blockedUntil?: Dat
       await loadUsers();
     } catch (error: unknown) {
       if (error instanceof Error) {
-        toast.error(error.message, "destructive");
+        toast.error(error.message);
       } else {
-        toast.error("Failed to change user role", "destructive");
+        toast.error("Failed to change user role");
       }
     } finally {
       setIsActionLoading(null);

@@ -14,8 +14,8 @@ public class User : BaseEntityWithId
     public string Role { get; private set; }
     public string? AvatarUrl { get; private set; }
     public string Bio { get; private set; }
-    public DateTime? BlockedUntil { get; private set; }
     public string? BlockReason { get; private set; }
+    public DateTime? BlockedUntil { get; private set; }
     public DateTime CreateAt { get; private set; }
 
     public bool IsBlocked => BlockedUntil.HasValue && BlockedUntil > DateTime.UtcNow;

@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: guitar_notepad_db
+    environment:
+      POSTGRES_DB: GuitarNotepad
+      POSTGRES_USER: niko
+      POSTGRES_PASSWORD: 1214
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U niko -d GuitarNotepad"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  backend:
+    build:
+      context: ./GuitarNotepadeBackend
+      dockerfile: Dockerfile
+    container_name: guitar_notepad_backend
+    restart: unless-stopped
+    env_file:
+      - ./GuitarNotepadeBackend/.env.docker
+    environment:
+      ASPNETCORE_URLS: http://*:3001  # ← порт 3001
+      PORT: 3001                      # ← порт 3001
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3001:3001"  # ← внешний 3001, внутренний 3001
+    # Уберите healthcheck пока не настроен
+    # или используйте:
+    # healthcheck:
+    #   test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+
+  frontend:
+    build:
+      context: ./GuitarNotepadFrontend
+      dockerfile: Dockerfile
+    container_name: guitar_notepad_frontend
+    restart: unless-stopped  
+    env_file:
+      - ./GuitarNotepadFrontend/.env.docker  
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
