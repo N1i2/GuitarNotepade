@@ -35,7 +35,9 @@ public class SongService : ISongService
     {
         var user = await _unitOfWork.Users.GetByIdAsync(ownerId, cancellationToken);
         if (user == null)
+        {
             throw new ArgumentException("User not found", nameof(ownerId));
+        }
 
         if (parentSongId.HasValue)
         {
@@ -63,8 +65,11 @@ public class SongService : ISongService
         CancellationToken cancellationToken = default)
     {
         var song = await _unitOfWork.Songs.GetByIdAsync(songId, cancellationToken);
-        if (song == null)
+
+        if (song == null) 
+        {
             throw new ArgumentException("Song not found", nameof(songId));
+        }
 
         song.Update(title, artist, genre, theme, description, null, null, isPublic);
         await _unitOfWork.Songs.UpdateAsync(song, cancellationToken);
@@ -88,8 +93,11 @@ public class SongService : ISongService
             _logger.LogDebug("Транзакция начата. Загружаем песню...");
 
             var song = await _unitOfWork.Songs.GetByIdAsync(songId, cancellationToken);
+
             if (song == null)
+            {
                 throw new ArgumentException("Песня не найдена", nameof(songId));
+            }
 
             var structure = await _unitOfWork.SongStructures
                 .GetWithSegmentsAsync(songId, cancellationToken);
@@ -132,7 +140,8 @@ public class SongService : ISongService
                     repeatGroup: repeatGroup);
 
                 await _unitOfWork.SongSegmentPositions.AddAsync(position, cancellationToken);
-                structure.SegmentPositions.Add(position);
+
+                structure.SegmentPositions?.Add(position);
 
                 positionIndex++;
             }

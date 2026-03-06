@@ -3,7 +3,7 @@ using AutoMapper;
 using Domain.Interfaces;
 using MediatR;
 
-namespace Application.Features.Queries.Albums;
+namespace Application.Features.Queries.Alboms;
 
 public class GetFavoriteAlbumQueryHandler : IRequestHandler<GetFavoriteAlbumQuery, AlbumWithSongsDto>
 {

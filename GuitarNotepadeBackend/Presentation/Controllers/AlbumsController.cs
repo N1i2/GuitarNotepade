@@ -1,7 +1,6 @@
 using Application.DTOs.Alboms;
 using Application.Features.Commands.Alboms;
 using Application.Features.Queries.Alboms;
-using Application.Features.Queries.Albums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

@@ -1,7 +1,7 @@
 ﻿using Application.DTOs.Song;
 using MediatR;
 
-namespace Application.Features.Commands.Comments;
+namespace Application.Features.Commands.Songs;
 
 public class AddCommentCommand : IRequest<SongCommentDto>
 {

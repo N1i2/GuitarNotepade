@@ -1,10 +1,9 @@
-using Application.Features.Commands.Songs;
 using Domain.Interfaces;
 using Domain.Interfaces.Services;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace Application.Features.Commands.Comments;
+namespace Application.Features.Commands.Songs;
 
 public class DeleteCommentCommandHandler : IRequestHandler<DeleteCommentCommand>
 {
