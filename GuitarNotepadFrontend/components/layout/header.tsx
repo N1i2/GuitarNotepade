@@ -36,6 +36,7 @@ export function Header() {
   const pathname = usePathname();
 
   const isAdmin = user?.role === "Admin";
+  const isGuest = user?.role === "Guest";
 
   const getInitials = (name: string) => {
     return name
@@ -50,7 +51,7 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 sm:px-6 lg:px-20 flex h-16 max-w-screen-2xl items-center justify-between">
         <div className="flex items-center gap-6">
-          <Link href={user ? "/home" : "/"} className="flex items-center gap-2">
+          <Link href="/home" className="flex items-center gap-2">
             <span className="text-xl font-bold bg-gradient-to-r from-foreground via-foreground/80 to-teal-500 dark:to-teal-400 bg-clip-text text-transparent">
               GuitarNotepad
             </span>
@@ -107,17 +108,19 @@ export function Header() {
                 </Link>
               </Button>
 
-              <Button
-                asChild
-                variant={pathname === "/home/albums" ? "default" : "ghost"}
-                size="sm"
-                className="gap-2"
-              >
-                <Link href="/home/albums">
-                  <FileText className="h-4 w-4" />
-                  Albums
-                </Link>
-              </Button>
+              {!isGuest && (
+                <Button
+                  asChild
+                  variant={pathname === "/home/albums" ? "default" : "ghost"}
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Link href="/home/albums">
+                    <FileText className="h-4 w-4" />
+                    Albums
+                  </Link>
+                </Button>
+              )}
 
               {isAdmin && (
                 <Button
@@ -139,7 +142,7 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-3">
-          {user ? (
+          {user && !isGuest ? (
             <>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -212,6 +215,12 @@ export function Header() {
                 </span>
               </div>
             </>
+          ) : user && isGuest ? (
+            <div className="flex items-center gap-2">
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/login">Войти</Link>
+              </Button>
+            </div>
           ) : (
             <div className="flex items-center gap-2">
               {pathname === "/login" || pathname === "/register" ? (

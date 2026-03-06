@@ -1,4 +1,4 @@
-﻿using Application;
+using Application;
 using DotNetEnv;
 using Infrastructure;
 using Infrastructure.Data;
@@ -11,7 +11,6 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Загружаем правильный .env файл в зависимости от окружения
 if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true")
 {
     Console.WriteLine("Running in Docker container, loading .env.docker...");
@@ -106,11 +105,11 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
-    
+
     try
     {
         var dbContext = services.GetRequiredService<AppDbContext>();
-        
+
         var pendingMigrations = dbContext.Database.GetPendingMigrations();
         if (pendingMigrations.Any())
         {
@@ -119,7 +118,7 @@ using (var scope = app.Services.CreateScope())
             {
                 Console.WriteLine($"  - {migration}");
             }
-            
+
             dbContext.Database.Migrate();
             Console.WriteLine("Migrations applied successfully!");
         }
@@ -127,7 +126,7 @@ using (var scope = app.Services.CreateScope())
         {
             Console.WriteLine("No pending migrations found. Database is up to date.");
         }
-        
+
         var canConnect = dbContext.Database.CanConnect();
         Console.WriteLine($"Database connection test: {(canConnect ? "SUCCESS" : "FAILED")}");
     }
@@ -135,8 +134,8 @@ using (var scope = app.Services.CreateScope())
     {
         Console.WriteLine($"ERROR applying migrations: {ex.Message}");
         Console.WriteLine($"Stack trace: {ex.StackTrace}");
-        
-        throw;
+        if (!app.Environment.IsDevelopment())
+            throw;
     }
 }
 
@@ -158,18 +157,16 @@ app.MapGet("/", async context =>
     await Task.CompletedTask;
 });
 
-// Health check endpoint
 app.MapGet("/health", () => "Healthy");
 
-// Database health check
 app.MapGet("/health/db", async (AppDbContext dbContext) =>
 {
     try
     {
         var canConnect = await dbContext.Database.CanConnectAsync();
-        return Results.Ok(new 
-        { 
-            Status = "Healthy", 
+        return Results.Ok(new
+        {
+            Status = "Healthy",
             Database = canConnect ? "Connected" : "Disconnected",
             Timestamp = DateTime.UtcNow
         });
@@ -192,13 +189,12 @@ app.MapGet("/health/full", async (AppDbContext dbContext) =>
         Timestamp = DateTime.UtcNow,
         Services = new Dictionary<string, string>()
     };
-    
+
     try
     {
-        // Check database
         var dbConnected = await dbContext.Database.CanConnectAsync();
         result.Services["database"] = dbConnected ? "Connected" : "Disconnected";
-        
+
         return Results.Ok(result);
     }
     catch (Exception ex)

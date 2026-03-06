@@ -3,5 +3,13 @@ using MediatR;
 
 namespace Application.Features.Queries.Songs;
 
-public record GetSongReviewByIdQuery(Guid ReviewId) : IRequest<SongReviewDto>;
+public class GetSongReviewByIdQuery : IRequest<SongReviewDto>
+{
+    public Guid ReviewId { get; }
+
+    public GetSongReviewByIdQuery(Guid reviewId)
+    {
+        ReviewId = reviewId;
+    }
+}
 

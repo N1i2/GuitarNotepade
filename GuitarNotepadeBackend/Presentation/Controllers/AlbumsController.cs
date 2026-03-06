@@ -1,9 +1,7 @@
-﻿using Application.DTOs.Alboms;
+using Application.DTOs.Alboms;
 using Application.Features.Commands.Alboms;
 using Application.Features.Queries.Alboms;
-using AutoMapper;
-using Domain.Interfaces;
-using Domain.Interfaces.Services;
+using Application.Features.Queries.Albums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,25 +15,14 @@ namespace Presentation.Controllers;
 public class AlbumsController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly IMapper _mapper;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IWebDavService _webDavService; 
 
-    public AlbumsController(
-        IMediator mediator,
-        IMapper mapper,
-        IUnitOfWork unitOfWork,
-        IWebDavService webDavService) 
+    public AlbumsController(IMediator mediator)
     {
         _mediator = mediator;
-        _mapper = mapper;
-        _unitOfWork = unitOfWork;
-        _webDavService = webDavService;
     }
 
     [HttpGet]
     public async Task<ActionResult<AlbumSearchResultDto>> SearchAlbums(
-        [FromQuery] Guid userId,
         [FromQuery] string? searchTerm = null,
         [FromQuery] Guid? ownerId = null,
         [FromQuery] bool? isPublic = null,
@@ -46,31 +33,26 @@ public class AlbumsController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
-        try
-        {
-            var filters = new AlbumSearchFilters
-            {
-                UserId = userId,
-                SearchTerm = searchTerm,
-                OwnerId = ownerId,
-                IsPublic = isPublic,
-                Genre = genre,
-                Theme = theme,
-                SortBy = sortBy,
-                SortOrder = sortOrder,
-                Page = page,
-                PageSize = pageSize
-            };
+        var currentUserId = GetCurrentUserId();
 
-            var query = new SearchAlbumsQuery(filters);
-            var result = await _mediator.Send(query);
-
-            return Ok(result);
-        }
-        catch (Exception ex)
+        var filters = new AlbumSearchFilters
         {
-            return BadRequest(new { error = ex.Message });
-        }
+            UserId = currentUserId,
+            SearchTerm = searchTerm,
+            OwnerId = ownerId,
+            IsPublic = isPublic,
+            Genre = genre,
+            Theme = theme,
+            SortBy = sortBy,
+            SortOrder = sortOrder,
+            Page = page,
+            PageSize = pageSize
+        };
+
+        var query = new SearchAlbumsQuery(filters);
+        var result = await _mediator.Send(query);
+
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
@@ -80,37 +62,26 @@ public class AlbumsController : ControllerBase
         {
             var query = new GetAlbumByIdQuery(id);
             var result = await _mediator.Send(query);
-
             return Ok(result);
         }
-        catch (KeyNotFoundException ex)
+        catch (KeyNotFoundException)
         {
-            return NotFound(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
+            return NotFound(new { error = "Album not found" });
         }
     }
 
-    [HttpGet("cover/{fileName}")]
-    [AllowAnonymous]
-    public async Task<ActionResult> GetAlbumCover(string fileName)
+    [HttpGet("{id}/with-songs")]
+    public async Task<ActionResult<AlbumWithSongsDto>> GetAlbumByIdWithSongs(Guid id)
     {
         try
         {
-            var coverBase64 = await _webDavService.GetAlbumCoverUrlAsync(fileName);
-
-            if (string.IsNullOrEmpty(coverBase64))
-            {
-                return NotFound(new { error = "Cover not found" });
-            }
-
-            return Ok(new { coverBase64 });
+            var query = new GetAlbumByIdWithSongsQuery(id);
+            var result = await _mediator.Send(query);
+            return Ok(result);
         }
-        catch (Exception ex)
+        catch (KeyNotFoundException)
         {
-            return BadRequest(new { error = ex.Message });
+            return NotFound(new { error = "Album not found" });
         }
     }
 
@@ -121,93 +92,26 @@ public class AlbumsController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
-        try
-        {
-            var currentUserId = GetCurrentUserId();
+        var currentUserId = GetCurrentUserId();
 
-            if (userId != currentUserId && includePrivate)
-            {
-                return Forbid();
-            }
-
-            var filters = new AlbumSearchFilters
-            {
-                UserId = currentUserId,
-                OwnerId = userId,
-                IsPublic = includePrivate ? null : true,
-                Page = page,
-                PageSize = pageSize
-            };
-
-            var query = new SearchAlbumsQuery(filters);
-            var result = await _mediator.Send(query);
-
-            return Ok(result);
-        }
-        catch (ArgumentException ex)
-        {
-            return NotFound(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-    }
-
-    [HttpPost("{id}/songs/{songId}")]
-    public async Task<ActionResult> AddSongToAlbum(Guid id, Guid songId)
-    {
-        try
-        {
-            var userId = GetCurrentUserId();
-
-            var command = new AddSongToAlbumCommand(userId, id, songId);
-            await _mediator.Send(command);
-
-            return Ok(new { message = "Song added to album successfully" });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { error = ex.Message });
-        }
-        catch (UnauthorizedAccessException)
+        if (userId != currentUserId && includePrivate)
         {
             return Forbid();
         }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-    }
 
-    [HttpDelete("{id}/songs/{songId}")]
-    public async Task<ActionResult> RemoveSongFromAlbum(Guid id, Guid songId)
-    {
-        try
+        var filters = new AlbumSearchFilters
         {
-            var userId = GetCurrentUserId();
+            UserId = currentUserId,
+            OwnerId = userId,
+            IsPublic = includePrivate ? null : true,
+            Page = page,
+            PageSize = pageSize
+        };
 
-            var command = new RemoveSongFromAlbumCommand(userId, id, songId);
-            await _mediator.Send(command);
+        var query = new SearchAlbumsQuery(filters);
+        var result = await _mediator.Send(query);
 
-            return NoContent();
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { error = ex.Message });
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        return Ok(result);
     }
 
     [HttpGet("my-albums")]
@@ -216,27 +120,20 @@ public class AlbumsController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
-        try
+        var userId = GetCurrentUserId();
+        var filters = new AlbumSearchFilters
         {
-            var userId = GetCurrentUserId();
-            var filters = new AlbumSearchFilters
-            {
-                UserId = userId,
-                OwnerId = userId,
-                IsPublic = includePrivate ? null : true,
-                Page = page,
-                PageSize = pageSize
-            };
+            UserId = userId,
+            OwnerId = userId,
+            IsPublic = includePrivate ? null : true,
+            Page = page,
+            PageSize = pageSize
+        };
 
-            var query = new SearchAlbumsQuery(filters);
-            var result = await _mediator.Send(query);
+        var query = new SearchAlbumsQuery(filters);
+        var result = await _mediator.Send(query);
 
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        return Ok(result);
     }
 
     [HttpPost]
@@ -250,8 +147,8 @@ public class AlbumsController : ControllerBase
                 userId,
                 dto.Title,
                 dto.IsPublic,
-                dto.Genre!,
-                dto.Theme!,
+                dto.Genre,
+                dto.Theme,
                 dto.CoverUrl,
                 dto.Description);
 
@@ -259,17 +156,9 @@ public class AlbumsController : ControllerBase
 
             return CreatedAtAction(nameof(GetAlbumById), new { id = result.Id }, result);
         }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
         catch (InvalidOperationException ex)
         {
             return Conflict(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
         }
     }
 
@@ -291,12 +180,11 @@ public class AlbumsController : ControllerBase
                 theme: dto.Theme);
 
             var result = await _mediator.Send(command);
-
             return Ok(result);
         }
-        catch (KeyNotFoundException ex)
+        catch (KeyNotFoundException)
         {
-            return NotFound(new { error = ex.Message });
+            return NotFound(new { error = "Album not found" });
         }
         catch (UnauthorizedAccessException)
         {
@@ -305,10 +193,6 @@ public class AlbumsController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return Conflict(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
         }
     }
 
@@ -324,9 +208,9 @@ public class AlbumsController : ControllerBase
 
             return NoContent();
         }
-        catch (KeyNotFoundException ex)
+        catch (KeyNotFoundException)
         {
-            return NotFound(new { error = ex.Message });
+            return NotFound(new { error = "Album not found" });
         }
         catch (UnauthorizedAccessException)
         {
@@ -336,87 +220,17 @@ public class AlbumsController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
     }
 
-    [HttpGet("{id}/with-songs")]
-    public async Task<ActionResult<AlbumWithSongsDto>> GetAlbumByIdWithSongs(Guid id)
-    {
-        try
-        {
-            var query = new GetAlbumByIdWithSongsQuery(id);
-            var result = await _mediator.Send(query);
-
-            return Ok(result);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-    }
-
-    [HttpGet("favorite/{songId}")]
-    public async Task<ActionResult<bool>> IsSongInFavorite(Guid songId)
+    [HttpPost("{id}/songs/{songId}")]
+    public async Task<ActionResult> AddSongToAlbum(Guid id, Guid songId)
     {
         try
         {
             var userId = GetCurrentUserId();
-            var favoriteAlbum = await GetUserFavoriteAlbumAsync(userId);
-
-            if (favoriteAlbum == null)
-            {
-                return Ok(false);
-            }
-
-            var songInAlbum = await _unitOfWork.Alboms.IsSongInAlbumAsync(favoriteAlbum.Id, songId);
-            return Ok(songInAlbum);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-    }
-
-    [HttpPost("favorite/{songId}")]
-    public async Task<ActionResult> AddSongToFavorite(Guid songId)
-    {
-        try
-        {
-            var userId = GetCurrentUserId();
-            var favoriteAlbum = await GetUserFavoriteAlbumAsync(userId);
-
-            if (favoriteAlbum == null)
-            {
-                var createCommand = new CreateAlbumCommand(
-                    userId,
-                    "Favorite",
-                    false,
-                    null,
-                    null,
-                    null,
-                    "My favorite songs");
-
-                var newFavoriteAlbum = await _mediator.Send(createCommand);
-                favoriteAlbum = await _unitOfWork.Alboms.GetByIdAsync(newFavoriteAlbum.Id);
-            }
-
-            var isAlreadyInAlbum = await _unitOfWork.Alboms.IsSongInAlbumAsync(favoriteAlbum!.Id, songId);
-            if (isAlreadyInAlbum)
-            {
-                return Conflict(new { error = "Song is already in favorite album" });
-            }
-
-            var command = new AddSongToAlbumCommand(userId, favoriteAlbum.Id, songId);
+            var command = new AddSongToAlbumCommand(userId, id, songId);
             await _mediator.Send(command);
-
-            return Ok(new { message = "Song added to favorites successfully" });
+            return Ok(new { message = "Song added to album successfully" });
         }
         catch (KeyNotFoundException ex)
         {
@@ -430,34 +244,16 @@ public class AlbumsController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
     }
 
-    [HttpDelete("favorite/{songId}")]
-    public async Task<ActionResult> RemoveSongFromFavorite(Guid songId)
+    [HttpDelete("{id}/songs/{songId}")]
+    public async Task<ActionResult> RemoveSongFromAlbum(Guid id, Guid songId)
     {
         try
         {
             var userId = GetCurrentUserId();
-            var favoriteAlbum = await GetUserFavoriteAlbumAsync(userId);
-
-            if (favoriteAlbum == null)
-            {
-                return NotFound(new { error = "Favorite album not found" });
-            }
-
-            var isInAlbum = await _unitOfWork.Alboms.IsSongInAlbumAsync(favoriteAlbum.Id, songId);
-            if (!isInAlbum)
-            {
-                return NotFound(new { error = "Song not found in favorite album" });
-            }
-
-            var command = new RemoveSongFromAlbumCommand(userId, favoriteAlbum.Id, songId);
+            var command = new RemoveSongFromAlbumCommand(userId, id, songId);
             await _mediator.Send(command);
-
             return NoContent();
         }
         catch (KeyNotFoundException ex)
@@ -468,10 +264,6 @@ public class AlbumsController : ControllerBase
         {
             return Forbid();
         }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
     }
 
     [HttpGet("favorite")]
@@ -480,28 +272,50 @@ public class AlbumsController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            var favoriteAlbum = await GetUserFavoriteAlbumAsync(userId);
-
-            if (favoriteAlbum == null)
-            {
-                return NotFound(new { error = "Favorite album not found" });
-            }
-
-            var query = new GetAlbumByIdWithSongsQuery(favoriteAlbum.Id);
+            var query = new GetFavoriteAlbumQuery(userId);
             var result = await _mediator.Send(query);
-
             return Ok(result);
         }
-        catch (Exception ex)
+        catch (KeyNotFoundException)
         {
-            return BadRequest(new { error = ex.Message });
+            return NotFound(new { error = "Favorite album not found" });
         }
     }
 
-    private async Task<Domain.Entities.Album?> GetUserFavoriteAlbumAsync(Guid userId)
+    [HttpPost("favorite/{songId}")]
+    public async Task<ActionResult> AddSongToFavorite(Guid songId)
     {
-        return await _unitOfWork.Alboms.FindAsync(a =>
-            a.OwnerId == userId && a.Title.ToLower() == "favorite");
+        try
+        {
+            var userId = GetCurrentUserId();
+            var command = new AddSongToFavoriteCommand(userId, songId);
+            await _mediator.Send(command);
+            return Ok(new { message = "Song added to favorites successfully" });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { error = ex.Message });
+        }
+    }
+
+    [HttpDelete("favorite/{songId}")]
+    public async Task<ActionResult> RemoveSongFromFavorite(Guid songId)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var command = new RemoveSongFromFavoriteCommand(userId, songId);
+            await _mediator.Send(command);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
     }
 
     private Guid GetCurrentUserId()

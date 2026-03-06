@@ -88,6 +88,7 @@ export default function SongsPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const toast = useToast();
+  const isGuest = user?.role === "Guest";
 
   const [allSongs, setAllSongs] = useState<SongDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -582,7 +583,7 @@ export default function SongsPage() {
                     onCheckedChange={(checked) =>
                       setShowOnlyMySongs(checked as boolean)
                     }
-                    disabled={!user}
+                    disabled={isGuest}
                   />
                   <Label
                     htmlFor="showOnlyMySongs"
@@ -606,14 +607,16 @@ export default function SongsPage() {
                     <Music2 className="h-3 w-3 mr-1" />
                     {isLoading ? "..." : filteredSongs.totalCount} songs
                   </Badge>
-                  <Button
-                    onClick={handleCreateNew}
-                    variant="default"
-                    className="w-full sm:w-auto"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create New Song
-                  </Button>
+                  {!isGuest && (
+                    <Button
+                      onClick={handleCreateNew}
+                      variant="default"
+                      className="w-full sm:w-auto"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create New Song
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

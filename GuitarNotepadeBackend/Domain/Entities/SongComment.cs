@@ -1,4 +1,4 @@
-﻿using Domain.Entities.Base;
+using Domain.Entities.Base;
 
 namespace Domain.Entities;
 
@@ -23,7 +23,7 @@ public class SongComment : BaseEntityWithId
     {
         if (userId == Guid.Empty)
         {
-            throw new ArgumentException("UserId is required", nameof(songId));
+            throw new ArgumentException("UserId is required", nameof(userId));
         }
 
         if (songId == Guid.Empty)

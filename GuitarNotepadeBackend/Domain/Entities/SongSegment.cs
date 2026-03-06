@@ -22,14 +22,12 @@ public class SongSegment : BaseEntityWithId
     public virtual Chord? Chord { get; private set; }
     public virtual StrummingPattern? Pattern { get; private set; }
     public virtual ICollection<SongSegmentPosition> Positions { get; private set; }
-    public virtual ICollection<SegmentLabel> SegmentLabels { get; private set; }
     public virtual ICollection<SongComment> Comments { get; private set; }
 
     protected SongSegment()
     {
         ContentHash = string.Empty;
         Positions = new List<SongSegmentPosition>();
-        SegmentLabels = new List<SegmentLabel>();
         Comments = new List<SongComment>();
     }
 
@@ -107,29 +105,6 @@ public class SongSegment : BaseEntityWithId
         tempSegment.CalculateHash();
 
         return existingSegments.FirstOrDefault(s => s.ContentHash == tempSegment.ContentHash);
-    }
-
-    public bool CanAddLabel()
-    {
-        return SegmentLabels.Count < Constants.Limits.MaxLabelsPerSegment;
-    }
-
-    public void AddLabel(SongLabel label)
-    {
-        if (CanAddLabel() && !SegmentLabels.Any(sl => sl.LabelId == label.Id))
-        {
-            var segmentLabel = SegmentLabel.Create(Id, label.Id);
-            SegmentLabels.Add(segmentLabel);
-        }
-    }
-
-    public void RemoveLabel(Guid labelId)
-    {
-        var segmentLabel = SegmentLabels.FirstOrDefault(sl => sl.LabelId == labelId);
-        if (segmentLabel != null)
-        {
-            SegmentLabels.Remove(segmentLabel);
-        }
     }
 
     public static string CalculateContentHash(string? lyric, Guid? chordId, Guid? patternId)

@@ -152,7 +152,8 @@ public class SongRepository : BaseRepository<Song>, ISongRepository
                 .Include(s => s.Comments)
                 .Include(s => s.Reviews)
                 .Include(s => s.ChildSongs)
-                .Include(s => s.SegmentPositions) 
+                .Include(s => s.SegmentPositions)
+                    .ThenInclude(sp => sp.Segment)
                 .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
 
             if (song == null)
@@ -160,9 +161,19 @@ public class SongRepository : BaseRepository<Song>, ISongRepository
                 return false;
             }
 
+            var segments = song.SegmentPositions
+                .Select(sp => sp.Segment)
+                .Distinct()
+                .ToList();
+
             foreach (var segmentPosition in song.SegmentPositions.ToList())
             {
                 _context.SongSegmentPositions.Remove(segmentPosition);
+            }
+
+            foreach (var segment in segments)
+            {
+                _context.SongSegments.Remove(segment);
             }
 
             foreach (var songChord in song.SongChords.ToList())
@@ -183,18 +194,6 @@ public class SongRepository : BaseRepository<Song>, ISongRepository
             foreach (var review in song.Reviews.ToList())
             {
                 _context.SongReviews.Remove(review);
-            }
-
-            if (song.ParentSongId.HasValue)
-            {
-                var parentSong = await _dbSet
-                    .Include(s => s.ChildSongs)
-                    .FirstOrDefaultAsync(s => s.Id == song.ParentSongId.Value, cancellationToken);
-
-                if (parentSong != null)
-                {
-                    parentSong.ChildSongs.Remove(song);
-                }
             }
 
             _dbSet.Remove(song);

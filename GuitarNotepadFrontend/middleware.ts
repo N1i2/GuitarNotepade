@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const protectedRoutes = ['/home']
+// const protectedRoutes = ['/home']
 
 const publicRoutes = ['/login', '/register', '/']
 
@@ -10,9 +10,9 @@ export function middleware(request: NextRequest) {
   
   const token = request.cookies.get('auth_token')?.value
 
-  if (protectedRoutes.some(route => pathname.startsWith(route)) && !token) {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
+  // if (protectedRoutes.some(route => pathname.startsWith(route)) && !token) {
+  //   return NextResponse.redirect(new URL('/login', request.url))
+  // }
 
   if (publicRoutes.includes(pathname) && token) {
     return NextResponse.redirect(new URL('/home', request.url))

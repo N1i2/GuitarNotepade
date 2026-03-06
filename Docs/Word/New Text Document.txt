@@ -1,0 +1,14 @@
+1ASP.NET Core
+2next.ts
+3Ultimate Guitar
+4Songsterr
+5PostgreSQL
+6EntityFramwork
+7миграции
+8MediatR
+9AutoMapper
+10JwtBearer
+11Tools
+12shadcn/ui 
+13axios 
+14Onion 

@@ -1,7 +1,5 @@
-﻿using Domain.Entities.Base;
+using Domain.Entities.Base;
 using Domain.ValidationRules.StrummingPatternsRules;
-using System.Reflection;
-using System.Xml.Linq;
 
 namespace Domain.Entities;
 

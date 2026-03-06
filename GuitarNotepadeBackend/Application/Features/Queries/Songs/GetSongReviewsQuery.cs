@@ -1,11 +1,29 @@
-﻿using Application.DTOs.Generic;
+using Application.DTOs.Generic;
+using Application.DTOs.Song;
 using MediatR;
 
 namespace Application.Features.Queries.Songs;
 
-public record GetSongReviewsQuery(
-    Guid SongId,
-    int Page = 1,
-    int PageSize = 20,
-    string SortBy = "createdAt",
-    bool Descending = false) : IRequest<PaginatedDto<SongReviewDto>>;
+public class GetSongReviewsQuery : IRequest<PaginatedDto<SongReviewDto>>
+{
+    public Guid SongId { get; }
+    public int Page { get; }
+    public int PageSize { get; }
+    public string SortBy { get; }
+    public bool Descending { get; }
+
+    public GetSongReviewsQuery(
+        Guid songId,
+        int page,
+        int pageSize,
+        string sortBy,
+        bool descending)
+    {
+        SongId = songId;
+        Page = page;
+        PageSize = pageSize;
+        SortBy = sortBy;
+        Descending = descending;
+    }
+}
+

@@ -1,4 +1,4 @@
-﻿using Domain.Entities.Base;
+using Domain.Entities.Base;
 
 namespace Domain.Entities;
 
@@ -14,9 +14,9 @@ public class SongAlbum : BaseEntityWithId
 
     public static SongAlbum Create(Guid albumId, Guid songId)
     {
-        if(albumId == Guid.Empty)
+        if (albumId == Guid.Empty)
         {
-            throw new ArgumentException("AlbumId is required", nameof(songId));
+            throw new ArgumentException("AlbumId is required", nameof(albumId));
         }
         if (songId == Guid.Empty)
         {

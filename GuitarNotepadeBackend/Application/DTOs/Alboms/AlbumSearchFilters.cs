@@ -2,7 +2,7 @@
 
 public class AlbumSearchFilters
 {
-    public Guid UserId { get; set; }
+    public Guid UserId { get; set; } = Guid.Empty;
     public string? SearchTerm { get; set; }
     public Guid? OwnerId { get; set; }
     public bool? IsPublic { get; set; }

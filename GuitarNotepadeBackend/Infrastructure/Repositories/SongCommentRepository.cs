@@ -25,7 +25,7 @@ public class SongCommentRepository : BaseRepository<SongComment>, ISongCommentRe
     }
 
     public async Task<List<SongComment>> GetBySegmentIdAsync(
-        Guid segmentId,
+        Guid? segmentId,
         CancellationToken cancellationToken = default)
     {
         return await _dbSet
@@ -38,8 +38,10 @@ public class SongCommentRepository : BaseRepository<SongComment>, ISongCommentRe
         CancellationToken cancellationToken = default)
     {
         return await _dbSet
-            .Where(c => c.Id == userId)
+            .Where(c => c.UserId == userId)
             .Include(c => c.Song)
+            .Include(c => c.Segment)
+            .OrderByDescending(c => c.CreatedAt)
             .ToListAsync(cancellationToken);
     }
 

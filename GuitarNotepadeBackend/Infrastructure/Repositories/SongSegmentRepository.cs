@@ -3,7 +3,6 @@ using Domain.Entities;
 using Domain.Interfaces.Repositories;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using System.Text;
 
 namespace Infrastructure.Repositories;
 
@@ -20,7 +19,8 @@ public class SongSegmentRepository : BaseRepository<SongSegment>, ISongSegmentRe
             .Include(s => s.Chord)
             .Include(s => s.Pattern)
             .Include(s => s.Positions)
-            .OrderBy(s => s.Positions.FirstOrDefault(p => p.SongId == songId)!.PositionIndex)
+            .OrderBy(s => s.Positions
+                .FirstOrDefault(p => p.SongId == songId)!.PositionIndex)
             .ToListAsync(cancellationToken);
     }
 
@@ -30,8 +30,10 @@ public class SongSegmentRepository : BaseRepository<SongSegment>, ISongSegmentRe
     {
         return await _dbSet
             .Where(s => s.ChordId == chordId)
+            .Include(s => s.Chord)
+            .Include(s => s.Pattern)
             .Include(s => s.Positions)
-            .ThenInclude(p => p.Song)
+                .ThenInclude(p => p.Song)
             .ToListAsync(cancellationToken);
     }
 
@@ -41,8 +43,10 @@ public class SongSegmentRepository : BaseRepository<SongSegment>, ISongSegmentRe
     {
         return await _dbSet
             .Where(s => s.PatternId == patternId)
+            .Include(s => s.Chord)
+            .Include(s => s.Pattern)
             .Include(s => s.Positions)
-            .ThenInclude(p => p.Song)
+                .ThenInclude(p => p.Song)
             .ToListAsync(cancellationToken);
     }
 
@@ -52,31 +56,10 @@ public class SongSegmentRepository : BaseRepository<SongSegment>, ISongSegmentRe
         CancellationToken cancellationToken = default)
     {
         return await _dbSet
-            .Where(s => s.Type == type && s.Positions.Any(p => p.SongId == songId))
+            .Where(s => s.Type == type &&
+                       s.Positions.Any(p => p.SongId == songId))
             .Include(s => s.Chord)
             .Include(s => s.Pattern)
-            .ToListAsync(cancellationToken);
-    }
-
-    public async Task<SongSegment?> FindDuplicateAsync(
-        string? lyric,
-        Guid? chordId,
-        Guid? patternId,
-        CancellationToken cancellationToken = default)
-    {
-        var hash = CalculateContentHash(lyric, chordId, patternId);
-        return await _dbSet
-            .FirstOrDefaultAsync(s => s.ContentHash == hash, cancellationToken);
-    }
-
-    public async Task<List<SongSegment>> GetSegmentsWithLabelsAsync(
-        List<Guid> labelIds,
-        CancellationToken cancellationToken = default)
-    {
-        return await _dbSet
-            .Where(s => s.SegmentLabels.Any(sl => labelIds.Contains(sl.LabelId)))
-            .Include(s => s.Positions)
-            .ThenInclude(p => p.Song)
             .ToListAsync(cancellationToken);
     }
 
@@ -86,6 +69,8 @@ public class SongSegmentRepository : BaseRepository<SongSegment>, ISongSegmentRe
     {
         var segments = await _dbSet
             .Where(s => s.Positions.Any(p => songIds.Contains(p.SongId)))
+            .Include(s => s.Chord)
+            .Include(s => s.Pattern)
             .Include(s => s.Positions)
             .ToListAsync(cancellationToken);
 
@@ -93,11 +78,10 @@ public class SongSegmentRepository : BaseRepository<SongSegment>, ISongSegmentRe
             .SelectMany(s => s.Positions.Select(p => new { p.SongId, Segment = s }))
             .Where(x => songIds.Contains(x.SongId))
             .GroupBy(x => x.SongId)
-            .ToDictionary(g => g.Key, g => g.Select(x => x.Segment).Distinct().ToList());
-    }
-
-    private string CalculateContentHash(string? lyric, Guid? chordId, Guid? patternId)
-    {
-        return SongSegment.CalculateContentHash(lyric, chordId, patternId);
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(x => x.Segment)
+                     .Distinct()
+                     .ToList());
     }
 }

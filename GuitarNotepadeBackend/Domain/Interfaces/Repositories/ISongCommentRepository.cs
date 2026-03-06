@@ -11,7 +11,7 @@ public interface ISongCommentRepository : IBaseRepository<SongComment>
         CancellationToken cancellationToken = default);
 
     Task<List<SongComment>> GetBySegmentIdAsync(
-        Guid segmentId,
+        Guid? segmentId,
         CancellationToken cancellationToken = default);
 
     Task<List<SongComment>> GetByUserIdAsync(

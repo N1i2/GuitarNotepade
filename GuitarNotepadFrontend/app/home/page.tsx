@@ -19,11 +19,7 @@ export default function HomePage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!isLoading && !user) {
-      router.push("/login");
-    }
-  }, [user, isLoading, router]);
+  const isGuest = user?.role === "Guest";
 
   if (isLoading) {
     return (
@@ -145,28 +141,30 @@ export default function HomePage() {
               </Button>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Albums
-              </CardTitle>
-              <CardDescription>
-                Browse and create albums
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                Access a comprehensive library of albums
-              </p>
-              <Button asChild className="w-full">
-                <Link href="/home/albums">
-                  <ArrowRight className="h-4 w-4 mr-2" />
-                  Go to Albums
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
+          {!isGuest && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Albums
+                </CardTitle>
+                <CardDescription>
+                  Browse and create albums
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Access a comprehensive library of albums
+                </p>
+                <Button asChild className="w-full">
+                  <Link href="/home/albums">
+                    <ArrowRight className="h-4 w-4 mr-2" />
+                    Go to Albums
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

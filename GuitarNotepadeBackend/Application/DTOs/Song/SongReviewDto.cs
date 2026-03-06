@@ -1,4 +1,6 @@
-﻿public class SongReviewDto
+namespace Application.DTOs.Song;
+
+public class SongReviewDto
 {
     public Guid Id { get; set; }
     public Guid SongId { get; set; }

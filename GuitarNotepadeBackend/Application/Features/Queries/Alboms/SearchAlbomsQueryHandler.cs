@@ -35,10 +35,17 @@ public class SearchAlbumsQueryHandler : IRequestHandler<SearchAlbumsQuery, Album
 
         var filters = request.Filters;
 
-        var user = await _unitOfWork.Users.GetByIdAsync(filters.UserId);
-        if (user!.Role != Constants.Roles.Admin)
+        if (filters.UserId != Guid.Empty)
         {
-            query = query.Where(q => q.OwnerId != user.Id ? q.IsPublic == true : true);
+            var user = await _unitOfWork.Users.GetByIdAsync(filters.UserId, cancellationToken);
+            if (user?.Role != Constants.Roles.Admin)
+            {
+                query = query.Where(q => q.OwnerId != user!.Id ? q.IsPublic == true : true);
+            }
+        }
+        else
+        {
+            query = query.Where(q => q.IsPublic == true);
         }
 
         if (filters.IsPublic.HasValue)

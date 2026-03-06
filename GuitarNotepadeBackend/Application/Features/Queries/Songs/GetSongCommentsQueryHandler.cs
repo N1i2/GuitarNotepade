@@ -1,13 +1,12 @@
-using Application.DTOs.Generic;
-using Application.DTOs.Song;
+﻿using Application.DTOs.Song;
 using AutoMapper;
+using Domain.Common;
 using Domain.Interfaces;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.Queries.Songs;
 
-public class GetSongCommentsQueryHandler : IRequestHandler<GetSongCommentsQuery, PaginatedDto<SongCommentDto>>
+public class GetSongCommentsQueryHandler : IRequestHandler<GetSongCommentsQuery, List<SongCommentDto>>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
@@ -18,38 +17,34 @@ public class GetSongCommentsQueryHandler : IRequestHandler<GetSongCommentsQuery,
         _mapper = mapper;
     }
 
-    public async Task<PaginatedDto<SongCommentDto>> Handle(GetSongCommentsQuery request, CancellationToken cancellationToken)
+    public async Task<List<SongCommentDto>> Handle(GetSongCommentsQuery request, CancellationToken cancellationToken)
     {
         var song = await _unitOfWork.Songs.GetByIdAsync(request.SongId, cancellationToken);
         if (song == null)
-            throw new ArgumentException("Song not found", nameof(request.SongId));
-
-        var query = _unitOfWork.SongComments.GetQueryable()
-            .Include(c => c.Song)
-                .ThenInclude(s => s.Owner)
-            .Include(c => c.Segment)
-            .Where(c => c.SongId == request.SongId);
-
-        if (request.SegmentId.HasValue)
         {
-            query = query.Where(c => c.SegmentId == request.SegmentId.Value);
+            throw new KeyNotFoundException($"Song with id {request.SongId} not found");            
         }
 
-        var totalCount = await query.CountAsync(cancellationToken);
+        if (!song.IsPublic && request.UserId != song.OwnerId)
+        {
+            if (request.UserId.HasValue)
+            {
+                var user = await _unitOfWork.Users.GetByIdAsync(request.UserId.Value, cancellationToken);
+                if (user?.Role != Constants.Roles.Admin)
+                    throw new UnauthorizedAccessException("You don't have access to this song");
+            }
+            else
+            {
+                throw new UnauthorizedAccessException("Song is private");
+            }
+        }
 
-        var comments = await query
-            .OrderByDescending(c => c.CreatedAt)
-            .Skip((request.Page - 1) * request.PageSize)
-            .Take(request.PageSize)
-            .ToListAsync(cancellationToken);
-
-        var commentDtos = _mapper.Map<List<SongCommentDto>>(comments);
-
-        return PaginatedDto<SongCommentDto>.Create(
-            commentDtos,
-            totalCount,
+        var comments = await _unitOfWork.SongComments.GetBySongIdAsync(
+            request.SongId,
             request.Page,
-            request.PageSize);
+            request.PageSize,
+            cancellationToken);
+
+        return _mapper.Map<List<SongCommentDto>>(comments);
     }
 }
-

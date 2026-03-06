@@ -1,4 +1,6 @@
-﻿public class SongChordDto
+﻿namespace Application.DTOs.Song;
+
+public class SongChordDto
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;

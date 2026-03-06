@@ -8,7 +8,6 @@ public class SongStructure : BaseEntityWithId
     public Guid SongId { get; private set; }
 
     public virtual ICollection<SongSegmentPosition> SegmentPositions { get; private set; }
-
     public virtual Song Song { get; private set; } = null!;
 
     protected SongStructure()
@@ -29,31 +28,20 @@ public class SongStructure : BaseEntityWithId
     }
 
     public void BuildStructure(
-            List<SegmentData> segmentDataList,
-            Dictionary<int, string>? repeatGroups = null)
+        Guid songId,
+        List<(Guid segmentId, string? repeatGroup)> segmentPositions)
     {
-        if (segmentDataList == null || !segmentDataList.Any())
-            return;
+        if (segmentPositions == null)
+            throw new ArgumentNullException(nameof(segmentPositions));
 
         SegmentPositions.Clear();
 
-        var existingSegments = new List<SongSegment>();
-        var segmentManager = new SongSegmentManager(existingSegments);
         var positionIndex = 0;
-
-        foreach (var segmentData in segmentDataList)
+        foreach (var (segmentId, repeatGroup) in segmentPositions)
         {
-            var segment = segmentManager.GetOrCreateSegment(segmentData);
-
-            string? repeatGroup = null;
-            if (repeatGroups != null && repeatGroups.ContainsKey(positionIndex))
-            {
-                repeatGroup = repeatGroups[positionIndex];
-            }
-
             var position = SongSegmentPosition.Create(
-                songId: SongId,
-                segmentId: segment.Id,
+                songId: songId,
+                segmentId: segmentId,
                 positionIndex: positionIndex,
                 repeatGroup: repeatGroup);
 
@@ -63,8 +51,9 @@ public class SongStructure : BaseEntityWithId
     }
 
     public void AddSegmentAtPosition(
+        Guid songId,
+        Guid segmentId,
         int positionIndex,
-        SegmentData segmentData,
         string? repeatGroup = null)
     {
         if (!CanAddPosition())
@@ -73,80 +62,27 @@ public class SongStructure : BaseEntityWithId
         if (positionIndex < 0 || positionIndex > SegmentPositions.Count)
             throw new ArgumentException("Invalid position index", nameof(positionIndex));
 
-        var allSegments = GetSegmentsInOrder();
-        var segmentManager = new SongSegmentManager(allSegments);
-        var segment = segmentManager.GetOrCreateSegment(segmentData);
-
         foreach (var pos in SegmentPositions.Where(p => p.PositionIndex >= positionIndex))
         {
             pos.UpdatePosition(pos.PositionIndex + 1);
         }
 
         var position = SongSegmentPosition.Create(
-            songId: SongId,
-            segmentId: segment.Id,
+            songId: songId,
+            segmentId: segmentId,
             positionIndex: positionIndex,
             repeatGroup: repeatGroup);
 
         SegmentPositions.Add(position);
     }
 
-    public static List<SongSegmentPosition> CreateSegmentPositions(
-        SongStructure structure,
-        List<(string? lyric, Guid? chordId, Guid? patternId, SegmentType type)> segmentData,
-        Dictionary<int, string>? repeatGroups = null)
+    public void ReplaceSegmentAtPosition(int positionIndex, Guid newSegmentId)
     {
-        if (structure == null)
-        {
-            throw new ArgumentNullException(nameof(structure));
-        }
+        var position = SegmentPositions.FirstOrDefault(p => p.PositionIndex == positionIndex);
+        if (position == null)
+            throw new ArgumentException($"No segment at position {positionIndex}");
 
-        if (segmentData == null || !segmentData.Any())
-        {
-            return new List<SongSegmentPosition>();
-        }
-
-        var positions = new List<SongSegmentPosition>();
-        var existingSegments = structure.GetSegmentsInOrder();
-        var positionIndex = 0;
-
-        foreach (var (lyric, chordId, patternId, type) in segmentData)
-        {
-            var existingSegment = SongSegment.FindDuplicate(existingSegments, lyric, chordId, patternId);
-
-            SongSegment segment;
-            if (existingSegment != null)
-            {
-                segment = existingSegment;
-            }
-            else
-            {
-                segment = SongSegment.Create(
-                    type: type,
-                    lyric: lyric,
-                    chordId: chordId,
-                    patternId: patternId);
-
-                existingSegments.Add(segment);
-            }
-
-            string? repeatGroup = null;
-            if (repeatGroups != null && repeatGroups.ContainsKey(positionIndex))
-            {
-                repeatGroup = repeatGroups[positionIndex];
-            }
-
-            var position = SongSegmentPosition.Create(
-                songId: structure.SongId,
-                segmentId: segment.Id,
-                positionIndex: positionIndex,
-                repeatGroup: repeatGroup);
-
-            positions.Add(position);
-            positionIndex++;
-        }
-
-        return positions;
+        position.SetSegment(newSegmentId);
     }
 
     public List<SongSegment> GetSegmentsInOrder()

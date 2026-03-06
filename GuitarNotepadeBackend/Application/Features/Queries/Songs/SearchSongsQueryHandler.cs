@@ -1,10 +1,9 @@
-﻿using Application.DTOs.Song;
+using Application.DTOs.Song;
 using AutoMapper;
 using Domain.Common;
 using Domain.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
 
 namespace Application.Features.Queries.Songs;
 
@@ -21,27 +20,39 @@ public class SearchSongsQueryHandler : IRequestHandler<SearchSongsQuery, SongSea
 
     public async Task<SongSearchResultDto> Handle(SearchSongsQuery request, CancellationToken cancellationToken)
     {
+        var filters = request.Filters;
         var query = _unitOfWork.Songs.GetQueryable()
             .Include(s => s.Owner)
             .Include(s => s.Structure)
             .Include(s => s.SongChords)
-            .ThenInclude(sc => sc.Chord)
+                .ThenInclude(sc => sc.Chord)
             .Include(s => s.SongPatterns)
-            .ThenInclude(sp => sp.StrummingPattern)
+                .ThenInclude(sp => sp.StrummingPattern)
+            .Include(s => s.Reviews)
+            .Include(s => s.Comments)
             .AsQueryable();
 
-        var filters = request.Filters;
-
-        var user = await _unitOfWork.Users.GetByIdAsync(request.Filters.UserId);
-
-        if (user!.Role != Constants.Roles.Admin)
+        if (filters.UserId.HasValue)
         {
-            query = query.Where(q => (q.OwnerId != user.Id) ? (q.IsPublic == true) : true);
+            var user = await _unitOfWork.Users.GetByIdAsync(filters.UserId.Value, cancellationToken);
+            if (user?.Role != Constants.Roles.Admin)
+            {
+                query = query.Where(s => s.IsPublic || s.OwnerId == filters.UserId.Value);
+            }
+        }
+        else
+        {
+            query = query.Where(s => s.IsPublic);
         }
 
         if (filters.IsPublic.HasValue)
         {
             query = query.Where(s => s.IsPublic == filters.IsPublic.Value);
+        }
+
+        if (filters.OwnerId.HasValue)
+        {
+            query = query.Where(s => s.OwnerId == filters.OwnerId.Value);
         }
 
         if (!string.IsNullOrWhiteSpace(filters.SearchTerm))
@@ -50,13 +61,8 @@ public class SearchSongsQueryHandler : IRequestHandler<SearchSongsQuery, SongSea
             query = query.Where(s =>
                 s.FullText.ToLower().Contains(searchTerm) ||
                 s.Title.ToLower().Contains(searchTerm) ||
-                s.Artist != null && s.Artist.ToLower().Contains(searchTerm) ||
-                s.Description != null && s.Description.ToLower().Contains(searchTerm));
-        }
-
-        if (filters.OwnerId.HasValue)
-        {
-            query = query.Where(s => s.OwnerId == filters.OwnerId.Value);
+                (s.Artist != null && s.Artist.ToLower().Contains(searchTerm)) ||
+                (s.Description != null && s.Description.ToLower().Contains(searchTerm)));
         }
 
         if (filters.ChordId.HasValue)
@@ -69,19 +75,27 @@ public class SearchSongsQueryHandler : IRequestHandler<SearchSongsQuery, SongSea
             query = query.Where(s => s.SongPatterns.Any(sp => sp.StrummingPatternId == filters.PatternId.Value));
         }
 
-        if (filters.ParentSongId.HasValue)
+        if (filters.MinRating.HasValue || filters.MaxRating.HasValue)
         {
-            query = query.Where(s => s.ParentSongId == filters.ParentSongId.Value);
-        }
-
-        if (filters.MinRating.HasValue)
-        {
-            query = query.Where(s => s.AverageBeautifulRating >= filters.MinRating.Value);
-        }
-
-        if (filters.MaxRating.HasValue)
-        {
-            query = query.Where(s => s.AverageBeautifulRating <= filters.MaxRating.Value);
+            if (filters.MinRating.HasValue && filters.MaxRating.HasValue)
+            {
+                query = query.Where(s =>
+                    s.AverageBeautifulRating.HasValue &&
+                    s.AverageBeautifulRating >= (decimal)filters.MinRating.Value &&
+                    s.AverageBeautifulRating <= (decimal)filters.MaxRating.Value);
+            }
+            else if (filters.MinRating.HasValue)
+            {
+                query = query.Where(s =>
+                    s.AverageBeautifulRating.HasValue &&
+                    s.AverageBeautifulRating >= (decimal)filters.MinRating.Value);
+            }
+            else if (filters.MaxRating.HasValue)
+            {
+                query = query.Where(s =>
+                    s.AverageBeautifulRating.HasValue &&
+                    s.AverageBeautifulRating <= (decimal)filters.MaxRating.Value);
+            }
         }
 
         if (filters.CreatedFrom.HasValue)
@@ -104,23 +118,6 @@ public class SearchSongsQueryHandler : IRequestHandler<SearchSongsQuery, SongSea
             .ToListAsync(cancellationToken);
 
         var songDtos = _mapper.Map<List<SongDto>>(songs);
-
-        var revies = _unitOfWork.SongReviews.GetQueryable().AsQueryable();
-
-        for (int i = 0; i < songDtos.Count; i++)
-        {
-            var songReviews = revies.Where(r => r.SongId == songDtos[i].Id);
-
-            if (songReviews == null || songReviews.Count() == 0)
-            {
-                continue;
-            }
-
-            songDtos[i].ReviewCount = songReviews.Count();
-
-            songDtos[i].AverageBeautifulRating = songReviews.Average(r => r.BeautifulLevel);
-            songDtos[i].AverageDifficultyRating = songReviews.Average(r => r.DifficultyLevel);
-        }
 
         return new SongSearchResultDto
         {
@@ -145,10 +142,6 @@ public class SearchSongsQueryHandler : IRequestHandler<SearchSongsQuery, SongSea
                 ? query.OrderBy(s => s.Title)
                 : query.OrderByDescending(s => s.Title),
 
-            "artist" => isAscending
-                ? query.OrderBy(s => s.Artist)
-                : query.OrderByDescending(s => s.Artist),
-
             "createdat" => isAscending
                 ? query.OrderBy(s => s.CreatedAt)
                 : query.OrderByDescending(s => s.CreatedAt),
@@ -165,11 +158,12 @@ public class SearchSongsQueryHandler : IRequestHandler<SearchSongsQuery, SongSea
                 ? query.OrderBy(s => s.AverageBeautifulRating ?? 0)
                 : query.OrderByDescending(s => s.AverageBeautifulRating ?? 0),
 
-            "difficulty" => isAscending
-                ? query.OrderBy(s => s.AverageDifficultyRating ?? 0)
-                : query.OrderByDescending(s => s.AverageDifficultyRating ?? 0),
+            "artist" => isAscending
+                ? query.OrderBy(s => s.Artist ?? "")
+                : query.OrderByDescending(s => s.Artist ?? ""),
 
             _ => query.OrderByDescending(s => s.CreatedAt)
         };
     }
 }
+

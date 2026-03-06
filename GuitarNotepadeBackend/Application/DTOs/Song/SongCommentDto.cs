@@ -1,4 +1,6 @@
-﻿public class SongCommentDto
+﻿namespace Application.DTOs.Song;
+
+public class SongCommentDto
 {
     public Guid Id { get; set; }
     public Guid SongId { get; set; }

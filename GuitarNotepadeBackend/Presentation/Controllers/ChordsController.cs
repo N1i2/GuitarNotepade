@@ -1,5 +1,4 @@
 ﻿using Application.DTOs.Chords;
-using AutoMapper;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,16 +11,13 @@ namespace Presentation.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class ChordsController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly IMapper _mapper;
 
-    public ChordsController(IMediator mediator, IMapper mapper)
+    public ChordsController(IMediator mediator)
     {
         _mediator = mediator;
-        _mapper = mapper;
     }
 
     [HttpGet]
@@ -35,13 +31,18 @@ public class ChordsController : ControllerBase
     {
         try
         {
-            var userId = GetCurrentUserId();
+            var isAuth = IsUserAuthenticated();
+
+            if (!isAuth && myChordsOnly == true)
+            {
+                return BadRequest(new { error = "Only authenticated users can view their own chords" });
+            }
 
             var filters = new ChordFiltersDto
             {
                 Name = name,
-                MyChordsOnly = myChordsOnly,
-                UserId = myChordsOnly.HasValue && myChordsOnly.Value ? userId : null,
+                MyChordsOnly = isAuth ? myChordsOnly : false, 
+                UserId = isAuth && myChordsOnly == true ? GetCurrentUserId() : null,
                 Page = page,
                 PageSize = pageSize,
                 SortBy = sortBy,
@@ -81,9 +82,9 @@ public class ChordsController : ControllerBase
 
     [HttpGet("exact/{name}")]
     public async Task<ActionResult<PaginatedDto<ChordDto>>> GetChordsByExactName(
-    string name,
-    [FromQuery] int page = 1,
-    [FromQuery] int pageSize = 20)
+        string name,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
     {
         try
         {
@@ -128,6 +129,7 @@ public class ChordsController : ControllerBase
     }
 
     [HttpGet("my-chords")]
+    [Authorize]
     public async Task<ActionResult<PaginatedDto<ChordDto>>> GetMyChords(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
@@ -153,10 +155,9 @@ public class ChordsController : ControllerBase
         [FromQuery] string sortBy = "name",
         [FromQuery] string sortOrder = "asc")
     {
-        await Task.CompletedTask;
-
         try
         {
+            await Task.CompletedTask;
             return Ok(new PaginatedDto<ChordDto>());
         }
         catch (Exception ex)
@@ -166,6 +167,7 @@ public class ChordsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize]
     public async Task<ActionResult<ChordDto>> CreateChord([FromBody] CreateChordDto dto)
     {
         try
@@ -193,6 +195,7 @@ public class ChordsController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize]
     public async Task<ActionResult<ChordDto>> UpdateChord(Guid id, [FromBody] UpdateChordDto dto)
     {
         try
@@ -230,6 +233,7 @@ public class ChordsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize]
     public async Task<ActionResult> DeleteChord(Guid id)
     {
         try
@@ -255,6 +259,11 @@ public class ChordsController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
+    }
+
+    private bool IsUserAuthenticated()
+    {
+        return User.Identity?.IsAuthenticated == true;
     }
 
     private Guid GetCurrentUserId()

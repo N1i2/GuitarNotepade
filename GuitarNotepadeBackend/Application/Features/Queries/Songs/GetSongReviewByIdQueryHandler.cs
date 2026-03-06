@@ -21,11 +21,12 @@ public class GetSongReviewByIdQueryHandler : IRequestHandler<GetSongReviewByIdQu
     {
         var review = await _unitOfWork.SongReviews.GetQueryable()
             .Include(r => r.User)
-            .Include(r => r.Song)
             .FirstOrDefaultAsync(r => r.Id == request.ReviewId, cancellationToken);
 
         if (review == null)
+        {
             throw new KeyNotFoundException("Review not found");
+        }
 
         return _mapper.Map<SongReviewDto>(review);
     }

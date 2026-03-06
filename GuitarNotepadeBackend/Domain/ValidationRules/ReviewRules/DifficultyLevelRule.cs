@@ -1,15 +1,14 @@
-﻿namespace Domain.ValidationRules.ReviewRules;
+using Domain.Common;
+
+namespace Domain.ValidationRules.ReviewRules;
 
 public static class DifficultyLevelRule
 {
-    private const int MinValue = 1;
-    private const int MaxValue = 5;
-
     public static void IsValid(int level)
     {
-        if (level < MinValue || level > MaxValue)
+        if (level > Constants.Review.MaxRating)
         {
-            throw new ArgumentException($"Difficulty level must be between {MinValue} and {MaxValue}", nameof(level));
+            throw new ArgumentException($"Difficulty level must be between {Constants.Review.MinRating} and {Constants.Review.MaxRating}", nameof(level));
         }
     }
 }

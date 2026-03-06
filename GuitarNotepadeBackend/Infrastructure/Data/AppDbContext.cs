@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Domain.Entities;
 using System.Reflection;
 
@@ -20,8 +20,6 @@ namespace Infrastructure.Data
         public DbSet<SongSegmentPosition> SongSegmentPositions { get; set; }
         public DbSet<SongStructure> SongStructures { get; set; }
         public DbSet<SongPattern> SongPatterns { get; set; }
-        public DbSet<SongLabel> SongLabels { get; set; }
-        public DbSet<SegmentLabel> SegmentLabels { get; set; }
         public DbSet<SongComment> SongComments { get; set; }
         public DbSet<SongChord> SongChords { get; set; }
         public DbSet<Album> Albums { get; set; }
@@ -109,9 +107,6 @@ namespace Infrastructure.Data
 
                 entity.Property(e => e.Theme)
                     .IsRequired()
-                    .HasMaxLength(100);
-
-                entity.Property(e => e.MyProperty)
                     .HasMaxLength(100);
 
                 entity.Property(e => e.CustomAudioUrl)
@@ -319,11 +314,6 @@ namespace Infrastructure.Data
                     .HasForeignKey(e => e.SegmentId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasMany(e => e.SegmentLabels)
-                    .WithOne(e => e.Segment)
-                    .HasForeignKey(e => e.SegmentId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
                 entity.HasMany(e => e.Comments)
                     .WithOne(e => e.Segment)
                     .HasForeignKey(e => e.SegmentId)
@@ -463,49 +453,6 @@ namespace Infrastructure.Data
                 entity.HasOne(e => e.Chord)
                     .WithMany(e => e.SongChords)
                     .HasForeignKey(e => e.ChordId)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            modelBuilder.Entity<SongLabel>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-
-                entity.Property(e => e.Name)
-                    .IsRequired()
-                    .HasMaxLength(50);
-
-                entity.Property(e => e.Color)
-                    .HasMaxLength(50);
-
-                entity.HasMany(e => e.SegmentLabels)
-                    .WithOne(e => e.Label)
-                    .HasForeignKey(e => e.LabelId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasIndex(e => e.Name);
-            });
-
-            modelBuilder.Entity<SegmentLabel>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-
-                entity.Property(e => e.SegmentId)
-                    .IsRequired();
-
-                entity.Property(e => e.LabelId)
-                    .IsRequired();
-
-                entity.HasIndex(e => new { e.SegmentId, e.LabelId })
-                    .IsUnique();
-
-                entity.HasOne(e => e.Segment)
-                    .WithMany(e => e.SegmentLabels)
-                    .HasForeignKey(e => e.SegmentId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasOne(e => e.Label)
-                    .WithMany(e => e.SegmentLabels)
-                    .HasForeignKey(e => e.LabelId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 

@@ -118,55 +118,65 @@ public class SongStatisticsService : ISongStatisticsService
         Guid? userId = null,
         CancellationToken cancellationToken = default)
     {
-        var chords = await _unitOfWork.Chords.GetAllAsync(cancellationToken);
+        var query = _unitOfWork.SongChords.GetQueryable()
+            .Include(sc => sc.Song)
+            .Include(sc => sc.Chord)
+            .AsQueryable();
 
-        var chordUsage = new Dictionary<string, int>();
-
-        foreach (var chord in chords)
+        if (userId.HasValue)
         {
-            var count = userId.HasValue
-                ? await _unitOfWork.SongChords.CountByChordIdAsync(chord.Id, cancellationToken)
-                : (await _unitOfWork.SongChords.GetByChordIdAsync(chord.Id, cancellationToken))
-                    .Count(sc => sc.Song.IsPublic);
-
-            if (count > 0)
-            {
-                chordUsage[chord.Name] = count;
-            }
+            query = query.Where(sc => sc.Song.OwnerId == userId.Value);
+        }
+        else
+        {
+            query = query.Where(sc => sc.Song.IsPublic);
         }
 
-        return chordUsage
-            .OrderByDescending(kv => kv.Value)
+        var chordStats = await query
+            .GroupBy(sc => new { sc.ChordId, sc.Chord.Name })
+            .Select(g => new
+            {
+                ChordName = g.Key.Name,
+                Count = g.Count()
+            })
+            .OrderByDescending(x => x.Count)
             .Take(topN)
-            .ToDictionary(kv => kv.Key, kv => kv.Value);
+            .ToDictionaryAsync(x => x.ChordName, x => x.Count, cancellationToken);
+
+        return chordStats;
     }
 
     public async Task<Dictionary<string, int>> GetPopularPatternsStatsAsync(
-        int topN = 10,
-        Guid? userId = null,
-        CancellationToken cancellationToken = default)
+    int topN = 10,
+    Guid? userId = null,
+    CancellationToken cancellationToken = default)
     {
-        var patterns = await _unitOfWork.StrummingPatterns.GetAllAsync(cancellationToken);
+        var query = _unitOfWork.SongPatterns.GetQueryable()
+            .Include(sp => sp.Song)
+            .Include(sp => sp.StrummingPattern)
+            .AsQueryable();
 
-        var patternUsage = new Dictionary<string, int>();
-
-        foreach (var pattern in patterns)
+        if (userId.HasValue)
         {
-            var count = userId.HasValue
-                ? await _unitOfWork.SongPatterns.CountByPatternIdAsync(pattern.Id, cancellationToken)
-                : (await _unitOfWork.SongPatterns.GetByPatternIdAsync(pattern.Id, cancellationToken))
-                    .Count(sp => sp.Song.IsPublic);
-
-            if (count > 0)
-            {
-                patternUsage[pattern.Name] = count;
-            }
+            query = query.Where(sp => sp.Song.OwnerId == userId.Value);
+        }
+        else
+        {
+            query = query.Where(sp => sp.Song.IsPublic);
         }
 
-        return patternUsage
-            .OrderByDescending(kv => kv.Value)
+        var patternStats = await query
+            .GroupBy(sp => new { sp.StrummingPatternId, sp.StrummingPattern.Name })
+            .Select(g => new
+            {
+                PatternName = g.Key.Name,
+                Count = g.Count()
+            })
+            .OrderByDescending(x => x.Count)
             .Take(topN)
-            .ToDictionary(kv => kv.Key, kv => kv.Value);
+            .ToDictionaryAsync(x => x.PatternName, x => x.Count, cancellationToken);
+
+        return patternStats;
     }
 
     public async Task<Dictionary<string, decimal>> GetAverageRatingsStatsAsync(

@@ -118,28 +118,6 @@ namespace Infrastructure.Data.Migrations
                     b.ToTable("Chords");
                 });
 
-            modelBuilder.Entity("Domain.Entities.SegmentLabel", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("LabelId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("SegmentId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LabelId");
-
-                    b.HasIndex("SegmentId", "LabelId")
-                        .IsUnique();
-
-                    b.ToTable("SegmentLabels");
-                });
-
             modelBuilder.Entity("Domain.Entities.Song", b =>
                 {
                     b.Property<Guid>("Id")
@@ -310,28 +288,6 @@ namespace Infrastructure.Data.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("SongComments");
-                });
-
-            modelBuilder.Entity("Domain.Entities.SongLabel", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Color")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Name");
-
-                    b.ToTable("SongLabels");
                 });
 
             modelBuilder.Entity("Domain.Entities.SongPattern", b =>
@@ -620,25 +576,6 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("CreatedBy");
                 });
 
-            modelBuilder.Entity("Domain.Entities.SegmentLabel", b =>
-                {
-                    b.HasOne("Domain.Entities.SongLabel", "Label")
-                        .WithMany("SegmentLabels")
-                        .HasForeignKey("LabelId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Domain.Entities.SongSegment", "Segment")
-                        .WithMany("SegmentLabels")
-                        .HasForeignKey("SegmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Label");
-
-                    b.Navigation("Segment");
-                });
-
             modelBuilder.Entity("Domain.Entities.Song", b =>
                 {
                     b.HasOne("Domain.Entities.User", "Owner")
@@ -854,18 +791,11 @@ namespace Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Domain.Entities.SongLabel", b =>
-                {
-                    b.Navigation("SegmentLabels");
-                });
-
             modelBuilder.Entity("Domain.Entities.SongSegment", b =>
                 {
                     b.Navigation("Comments");
 
                     b.Navigation("Positions");
-
-                    b.Navigation("SegmentLabels");
                 });
 
             modelBuilder.Entity("Domain.Entities.SongStructure", b =>

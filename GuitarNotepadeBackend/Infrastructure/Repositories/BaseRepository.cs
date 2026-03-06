@@ -56,6 +56,7 @@ public class BaseRepository<T> : IBaseRepository<T> where T : BaseEntityWithId
 
         _dbSet.Remove(entity);
         await _context.SaveChangesAsync(cancellationToken);
+
         return true;
     }
 

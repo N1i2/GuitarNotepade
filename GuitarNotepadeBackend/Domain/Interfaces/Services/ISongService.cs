@@ -1,4 +1,4 @@
-﻿using Domain.Common;
+using Domain.Common;
 using Domain.Entities;
 
 namespace Domain.Interfaces.Services;
@@ -9,8 +9,8 @@ public interface ISongService
         Guid ownerId,
         string title,
         bool isPublic,
-        string genre,
-        string theme,
+        string? genre = null,
+        string? theme = null,
         string? artist = null,
         string? description = null,
         Guid? parentSongId = null,

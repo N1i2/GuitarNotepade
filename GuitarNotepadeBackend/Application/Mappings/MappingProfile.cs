@@ -1,4 +1,4 @@
-﻿using Application.DTOs.Alboms;
+using Application.DTOs.Alboms;
 using Application.DTOs.Chords;
 using Application.DTOs.Song;
 using Application.DTOs.StrummingPatterns;
@@ -7,19 +7,11 @@ using Application.Features.Commands.Alboms;
 using Application.Features.Commands.Users;
 using AutoMapper;
 using Domain.Entities;
-using Domain.Interfaces.Services;
 
 namespace Application.Mappings;
 
 public class MappingProfile : Profile
 {
-    private readonly IWebDavService? _webDavService;
-
-    public MappingProfile(IWebDavService webDavService) : this()
-    {
-        _webDavService = webDavService;
-    }
-
     public MappingProfile()
     {
         CreateMap<RegisterUserDto, RegisterUserCommand>();
@@ -34,6 +26,18 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.CommentsCount, opt => opt.MapFrom(src => src.Comments.Count))
             .ForMember(dest => dest.SegmentsCount, opt => opt.MapFrom(src => src.Structure != null ? src.Structure.SegmentPositions.Count : 0));
 
+        CreateMap<Song, FullSongDto>()
+            .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => src.Owner != null ? src.Owner.NikName : null))
+            .ForMember(dest => dest.ParentSongTitle, opt => opt.MapFrom(src => src.ParentSong != null ? src.ParentSong.Title : null))
+            .ForMember(dest => dest.Chords, opt => opt.MapFrom(src => src.SongChords.Select(sc => sc.Chord)))
+            .ForMember(dest => dest.Patterns, opt => opt.MapFrom(src => src.SongPatterns.Select(sp => sp.StrummingPattern)))
+            .ForMember(dest => dest.Comments, opt => opt.MapFrom(src => src.Comments))
+            .ForMember(dest => dest.Segments, opt => opt.MapFrom(src => MapSegmentsWithPositions(src)))
+            .ForMember(dest => dest.AverageBeautifulRating, opt => opt.MapFrom(src =>
+                src.AverageBeautifulRating.HasValue ? (double?)Convert.ToDouble(src.AverageBeautifulRating.Value) : null))
+            .ForMember(dest => dest.AverageDifficultyRating, opt => opt.MapFrom(src =>
+                src.AverageDifficultyRating.HasValue ? (double?)Convert.ToDouble(src.AverageDifficultyRating.Value) : null));
+
         CreateMap<SongComment, SongCommentDto>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
             .ForMember(dest => dest.SongId, opt => opt.MapFrom(src => src.SongId))
@@ -47,22 +51,8 @@ public class MappingProfile : Profile
 
         CreateMap<SongSegment, SongSegmentDto>()
             .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString()))
-            .ForMember(dest => dest.Chord, opt => opt.MapFrom(src => src.Chord != null ? new SongChordDto
-            {
-                Id = src.Chord.Id,
-                Name = src.Chord.Name,
-                Fingering = src.Chord.Fingering,
-                Description = src.Chord.Description
-            } : null))
-            .ForMember(dest => dest.Pattern, opt => opt.MapFrom(src => src.Pattern != null ? new SongPatternDto
-            {
-                Id = src.Pattern.Id,
-                Name = src.Pattern.Name,
-                Pattern = src.Pattern.Pattern,
-                IsFingerStyle = src.Pattern.IsFingerStyle,
-                Description = src.Pattern.Description
-            } : null))
-            .ForMember(dest => dest.Labels, opt => opt.MapFrom(src => src.SegmentLabels.Select(sl => sl.Label)));
+            .ForMember(dest => dest.Chord, opt => opt.MapFrom(src => src.Chord))
+            .ForMember(dest => dest.Pattern, opt => opt.MapFrom(src => src.Pattern));
 
         CreateMap<SongSegment, SegmentDataDto>()
             .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString()))
@@ -74,8 +64,7 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Color, opt => opt.MapFrom(src => src.Color))
             .ForMember(dest => dest.BackgroundColor, opt => opt.MapFrom(src => src.BackgroundColor))
             .ForMember(dest => dest.Chord, opt => opt.MapFrom(src => src.Chord))
-            .ForMember(dest => dest.Pattern, opt => opt.MapFrom(src => src.Pattern))
-            .ForMember(dest => dest.Labels, opt => opt.MapFrom(src => src.SegmentLabels.Select(sl => sl.Label)));
+            .ForMember(dest => dest.Pattern, opt => opt.MapFrom(src => src.Pattern));
 
         CreateMap<SongSegmentPosition, SegmentDataWithPositionDto>()
             .ForMember(dest => dest.PositionIndex, opt => opt.MapFrom(src => src.PositionIndex))
@@ -87,15 +76,6 @@ public class MappingProfile : Profile
 
         CreateMap<SongStructure, SongStructureDto>()
             .ForMember(dest => dest.RepeatGroups, opt => opt.Ignore());
-
-        CreateMap<SegmentLabel, SegmentLabelDto>();
-
-        CreateMap<SongLabel, SegmentLabelDto>()
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
-            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
-            .ForMember(dest => dest.Color, opt => opt.MapFrom(src => src.Color));
-
-        CreateMap<SongLabel, SongLabelDto>();
 
         CreateMap<Chord, ChordDto>()
             .ForMember(dest => dest.CreatedByNikName, opt => opt.MapFrom(src => src.CreatedBy != null ? src.CreatedBy.NikName : null));
@@ -116,35 +96,14 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.IsFingerStyle, opt => opt.MapFrom(src => src.IsFingerStyle))
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description));
 
-        CreateMap<Song, FullSongDto>()
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
-            .ForMember(dest => dest.Title, opt => opt.MapFrom(src => src.Title))
-            .ForMember(dest => dest.Artist, opt => opt.MapFrom(src => src.Artist))
-            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
-            .ForMember(dest => dest.IsPublic, opt => opt.MapFrom(src => src.IsPublic))
-            .ForMember(dest => dest.OwnerId, opt => opt.MapFrom(src => src.OwnerId))
-            .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => src.Owner != null ? src.Owner.NikName : null))
-            .ForMember(dest => dest.ParentSongId, opt => opt.MapFrom(src => src.ParentSongId))
-            .ForMember(dest => dest.ParentSongTitle, opt => opt.MapFrom(src => src.ParentSong != null ? src.ParentSong.Title : null))
-            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt))
-            .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt))
-            .ForMember(dest => dest.ReviewCount, opt => opt.MapFrom(src => src.ReviewCount))
-            .ForMember(dest => dest.AverageBeautifulRating, opt => opt.MapFrom(src =>
-                src.AverageBeautifulRating.HasValue ? (double?)Convert.ToDouble(src.AverageBeautifulRating.Value) : null))
-            .ForMember(dest => dest.AverageDifficultyRating, opt => opt.MapFrom(src =>
-                src.AverageDifficultyRating.HasValue ? (double?)Convert.ToDouble(src.AverageDifficultyRating.Value) : null))
-            .ForMember(dest => dest.Chords, opt => opt.MapFrom(src => src.SongChords.Select(sc => sc.Chord)))
-            .ForMember(dest => dest.Patterns, opt => opt.MapFrom(src => src.SongPatterns.Select(sp => sp.StrummingPattern)))
-            .ForMember(dest => dest.Comments, opt => opt.MapFrom(src => src.Comments))
-            .ForMember(dest => dest.Segments, opt => opt.MapFrom(src => MapSegmentsWithPositions(src)));
-
         CreateMap<Album, AlbumDto>()
-    .ForMember(dest => dest.OwnerName, opt => opt.Ignore())
-    .ForMember(dest => dest.CountOfSongs, opt => opt.Ignore())
-    .ForMember(dest => dest.CoverUrl, opt => opt.MapFrom<AlbumCoverUrlResolver>());
+            .ForMember(dest => dest.OwnerName, opt => opt.Ignore())
+            .ForMember(dest => dest.CountOfSongs, opt => opt.MapFrom(src => src.SongAlbums.Count))
+            .ForMember(dest => dest.CoverUrl, opt => opt.Ignore());
 
         CreateMap<Album, AlbumWithSongsDto>()
-               .IncludeBase<Album, AlbumDto>();
+            .IncludeBase<Album, AlbumDto>()
+            .ForMember(dest => dest.Songs, opt => opt.Ignore());
 
         CreateMap<Song, SongInAlbumDto>()
             .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => src.Owner != null ? src.Owner.NikName : string.Empty))
@@ -152,52 +111,15 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.PatternCount, opt => opt.MapFrom(src => src.SongPatterns.Count))
             .ForMember(dest => dest.ReviewCount, opt => opt.MapFrom(src => src.Reviews.Count))
             .ForMember(dest => dest.CommentsCount, opt => opt.MapFrom(src => src.Comments.Count))
-            .ForMember(dest => dest.AverageBeautifulRating, opt => opt.Ignore())
-            .ForMember(dest => dest.AverageDifficultyRating, opt => opt.Ignore());
-
-        CreateMap<Song, SongInAlbumDto>()
-               .ForMember(dest => dest.OwnerName, opt => opt.Ignore())
-               .ForMember(dest => dest.ChordCount, opt => opt.Ignore())
-               .ForMember(dest => dest.PatternCount, opt => opt.Ignore())
-               .ForMember(dest => dest.ReviewCount, opt => opt.Ignore())
-               .ForMember(dest => dest.CommentsCount, opt => opt.Ignore())
-               .ForMember(dest => dest.AverageBeautifulRating, opt => opt.Ignore())
-               .ForMember(dest => dest.AverageDifficultyRating, opt => opt.Ignore())
-               .ForMember(dest => dest.HasAudio, opt => opt.Ignore());
-
-        CreateMap<UpdateAlbumDto, UpdateAlbumCommand>()
-    .ForMember(dest => dest.CoverBase64, opt => opt.MapFrom(src => src.CoverUrl));
-
-        CreateMap<CreateAlbumDto, CreateAlbumCommand>()
-            .ForMember(dest => dest.CoverBase64, opt => opt.MapFrom(src => src.CoverUrl));
-    }
-
-    public class AlbumCoverUrlResolver : IValueResolver<Album, AlbumDto, string?>
-    {
-        private readonly IWebDavService _webDavService;
-
-        public AlbumCoverUrlResolver(IWebDavService webDavService)
-        {
-            _webDavService = webDavService;
-        }
-
-        public string? Resolve(Album source, AlbumDto destination, string? destMember, ResolutionContext context)
-        {
-            if (string.IsNullOrEmpty(source.CoverUrl))
-            {
-                return null;
-            }
-
-            try
-            {
-                var base64Cover = _webDavService.GetAlbumCoverUrlAsync(source.CoverUrl).GetAwaiter().GetResult();
-                return base64Cover;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+            .ForMember(dest => dest.HasAudio, opt => opt.MapFrom(src => !string.IsNullOrEmpty(src.CustomAudioUrl)))
+            .ForMember(dest => dest.AverageBeautifulRating, opt => opt.MapFrom(src =>
+                src.Reviews.Any(r => r.BeautifulLevel.HasValue)
+                    ? (int?)Math.Round(src.Reviews.Where(r => r.BeautifulLevel.HasValue).Average(r => r.BeautifulLevel!.Value))
+                    : null))
+            .ForMember(dest => dest.AverageDifficultyRating, opt => opt.MapFrom(src =>
+                src.Reviews.Any(r => r.DifficultyLevel.HasValue)
+                    ? (int?)Math.Round(src.Reviews.Where(r => r.DifficultyLevel.HasValue).Average(r => r.DifficultyLevel!.Value))
+                    : null));
     }
 
     private List<SegmentDataWithPositionDto> MapSegmentsWithPositions(Song song)
@@ -246,15 +168,7 @@ public class MappingProfile : Profile
                 Pattern = segment.Pattern.Pattern,
                 IsFingerStyle = segment.Pattern.IsFingerStyle,
                 Description = segment.Pattern.Description
-            } : null,
-            Labels = segment.SegmentLabels?
-                .Select(sl => new SegmentLabelDto
-                {
-                    Id = sl.Label.Id,
-                    Name = sl.Label.Name,
-                    Color = sl.Label.Color
-                })
-                .ToList() ?? new List<SegmentLabelDto>()
+            } : null
         };
     }
 }

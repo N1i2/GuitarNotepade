@@ -27,6 +27,7 @@ public class SongSegmentPositionRepository : BaseRepository<SongSegmentPosition>
         return await _dbSet
             .Where(p => p.SegmentId == segmentId)
             .Include(p => p.Song)
+            .OrderBy(p => p.PositionIndex)
             .ToListAsync(cancellationToken);
     }
 
@@ -86,5 +87,36 @@ public class SongSegmentPositionRepository : BaseRepository<SongSegmentPosition>
         }
 
         await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<bool> DeletePositionWithSegmentIfUnusedAsync(
+    Guid positionId,
+    CancellationToken cancellationToken = default)
+    {
+        var position = await _dbSet
+            .Include(p => p.Segment)
+            .FirstOrDefaultAsync(p => p.Id == positionId, cancellationToken);
+
+        if (position == null)
+            return false;
+
+        var segment = position.Segment;
+        var songId = position.SongId;
+
+        _dbSet.Remove(position);
+
+        var remainingPositionsInThisSong = await _dbSet
+            .AnyAsync(p => p.SegmentId == segment.Id &&
+                          p.SongId == songId &&
+                          p.Id != positionId,
+                          cancellationToken);
+
+        if (!remainingPositionsInThisSong)
+        {
+            _context.SongSegments.Remove(segment);
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+        return true;
     }
 }

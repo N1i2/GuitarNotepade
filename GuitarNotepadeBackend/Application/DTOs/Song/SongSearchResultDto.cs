@@ -1,4 +1,4 @@
-﻿using Application.DTOs.Song;
+namespace Application.DTOs.Song;
 
 public class SongSearchResultDto
 {
@@ -8,3 +8,4 @@ public class SongSearchResultDto
     public int PageSize { get; set; }
     public int TotalPages { get; set; }
 }
+

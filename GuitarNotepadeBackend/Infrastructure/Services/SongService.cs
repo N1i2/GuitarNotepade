@@ -1,19 +1,24 @@
-﻿using Domain.Entities;
+using Domain.Entities;
 using Domain.Interfaces;
 using Domain.Interfaces.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Domain.Common;
 
 namespace Infrastructure.Services;
 
 public class SongService : ISongService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ISongSegmentService _songSegmentService;
     private readonly ILogger<SongService> _logger;
 
-    public SongService(IUnitOfWork unitOfWork, ILogger<SongService> logger)
+    public SongService(
+        IUnitOfWork unitOfWork,
+        ISongSegmentService songSegmentService,
+        ILogger<SongService> logger)
     {
         _unitOfWork = unitOfWork;
+        _songSegmentService = songSegmentService;
         _logger = logger;
     }
 
@@ -21,8 +26,8 @@ public class SongService : ISongService
         Guid ownerId,
         string title,
         bool isPublic,
-        string genre,
-        string theme,
+        string? genre = null,
+        string? theme = null,
         string? artist = null,
         string? description = null,
         Guid? parentSongId = null,
@@ -41,6 +46,7 @@ public class SongService : ISongService
 
         var song = Song.Create(ownerId, title, isPublic, genre, theme, artist, description, null, null, parentSongId);
         song = await _unitOfWork.Songs.CreateAsync(song, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Song created: {SongId} by user {UserId}", song.Id, ownerId);
         return song;
@@ -62,6 +68,7 @@ public class SongService : ISongService
 
         song.Update(title, artist, genre, theme, description, null, null, isPublic);
         await _unitOfWork.Songs.UpdateAsync(song, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Song updated: {SongId}", songId);
         return song;
@@ -73,36 +80,135 @@ public class SongService : ISongService
         Dictionary<int, string>? repeatGroups = null,
         CancellationToken cancellationToken = default)
     {
-        var song = await _unitOfWork.Songs.GetByIdAsync(songId, cancellationToken);
-        if (song == null)
-            throw new ArgumentException("Song not found", nameof(songId));
+        _logger.LogInformation("Начало BuildSongStructure для песни {SongId} с {Count} сегментами",
+            songId, segmentDataList.Count);
 
-        var structure = await _unitOfWork.SongStructures.GetBySongIdAsync(songId, cancellationToken);
-        if (structure == null)
+        return await _unitOfWork.ExecuteInTransactionAsync(async () =>
         {
-            structure = SongStructure.Create(songId);
-            structure = await _unitOfWork.SongStructures.CreateAsync(structure, cancellationToken);
-        }
+            _logger.LogDebug("Транзакция начата. Загружаем песню...");
 
-        await _unitOfWork.BeginTransactionAsync(cancellationToken);
-        try
-        {
-            structure.BuildStructure(segmentDataList, repeatGroups);
+            var song = await _unitOfWork.Songs.GetByIdAsync(songId, cancellationToken);
+            if (song == null)
+                throw new ArgumentException("Песня не найдена", nameof(songId));
+
+            var structure = await _unitOfWork.SongStructures
+                .GetWithSegmentsAsync(songId, cancellationToken);
+
+            if (structure == null)
+            {
+                structure = SongStructure.Create(songId);
+                await _unitOfWork.SongStructures.AddAsync(structure, cancellationToken);
+                _logger.LogDebug("Создана новая структура для песни {SongId}", songId);
+            }
+
+            var oldSegmentIds = structure.SegmentPositions?
+                .Select(sp => sp.SegmentId)
+                .Distinct()
+                .ToList() ?? new List<Guid>();
+
+            _logger.LogDebug("Найдено {Count} старых сегментов", oldSegmentIds.Count);
+
+            foreach (var position in structure.SegmentPositions?.ToList() ?? new List<SongSegmentPosition>())
+            {
+                await _unitOfWork.SongSegmentPositions.DeleteAsync(position.Id, cancellationToken);
+            }
+
+            structure.SegmentPositions?.Clear();
+
+            var usedSegmentIds = new HashSet<Guid>();
+            var positionIndex = 0;
+
+            foreach (var segmentData in segmentDataList)
+            {
+                var segment = await GetOrCreateSegmentInternalAsync(segmentData, cancellationToken);
+                usedSegmentIds.Add(segment.Id);
+
+                var repeatGroup = repeatGroups?.GetValueOrDefault(positionIndex);
+
+                var position = SongSegmentPosition.Create(
+                    songId: songId,
+                    segmentId: segment.Id,
+                    positionIndex: positionIndex,
+                    repeatGroup: repeatGroup);
+
+                await _unitOfWork.SongSegmentPositions.AddAsync(position, cancellationToken);
+                structure.SegmentPositions.Add(position);
+
+                positionIndex++;
+            }
+
+            _logger.LogDebug("Создано {Count} новых позиций", positionIndex);
+
+            var segmentsToRemove = new List<Guid>();
+
+            foreach (var oldSegmentId in oldSegmentIds)
+            {
+                if (usedSegmentIds.Contains(oldSegmentId))
+                    continue;
+
+                var otherUsages = await _unitOfWork.SongSegmentPositions
+                    .GetQueryable()
+                    .CountAsync(sp => sp.SegmentId == oldSegmentId && sp.SongId != songId, cancellationToken);
+
+                if (otherUsages == 0)
+                {
+                    segmentsToRemove.Add(oldSegmentId);
+                    _logger.LogDebug("Сегмент {SegmentId} будет удален", oldSegmentId);
+                }
+            }
+
+            foreach (var segmentId in segmentsToRemove)
+            {
+                await _unitOfWork.SongSegments.DeleteAsync(segmentId, cancellationToken);
+            }
+
             await _unitOfWork.SongStructures.UpdateAsync(structure, cancellationToken);
-
             song.UpdateFullText();
             await _unitOfWork.Songs.UpdateAsync(song, cancellationToken);
 
-            await _unitOfWork.CommitTransactionAsync(cancellationToken);
-        }
-        catch
+            var saveResult = await _unitOfWork.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Структура сохранена. Затронуто строк: {SaveResult}", saveResult);
+
+            return await _unitOfWork.SongStructures.GetWithSegmentsAsync(songId, cancellationToken)
+                   ?? throw new InvalidOperationException("Не удалось загрузить созданную структуру");
+
+        }, cancellationToken);
+    }
+
+
+    private async Task<SongSegment> GetOrCreateSegmentInternalAsync(
+     SongStructure.SegmentData segmentData,
+     CancellationToken cancellationToken)
+    {
+        var hash = SongSegment.CalculateContentHash(
+            segmentData.Lyric,
+            segmentData.ChordId,
+            segmentData.PatternId);
+
+        var existingSegment = await _unitOfWork.SongSegments
+            .GetQueryable()
+            .FirstOrDefaultAsync(s => s.ContentHash == hash, cancellationToken);
+
+        if (existingSegment != null)
         {
-            await _unitOfWork.RollbackTransactionAsync(cancellationToken);
-            throw;
+            _logger.LogTrace("Найден существующий сегмент {SegmentId}", existingSegment.Id);
+            return existingSegment;
         }
 
-        _logger.LogInformation("Song structure built for song: {SongId}", songId);
-        return structure;
+        var newSegment = SongSegment.Create(
+            type: segmentData.Type,
+            lyric: segmentData.Lyric,
+            chordId: segmentData.ChordId,
+            patternId: segmentData.PatternId,
+            duration: segmentData.Duration,
+            description: segmentData.Description,
+            color: segmentData.Color,
+            backgroundColor: segmentData.BackgroundColor);
+
+        await _unitOfWork.SongSegments.AddAsync(newSegment, cancellationToken);
+
+        _logger.LogDebug("Создан новый сегмент {SegmentId}", newSegment.Id);
+        return newSegment;
     }
 
     public async Task<Song> CreateSongFromExistingAsync(
@@ -120,6 +226,7 @@ public class SongService : ISongService
 
         var newSong = Song.CreateFromExisting(originalSong, newOwnerId);
         newSong = await _unitOfWork.Songs.CreateAsync(newSong, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Song copied: {OriginalSongId} -> {NewSongId} by user {UserId}",
             originalSongId, newSong.Id, newOwnerId);
@@ -132,9 +239,18 @@ public class SongService : ISongService
     {
         var song = await _unitOfWork.Songs.GetByIdAsync(songId, cancellationToken);
         if (song == null)
+        {
             throw new ArgumentException("Song not found", nameof(songId));
+        }
 
-        await _unitOfWork.SongStructures.GetWithSegmentsAsync(songId, cancellationToken);
+        var structure = await _unitOfWork.SongStructures.GetWithSegmentsAsync(songId, cancellationToken);
+
+        if (structure != null)
+        {
+            _logger.LogDebug("Loaded structure with {SegmentCount} segments for song {SongId}",
+                structure.SegmentPositions?.Count ?? 0, songId);
+        }
+
         return song;
     }
 
@@ -151,8 +267,13 @@ public class SongService : ISongService
         if (chord == null)
             throw new ArgumentException("Chord not found", nameof(chordId));
 
+        if (song.SongChords.Any(sc => sc.ChordId == chordId))
+        {
+            _logger.LogDebug("Chord {ChordId} already exists in song {SongId}", chordId, songId);
+            return;
+        }
+
         song.AddChord(chordId);
-        await _unitOfWork.Songs.UpdateAsync(song, cancellationToken);
 
         _logger.LogInformation("Chord {ChordId} added to song {SongId}", chordId, songId);
     }
@@ -170,8 +291,15 @@ public class SongService : ISongService
         if (pattern == null)
             throw new ArgumentException("Pattern not found", nameof(patternId));
 
+        if (song.SongPatterns.Any(sp => sp.StrummingPatternId == patternId))
+        {
+            _logger.LogDebug("Pattern {PatternId} already exists in song {SongId}", patternId, songId);
+            return;
+        }
+
         song.AddPattern(patternId);
         await _unitOfWork.Songs.UpdateAsync(song, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Pattern {PatternId} added to song {SongId}", patternId, songId);
     }
@@ -187,6 +315,7 @@ public class SongService : ISongService
 
         song.RemoveChord(chordId);
         await _unitOfWork.Songs.UpdateAsync(song, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Chord {ChordId} removed from song {SongId}", chordId, songId);
     }
@@ -202,6 +331,7 @@ public class SongService : ISongService
 
         song.RemovePattern(patternId);
         await _unitOfWork.Songs.UpdateAsync(song, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Pattern {PatternId} removed from song {SongId}", patternId, songId);
     }
@@ -246,7 +376,7 @@ public class SongService : ISongService
             return true;
 
         var user = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken);
-        return user?.Role == Constants.Roles.Admin;
+        return user?.Role == Domain.Common.Constants.Roles.Admin;
     }
 
     public async Task UpdateSongStatisticsAsync(
@@ -259,6 +389,7 @@ public class SongService : ISongService
 
         song.UpdateStatistics();
         await _unitOfWork.Songs.UpdateAsync(song, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogDebug("Statistics updated for song: {SongId}", songId);
     }

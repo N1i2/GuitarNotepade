@@ -3,58 +3,67 @@ using AutoMapper;
 using Domain.Interfaces;
 using Domain.Interfaces.Services;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Features.Commands.Songs;
 
 public class UpdateSongReviewCommandHandler : IRequestHandler<UpdateSongReviewCommand, SongReviewDto>
 {
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IMapper _mapper;
     private readonly ISongReviewService _songReviewService;
+    private readonly ISongService _songService;
+    private readonly IMapper _mapper;
+    private readonly ILogger<UpdateSongReviewCommandHandler> _logger;
 
     public UpdateSongReviewCommandHandler(
         IUnitOfWork unitOfWork,
+        ISongReviewService songReviewService,
+        ISongService songService,
         IMapper mapper,
-        ISongReviewService songReviewService)
+        ILogger<UpdateSongReviewCommandHandler> logger)
     {
         _unitOfWork = unitOfWork;
-        _mapper = mapper;
         _songReviewService = songReviewService;
+        _songService = songService;
+        _mapper = mapper;
+        _logger = logger;
     }
 
     public async Task<SongReviewDto> Handle(UpdateSongReviewCommand request, CancellationToken cancellationToken)
     {
         var review = await _unitOfWork.SongReviews.GetByIdAsync(request.ReviewId, cancellationToken);
+
         if (review == null)
-            throw new ArgumentException("Review not found", nameof(request.ReviewId));
+        {
+            throw new KeyNotFoundException("Review not found");
+        }
 
         if (review.UserId != request.UserId)
-            throw new UnauthorizedAccessException("You don't have permission to update this review");
+        {
+            throw new UnauthorizedAccessException("You do not have permission to update this review");
+        }
 
         var updatedReview = await _songReviewService.UpdateReviewAsync(
-            request.ReviewId,
-            request.ReviewText,
-            request.BeautifulLevel,
-            request.DifficultyLevel,
-            cancellationToken);
-
-        var song = await _unitOfWork.Songs.GetByIdAsync(updatedReview.SongId, cancellationToken);
-        if (song != null)
-        {
-            song.UpdateStatistics();
-            await _unitOfWork.Songs.UpdateAsync(song, cancellationToken);
-        }
+            reviewId: request.ReviewId,
+            reviewText: request.ReviewText,
+            beautifulLevel: request.BeautifulLevel,
+            difficultyLevel: request.DifficultyLevel,
+            cancellationToken: cancellationToken);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var fullReview = await _unitOfWork.SongReviews.GetQueryable()
-            .Include(r => r.User)
-            .FirstOrDefaultAsync(r => r.Id == updatedReview.Id, cancellationToken);
+        await _songService.UpdateSongStatisticsAsync(review.SongId, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var dto = _mapper.Map<SongReviewDto>(fullReview);
+        var reviewWithDetails = await _unitOfWork.SongReviews.GetByIdAsync(request.ReviewId, cancellationToken);
+        if (reviewWithDetails == null)
+        {
+            throw new KeyNotFoundException("Review not found after update");
+        }
 
-        return dto;
+        _logger.LogInformation("Review updated successfully: {ReviewId}", request.ReviewId);
+
+        return _mapper.Map<SongReviewDto>(reviewWithDetails);
     }
 }
 

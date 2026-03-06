@@ -2,11 +2,11 @@ using Application.DTOs.Generic;
 using Application.DTOs.Song;
 using Application.Features.Commands.Songs;
 using Application.Features.Queries.Songs;
-using AutoMapper;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Application.DTOs.Song.Comment;
 
 namespace Presentation.Controllers;
 
@@ -16,12 +16,10 @@ namespace Presentation.Controllers;
 public class ReviewsController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly IMapper _mapper;
 
-    public ReviewsController(IMediator mediator, IMapper mapper)
+    public ReviewsController(IMediator mediator)
     {
         _mediator = mediator;
-        _mapper = mapper;
     }
 
     [HttpPost("songs/{songId}")]
@@ -52,55 +50,6 @@ public class ReviewsController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-    }
-
-    [HttpGet("{id}")]
-    public async Task<ActionResult<SongReviewDto>> GetReview(Guid id)
-    {
-        try
-        {
-            var query = new GetSongReviewByIdQuery(id);
-            var result = await _mediator.Send(query);
-
-            return Ok(result);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-    }
-
-    [HttpGet("songs/{songId}")]
-    public async Task<ActionResult<PaginatedDto<SongReviewDto>>> GetSongReviews(
-        Guid songId,
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
-        [FromQuery] string sortBy = "createdAt",
-        [FromQuery] bool descending = false)
-    {
-        try
-        {
-            var query = new GetSongReviewsQuery(songId, page, pageSize, sortBy, descending);
-            var result = await _mediator.Send(query);
-
-            return Ok(result);
-        }
-        catch (ArgumentException ex)
-        {
-            return NotFound(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
     }
 
     [HttpPut("{id}")]
@@ -120,20 +69,50 @@ public class ReviewsController : ControllerBase
                 dto.DifficultyLevel);
 
             var result = await _mediator.Send(command);
-
             return Ok(result);
         }
-        catch (KeyNotFoundException ex)
+        catch (KeyNotFoundException)
         {
-            return NotFound(new { error = ex.Message });
+            return NotFound(new { error = "Review not found" });
         }
         catch (UnauthorizedAccessException)
         {
             return Forbid();
         }
-        catch (Exception ex)
+    }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<SongReviewDto>> GetReview(Guid id)
+    {
+        try
         {
-            return BadRequest(new { error = ex.Message });
+            var query = new GetSongReviewByIdQuery(id);
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound(new { error = "Review not found" });
+        }
+    }
+
+    [HttpGet("songs/{songId}")]
+    public async Task<ActionResult<PaginatedDto<SongReviewDto>>> GetSongReviews(
+        Guid songId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string sortBy = "createdAt",
+        [FromQuery] bool descending = false)
+    {
+        try
+        {
+            var query = new GetSongReviewsQuery(songId, page, pageSize, sortBy, descending);
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (ArgumentException)
+        {
+            return NotFound(new { error = "Song not found" });
         }
     }
 
@@ -143,23 +122,17 @@ public class ReviewsController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-
             var command = new DeleteSongReviewCommand(userId, id);
             await _mediator.Send(command);
-
             return NoContent();
         }
-        catch (KeyNotFoundException ex)
+        catch (KeyNotFoundException)
         {
-            return NotFound(new { error = ex.Message });
+            return NotFound(new { error = "Review not found" });
         }
         catch (UnauthorizedAccessException)
         {
             return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
         }
     }
 
@@ -177,4 +150,3 @@ public class ReviewsController : ControllerBase
         return userId;
     }
 }
-

@@ -25,17 +25,13 @@ services:
     env_file:
       - ./GuitarNotepadeBackend/.env.docker
     environment:
-      ASPNETCORE_URLS: http://*:3001  # ← порт 3001
-      PORT: 3001                      # ← порт 3001
+      ASPNETCORE_URLS: http://*:3001  
+      PORT: 3001                      
     depends_on:
       postgres:
         condition: service_healthy
     ports:
-      - "3001:3001"  # ← внешний 3001, внутренний 3001
-    # Уберите healthcheck пока не настроен
-    # или используйте:
-    # healthcheck:
-    #   test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      - "3001:3001"  
 
   frontend:
     build:

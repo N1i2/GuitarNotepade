@@ -1,4 +1,4 @@
-﻿using Domain.Common;
+using Domain.Common;
 using Domain.Entities.Base;
 using Domain.ValidationRules.SongRules;
 using System.Text;
@@ -13,10 +13,9 @@ public class Song : BaseEntityWithId
     public bool IsPublic { get; private set; }
     public Guid OwnerId { get; private set; }
     public Guid? ParentSongId { get; private set; }
-    public string Genre { get; set; }
-    public string Theme { get; set; }
-    public string? MyProperty { get; set; }
-    public string? CustomAudioUrl { get; set; }
+    public string Genre { get; private set; }
+    public string Theme { get; private set; }
+    public string? CustomAudioUrl { get; private set; }
     public string? CustomAudioType { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
@@ -55,8 +54,8 @@ public class Song : BaseEntityWithId
         Guid ownerId,
         string title,
         bool isPublic,
-        string genre,
-        string theme,
+        string? genre = null,
+        string? theme = null,
         string? artist = null,
         string? description = null,
         string? customAudioUrl = null,
@@ -75,8 +74,8 @@ public class Song : BaseEntityWithId
             Id = Guid.NewGuid(),
             OwnerId = ownerId,
             Title = title.Trim(),
-            Genre = genre,
-            Theme = theme,
+            Genre = genre?.Trim() ?? string.Empty,
+            Theme = theme?.Trim() ?? string.Empty,
             Artist = artist?.Trim(),
             Description = description?.Trim(),
             IsPublic = isPublic,
@@ -107,14 +106,14 @@ public class Song : BaseEntityWithId
             Title = title.Trim();
         }
 
-        if(genre != null)
+        if (genre != null)
         {
-            Genre = genre;
+            Genre = genre.Trim();
         }
 
         if (theme != null)
         {
-            Theme = theme;
+            Theme = theme.Trim();
         }
 
         if (artist != null)
@@ -262,9 +261,9 @@ public class Song : BaseEntityWithId
         var newSong = Create(
             ownerId: newOwnerId,
             title: originalSong.Title,
+            isPublic: true,
             genre: originalSong.Genre,
             theme: originalSong.Theme,
-            isPublic: true,
             artist: originalSong.Artist,
             description: originalSong.Description,
             parentSongId: originalSong.Id);

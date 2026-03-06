@@ -1,8 +1,6 @@
-﻿using Domain.Common;
+using Domain.Common;
 using Domain.Entities.Base;
 using Domain.ValidationRules.UserRules;
-using System.Reflection.Metadata;
-using System.Runtime.CompilerServices;
 
 namespace Domain.Entities;
 

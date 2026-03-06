@@ -1,7 +1,16 @@
-﻿using MediatR;
+using MediatR;
 
 namespace Application.Features.Commands.Songs;
 
-public record DeleteSongReviewCommand(
-    Guid UserId,
-    Guid ReviewId) : IRequest<bool>;
+public class DeleteSongReviewCommand : IRequest
+{
+    public Guid UserId { get; }
+    public Guid ReviewId { get; }
+
+    public DeleteSongReviewCommand(Guid userId, Guid reviewId)
+    {
+        UserId = userId;
+        ReviewId = reviewId;
+    }
+}
+

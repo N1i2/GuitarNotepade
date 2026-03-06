@@ -1,5 +1,4 @@
 ﻿using Application.DTOs.Alboms;
-using Application.Features.Commands.Alboms;
 using AutoMapper;
 using Domain.Entities;
 using Domain.Interfaces;
@@ -7,7 +6,7 @@ using Domain.Interfaces.Services;
 using Domain.ValidationRules.AlbomRules;
 using MediatR;
 
-namespace Application.Features.Handlers.Alboms;
+namespace Application.Features.Commands.Alboms;
 
 public class UpdateAlbumCommandHandler : IRequestHandler<UpdateAlbumCommand, AlbumDto>
 {

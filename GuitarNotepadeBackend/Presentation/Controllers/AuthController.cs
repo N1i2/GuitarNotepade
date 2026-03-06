@@ -1,5 +1,6 @@
-﻿using AutoMapper;
+using AutoMapper;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Application.DTOs.Users;
 using Application.Features.Commands.Users;
@@ -22,36 +23,20 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<ActionResult<AuthResponseDto>> Register([FromBody]RegisterUserDto dto)
+    [AllowAnonymous]
+    public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterUserDto dto)
     {
-        try
-        {
-            var command = _mapper.Map<RegisterUserCommand>(dto);
-
-            var result = await _mediator.Send(command);
-
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        var command = _mapper.Map<RegisterUserCommand>(dto);
+        var result = await _mediator.Send(command);
+        return Ok(result);
     }
 
     [HttpPost("login")]
-    public async Task<ActionResult<AuthResponseDto>> Login([FromBody]LoginUserDto dto)
+    [AllowAnonymous]
+    public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginUserDto dto)
     {
-        try
-        {
-            var command = _mapper.Map<LoginUserCommand>(dto);
-
-            var result = await _mediator.Send(command);
-
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        var command = _mapper.Map<LoginUserCommand>(dto);
+        var result = await _mediator.Send(command);
+        return Ok(result);
     }
 }

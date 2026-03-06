@@ -22,27 +22,32 @@ public class GetUserSongsQueryHandler : IRequestHandler<GetUserSongsQuery, Pagin
     {
         var user = await _unitOfWork.Users.GetByIdAsync(request.UserId, cancellationToken);
         if (user == null)
+        {
             throw new ArgumentException("User not found", nameof(request.UserId));
+        }
 
         var query = _unitOfWork.Songs.GetQueryable()
+            .Where(s => s.OwnerId == request.UserId)
             .Include(s => s.Owner)
-            .Include(s => s.ParentSong)
             .Include(s => s.Structure)
             .Include(s => s.SongChords)
                 .ThenInclude(sc => sc.Chord)
             .Include(s => s.SongPatterns)
                 .ThenInclude(sp => sp.StrummingPattern)
-            .Where(s => s.OwnerId == request.UserId);
+            .Include(s => s.Reviews)
+            .Include(s => s.Comments)
+            .AsQueryable();
 
         if (!request.IncludePrivate)
         {
             query = query.Where(s => s.IsPublic);
         }
 
+        query = query.OrderByDescending(s => s.CreatedAt);
+
         var totalCount = await query.CountAsync(cancellationToken);
 
         var songs = await query
-            .OrderByDescending(s => s.CreatedAt)
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
             .ToListAsync(cancellationToken);

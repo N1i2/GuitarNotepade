@@ -1,8 +1,8 @@
-﻿using Application.DTOs.Chords;
-using Application.DTOs.StrummingPatterns;
+﻿using Application.DTOs.StrummingPatterns;
 using Domain.Entities;
 using Domain.Interfaces;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.Commands.StrummingPatterns;
 
@@ -18,8 +18,7 @@ public class CreatePatternCommandHandler : IRequestHandler<CreatePatternCommand,
     public async Task<StrummingPatternsDto> Handle(CreatePatternCommand request, CancellationToken cancellationToken)
     {
         var exists = await _unitOfWork.StrummingPatterns.ExistsWithSameNameAsync(
-            request.Name,
-            cancellationToken);
+            request.Name, cancellationToken);
 
         if (exists)
         {
@@ -36,7 +35,15 @@ public class CreatePatternCommandHandler : IRequestHandler<CreatePatternCommand,
         await _unitOfWork.StrummingPatterns.CreateAsync(sp, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return MapToDto(sp);
+        var patternWithUser = await _unitOfWork.StrummingPatterns
+            .GetQueryable()
+            .Include(p => p.CreatedBy)
+            .FirstOrDefaultAsync(p => p.Id == sp.Id, cancellationToken);
+
+        if (patternWithUser == null)
+            throw new Exception("Failed to load created pattern");
+
+        return MapToDto(patternWithUser);
     }
 
     private StrummingPatternsDto MapToDto(StrummingPattern sp)
@@ -49,6 +56,7 @@ public class CreatePatternCommandHandler : IRequestHandler<CreatePatternCommand,
             IsFingerStyle = sp.IsFingerStyle,
             Description = sp.Description,
             CreatedByUserId = sp.CreatedByUserId,
+            CreatedByNikName = sp.CreatedBy?.NikName,
             CreatedAt = sp.CreatedAt,
             UpdatedAt = sp.UpdatedAt
         };

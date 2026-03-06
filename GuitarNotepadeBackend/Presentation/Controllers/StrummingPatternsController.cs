@@ -1,8 +1,6 @@
 ﻿using Application.DTOs.Generic;
 using Application.DTOs.StrummingPatterns;
-using Application.Features.Commands.Chords;
 using Application.Features.Commands.StrummingPatterns;
-using Application.Features.Queries.Chords;
 using Application.Features.Queries.StrummingPatterns;
 using AutoMapper;
 using MediatR;
@@ -14,7 +12,6 @@ namespace Presentation.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class StrummingPatternsController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -38,14 +35,19 @@ public class StrummingPatternsController : ControllerBase
     {
         try
         {
-            var userId = GetCurrentUserId();
+            var isAuth = IsUserAuthenticated();
+
+            if (!isAuth && myPatternsOnly == true)
+            {
+                return BadRequest(new { error = "Only authenticated users can view their own patterns" });
+            }
 
             var filters = new StrummingPatternsFiltersDto
             {
                 Name = name,
-                MyPatternsOnly = myPatternsOnly,
+                MyPatternsOnly = isAuth ? myPatternsOnly : false,
                 IsFingerStyle = isFingerStyle,
-                UserId = myPatternsOnly.HasValue && myPatternsOnly.Value ? userId : null,
+                UserId = isAuth && myPatternsOnly == true ? GetCurrentUserId() : null,
                 Page = page,
                 PageSize = pageSize,
                 SortBy = sortBy,
@@ -63,8 +65,41 @@ public class StrummingPatternsController : ControllerBase
         }
     }
 
-    [HttpGet("by-id/{id}")]
-    public async Task<ActionResult<StrummingPatternsDto>> GetStrummingPaternById(Guid id)
+    [HttpGet("search")]
+    public async Task<ActionResult<PaginatedDto<StrummingPatternsDto>>> SearchPatternsByName(
+        [FromQuery] string name,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return BadRequest(new { error = "Search term cannot be empty" });
+            }
+
+            var filters = new StrummingPatternsFiltersDto
+            {
+                Name = name,
+                Page = page,
+                PageSize = pageSize,
+                SortBy = "name", 
+                SortOrder = "asc"
+            };
+
+            var query = new GetAllPatternsQuery(filters);
+            var result = await _mediator.Send(query);
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<StrummingPatternsDto>> GetStrummingPatternById(Guid id)
     {
         try
         {
@@ -83,19 +118,28 @@ public class StrummingPatternsController : ControllerBase
         }
     }
 
-    [HttpGet("by-name/{patternName}")]
-    public async Task<ActionResult<StrummingPatternsDto>> GetStrummingPatternByName(string patternName)
+    [HttpGet("my-patterns")]
+    [Authorize]
+    public async Task<ActionResult<PaginatedDto<StrummingPatternsDto>>> GetMyPatterns(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
     {
         try
         {
-            var query = new GetPatternByNameQuery(patternName);
+            var filters = new StrummingPatternsFiltersDto
+            {
+                MyPatternsOnly = true,
+                UserId = GetCurrentUserId(),
+                Page = page,
+                PageSize = pageSize,
+                SortBy = "createdat",
+                SortOrder = "desc"
+            };
+
+            var query = new GetAllPatternsQuery(filters);
             var result = await _mediator.Send(query);
 
             return Ok(result);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { error = ex.Message });
         }
         catch (Exception ex)
         {
@@ -104,6 +148,7 @@ public class StrummingPatternsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize]
     public async Task<ActionResult<StrummingPatternsDto>> CreatePattern([FromBody] CreatePatternDto dto)
     {
         try
@@ -119,7 +164,7 @@ public class StrummingPatternsController : ControllerBase
 
             var result = await _mediator.Send(command);
 
-            return CreatedAtAction(nameof(GetStrummingPaternById), new { id = result.Id }, result);
+            return CreatedAtAction(nameof(GetStrummingPatternById), new { id = result.Id }, result);
         }
         catch (InvalidOperationException ex)
         {
@@ -132,12 +177,12 @@ public class StrummingPatternsController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize]
     public async Task<ActionResult<StrummingPatternsDto>> UpdatePattern(Guid id, [FromBody] UpdatePatternDto dto)
     {
         try
         {
             var userId = GetCurrentUserId();
-
             var command = new UpdatePatternCommand(
                 id,
                 userId,
@@ -170,6 +215,7 @@ public class StrummingPatternsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize]
     public async Task<ActionResult> DeletePattern(Guid id)
     {
         try
@@ -195,6 +241,11 @@ public class StrummingPatternsController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
+    }
+
+    private bool IsUserAuthenticated()
+    {
+        return User.Identity?.IsAuthenticated == true;
     }
 
     private Guid GetCurrentUserId()

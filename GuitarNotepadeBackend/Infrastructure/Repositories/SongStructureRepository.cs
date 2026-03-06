@@ -28,10 +28,6 @@ public class SongStructureRepository : BaseRepository<SongStructure>, ISongStruc
             .Include(ss => ss.SegmentPositions)
                 .ThenInclude(sp => sp.Segment)
                     .ThenInclude(s => s.Pattern)
-            .Include(ss => ss.SegmentPositions)
-                .ThenInclude(sp => sp.Segment)
-                    .ThenInclude(s => s.SegmentLabels)
-                        .ThenInclude(sl => sl.Label)
             .FirstOrDefaultAsync(ss => ss.SongId == songId, cancellationToken);
     }
 

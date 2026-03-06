@@ -1,14 +1,13 @@
-﻿namespace Application.DTOs.Song;
+namespace Application.DTOs.Song;
 
 public class SongSearchFilters
 {
-    public Guid UserId { get; set; }
+    public Guid? UserId { get; set; }
     public string? SearchTerm { get; set; }
     public Guid? OwnerId { get; set; }
     public bool? IsPublic { get; set; }
     public Guid? ChordId { get; set; }
     public Guid? PatternId { get; set; }
-    public Guid? ParentSongId { get; set; }
     public decimal? MinRating { get; set; }
     public decimal? MaxRating { get; set; }
     public DateTime? CreatedFrom { get; set; }
@@ -18,3 +17,4 @@ public class SongSearchFilters
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 20;
 }
+

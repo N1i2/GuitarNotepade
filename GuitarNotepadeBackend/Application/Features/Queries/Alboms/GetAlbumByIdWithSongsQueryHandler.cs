@@ -3,7 +3,6 @@ using Application.DTOs.Alboms;
 using Domain.Interfaces;
 using Domain.Interfaces.Services;
 using AutoMapper;
-using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.Queries.Alboms;
 

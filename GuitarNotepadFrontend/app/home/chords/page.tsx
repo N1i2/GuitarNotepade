@@ -44,6 +44,7 @@ export default function ChordsPage() {
   const router = useRouter();
   const { user } = useAuth();
   const toast = useToast();
+  const isGuest = user?.role === "Guest";
 
   const [allChords, setAllChords] = useState<Chord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -254,7 +255,7 @@ export default function ChordsPage() {
                     id="showOnlyMyChords" 
                     checked={showOnlyMyChords}
                     onCheckedChange={(checked) => setShowOnlyMyChords(checked as boolean)}
-                    disabled={!user}
+                    disabled={isGuest}
                   />
                   <Label 
                     htmlFor="showOnlyMyChords" 
@@ -276,10 +277,12 @@ export default function ChordsPage() {
                     <Hash className="h-3 w-3 mr-1" />
                     {isLoadingAll ? "..." : uniqueChords.totalCount} chords
                   </Badge>
-                  <Button onClick={handleCreateNew} variant="default" className="w-full sm:w-auto">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create New Chord
-                  </Button>
+                  {!isGuest && (
+                    <Button onClick={handleCreateNew} variant="default" className="w-full sm:w-auto">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create New Chord
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -295,7 +298,7 @@ export default function ChordsPage() {
               </div>
             )}
             
-            {!user && (
+            {isGuest && (
               <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-md border border-amber-200 dark:border-amber-800">
                 <div className="flex items-center gap-2 text-sm">
                   <EyeOff className="h-4 w-4 text-amber-600" />

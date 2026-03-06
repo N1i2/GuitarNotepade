@@ -1,10 +1,20 @@
-﻿using Application.DTOs.Generic;
+﻿using Application.DTOs.Song;
 using MediatR;
 
 namespace Application.Features.Queries.Songs;
 
-public record GetSongCommentsQuery(
-    Guid SongId,
-    Guid? SegmentId = null,
-    int Page = 1,
-    int PageSize = 50) : IRequest<PaginatedDto<SongCommentDto>>;
+public class GetSongCommentsQuery : IRequest<List<SongCommentDto>>
+{
+    public Guid SongId { get; }
+    public Guid? UserId { get; }
+    public int Page { get; }
+    public int PageSize { get; }
+
+    public GetSongCommentsQuery(Guid songId, Guid? userId = null, int page = 1, int pageSize = 50)
+    {
+        SongId = songId;
+        UserId = userId;
+        Page = page;
+        PageSize = pageSize;
+    }
+}

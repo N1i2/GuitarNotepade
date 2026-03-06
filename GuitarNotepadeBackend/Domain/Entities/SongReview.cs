@@ -8,8 +8,8 @@ public class SongReview : BaseEntityWithId
     public Guid SongId { get; private set; }
     public Guid UserId { get; private set; }
     public string ReviewText { get; private set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime? UpdatedAt { get; set; }
+    public DateTime CreatedAt { get; private set; }
+    public DateTime? UpdatedAt { get; private set; }
     
     public int? BeautifulLevel { get; private set; }
     public int? DifficultyLevel { get; private set; }
@@ -74,17 +74,9 @@ public class SongReview : BaseEntityWithId
             ReviewText = newReviewText.Trim();
         }
 
-        if (newBeautifulLevel.HasValue)
-        {
-            BeautifulLevelRule.IsValid(newBeautifulLevel.Value);
-            BeautifulLevel = newBeautifulLevel;
-        }
+        SetBeautifulLevel(newBeautifulLevel);
 
-        if (newDifficultyLevel.HasValue)
-        {
-            DifficultyLevelRule.IsValid(newDifficultyLevel.Value);
-            DifficultyLevel = newDifficultyLevel;
-        }
+        SetDifficultyLevel(newDifficultyLevel);
 
         UpdatedAt = DateTime.UtcNow;
     }
@@ -107,5 +99,39 @@ public class SongReview : BaseEntityWithId
         }
 
         return !user.IsBlocked;
+    }
+
+    private void SetBeautifulLevel(int? newBeautifulLevel)
+    {
+        if(newBeautifulLevel == null)
+        {
+            return;
+        }
+
+        if(newBeautifulLevel <= 0)
+        {
+            BeautifulLevel = null;
+            return;
+        }
+
+        BeautifulLevelRule.IsValid(newBeautifulLevel.Value);
+        BeautifulLevel = newBeautifulLevel;
+    }
+
+    private void SetDifficultyLevel(int? newDifficultyLevel)
+    {
+        if (newDifficultyLevel == null)
+        {
+            return;
+        }
+
+        if (newDifficultyLevel <= 0)
+        {
+            DifficultyLevel = null;
+            return;
+        }
+
+        DifficultyLevelRule.IsValid(newDifficultyLevel.Value);
+        DifficultyLevel = newDifficultyLevel;
     }
 }

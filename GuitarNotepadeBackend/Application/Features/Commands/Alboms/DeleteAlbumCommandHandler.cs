@@ -1,11 +1,10 @@
-﻿using Application.Features.Commands.Alboms;
-using Domain.Common;
+﻿using Domain.Common;
 using Domain.Entities;
 using Domain.Interfaces;
 using Domain.Interfaces.Services;
 using MediatR;
 
-namespace Application.Features.Handlers.Alboms;
+namespace Application.Features.Commands.Alboms;
 
 public class DeleteAlbumCommandHandler : IRequestHandler<DeleteAlbumCommand>
 {

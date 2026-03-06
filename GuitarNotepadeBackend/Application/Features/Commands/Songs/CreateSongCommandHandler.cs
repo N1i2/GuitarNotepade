@@ -1,27 +1,33 @@
-﻿using Application.DTOs.Song;
+using Application.DTOs.Song;
 using AutoMapper;
 using Domain.Common;
 using Domain.Interfaces;
 using Domain.Interfaces.Services;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Features.Commands.Songs;
 
 public class CreateSongCommandHandler : IRequestHandler<CreateSongCommand, SongDto>
 {
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IMapper _mapper;
+    private readonly ISongService _songService;
     private readonly IWebDavService _webDavService;
+    private readonly IMapper _mapper;
+    private readonly ILogger<CreateSongCommandHandler> _logger;
 
     public CreateSongCommandHandler(
         IUnitOfWork unitOfWork,
+        ISongService songService,
+        IWebDavService webDavService,
         IMapper mapper,
-        IWebDavService webDavService)
+        ILogger<CreateSongCommandHandler> logger)
     {
         _unitOfWork = unitOfWork;
-        _mapper = mapper;
+        _songService = songService;
         _webDavService = webDavService;
+        _mapper = mapper;
+        _logger = logger;
     }
 
     public async Task<SongDto> Handle(CreateSongCommand request, CancellationToken cancellationToken)
@@ -32,127 +38,99 @@ public class CreateSongCommandHandler : IRequestHandler<CreateSongCommand, SongD
             throw new ArgumentException("User not found", nameof(request.UserId));
         }
 
-        string? audioUrl = null;
-        string? audioType = null;
-
-        if (!string.IsNullOrEmpty(request.AudioBase64))
+        if (user.IsBlocked)
         {
-            if (request.AudioType == Constants.AudioTypes.UrlType)
-            {
-                audioUrl = request.AudioBase64;
-                audioType = Constants.AudioTypes.UrlType;
-            }
-            else if (request.AudioType == Constants.AudioTypes.FileType)
+            throw new UnauthorizedAccessException("User is blocked");
+        }
+
+        return await _unitOfWork.ExecuteInTransactionAsync(async () =>
+        {
+            var song = await _songService.CreateSongAsync(
+                ownerId: request.UserId,
+                title: request.Title,
+                isPublic: request.IsPublic,
+                genre: request.Genre,
+                theme: request.Theme,
+                artist: request.Artist,
+                description: request.Description,
+                parentSongId: request.ParentSongId,
+                cancellationToken: cancellationToken);
+
+            string? audioFileName = null;
+            string? audioType = null;
+
+            if (!string.IsNullOrEmpty(request.AudioBase64) && !string.IsNullOrEmpty(request.AudioType))
             {
                 try
                 {
-                    var fileExtension = GetAudioFileExtensionFromBase64(request.AudioBase64);
-                    var fileName = $"audio_{Guid.NewGuid():N}{fileExtension}";
+                    var fileExtension = GetFileExtensionFromAudioType(request.AudioType);
+                    audioFileName = $"{song.Id}{fileExtension}";
 
-                    var cleanBase64 = CleanBase64String(request.AudioBase64);
+                    var audioStream = ConvertBase64ToStream(request.AudioBase64);
 
-                    var audioBytes = Convert.FromBase64String(cleanBase64);
-                    using var stream = new MemoryStream(audioBytes);
+                    audioFileName = await _webDavService.UploadAudioAsync(
+                        audioStream,
+                        audioFileName,
+                        song.Id);
 
-                    audioUrl = await _webDavService.UploadAudioAsync(stream, fileName, request.UserId);
-                    audioType = Constants.AudioTypes.FileType;
+                    audioType = request.AudioType;
 
-                    Console.WriteLine($"Audio uploaded to Yandex.Disk: {audioUrl}");
-                }
-                catch (FormatException ex)
-                {
-                    Console.WriteLine($"Invalid base64 format: {ex.Message}");
-                    throw new Exception("Invalid audio format");
+                    song.Update(
+                        customAudioUrl: audioFileName,
+                        customAudioType: audioType);
+
+                    await _unitOfWork.Songs.UpdateAsync(song, cancellationToken);
+
+                    _logger.LogInformation("Audio uploaded successfully for song {SongId}: {FileName}",
+                        song.Id, audioFileName);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error uploading audio: {ex.Message}");
-                    throw new Exception($"Error uploading audio: {ex.Message}");
+                    _logger.LogError(ex, "Failed to upload audio for song {SongId}", song.Id);
                 }
             }
-        }
 
-        if (request.ParentSongId.HasValue)
-        {
-            var parentSong = await _unitOfWork.Songs.GetByIdAsync(request.ParentSongId.Value, cancellationToken);
-            if (parentSong == null || !parentSong.IsPublic)
-                throw new ArgumentException("Parent song not found or not public", nameof(request.ParentSongId));
-        }
+            _logger.LogInformation("Song created successfully: {SongId}", song.Id);
 
-        var song = Domain.Entities.Song.Create(
-            request.UserId,
-            request.Title,
-            request.IsPublic,
-            request.Gener,
-            request.Theme,
-            request.Artist,
-            request.Description,
-            audioUrl,
-            audioType,
-            request.ParentSongId);
+            var songWithDetails = await _unitOfWork.Songs.GetByIdAsync(song.Id, cancellationToken);
+            return _mapper.Map<SongDto>(songWithDetails);
 
-        await _unitOfWork.Songs.CreateAsync(song, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        var fullSong = await _unitOfWork.Songs.GetQueryable()
-            .Include(s => s.Owner)
-            .Include(s => s.ParentSong)
-            .Include(s => s.Structure)
-            .Include(s => s.SongChords)
-                .ThenInclude(sc => sc.Chord)
-            .Include(s => s.SongPatterns)
-                .ThenInclude(sp => sp.StrummingPattern)
-            .FirstOrDefaultAsync(s => s.Id == song.Id, cancellationToken);
-
-        return _mapper.Map<SongDto>(fullSong);
+        }, cancellationToken);
     }
 
-    private string CleanBase64String(string base64)
+    private Stream ConvertBase64ToStream(string base64String)
     {
-        if (base64.Contains("data:") && base64.Contains("base64,"))
+        if (string.IsNullOrEmpty(base64String))
         {
-            var parts = base64.Split(',');
-            if (parts.Length == 2)
+            throw new ArgumentException("Base64 string cannot be empty", nameof(base64String));
+        }
+
+        string cleanBase64 = base64String;
+        if (base64String.Contains("data:") && base64String.Contains("base64,"))
+        {
+            var parts = base64String.Split(',');
+            if (parts.Length > 1)
             {
-                return parts[1];
+                cleanBase64 = parts[1];
             }
         }
-        return base64;
+
+        var bytes = Convert.FromBase64String(cleanBase64);
+        return new MemoryStream(bytes);
     }
 
-    private string GetAudioFileExtensionFromBase64(string base64)
+    private string GetFileExtensionFromAudioType(string audioType)
     {
-        if (base64.StartsWith("data:audio/mpeg;base64,") || base64.StartsWith("data:audio/mp3;base64,"))
+        return audioType.ToLowerInvariant() switch
         {
-            return ".mp3";
-        }
-        else if (base64.StartsWith("data:audio/wav;base64,"))
-        {
-            return ".wav";
-        }
-        else if (base64.StartsWith("data:audio/ogg;base64,"))
-        {
-            return ".ogg";
-        }
-        else if (base64.StartsWith("data:audio/mp4;base64,") || base64.StartsWith("data:audio/m4a;base64,"))
-        {
-            return ".m4a";
-        }
-        else if (base64.StartsWith("data:audio/aac;base64,"))
-        {
-            return ".aac";
-        }
-        else if (base64.StartsWith("data:audio/flac;base64,"))
-        {
-            return ".flac";
-        }
-        else if (base64.StartsWith("data:audio/opus;base64,"))
-        {
-            return ".opus";
-        }
-        else
-        {
-            return ".mp3";
-        }
+            "audio/mpeg" or "audio/mp3" => ".mp3",
+            "audio/wav" => ".wav",
+            "audio/ogg" => ".ogg",
+            "audio/mp4" or "audio/m4a" => ".m4a",
+            "audio/aac" => ".aac",
+            "audio/flac" => ".flac",
+            "audio/opus" => ".opus",
+            _ => ".mp3"
+        };
     }
 }

@@ -12,8 +12,6 @@ public interface IUnitOfWork : IDisposable
     ISongSegmentRepository SongSegments { get; }
     ISongStructureRepository SongStructures { get; }
     ISongSegmentPositionRepository SongSegmentPositions { get; }
-    ISongLabelRepository SongLabels { get; }
-    ISegmentLabelRepository SegmentLabels { get; }
     ISongCommentRepository SongComments { get; }
     ISongChordRepository SongChords { get; }
     ISongPatternRepository SongPatterns { get; }
@@ -21,9 +19,6 @@ public interface IUnitOfWork : IDisposable
     ISongAlbomRepository SongAlboms { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
-    Task BeginTransactionAsync(CancellationToken cancellationToken = default);
-    Task CommitTransactionAsync(CancellationToken cancellationToken = default);
-    Task RollbackTransactionAsync(CancellationToken cancellationToken = default);
 
     Task<TResult> ExecuteInTransactionAsync<TResult>(
            Func<Task<TResult>> operation,
@@ -31,9 +26,5 @@ public interface IUnitOfWork : IDisposable
 
     Task ExecuteInTransactionAsync(
         Func<Task> operation,
-        CancellationToken cancellationToken = default);
-
-    Task<TResult> ExecuteInExistingTransactionAsync<TResult>(
-        Func<Task<TResult>> operation,
         CancellationToken cancellationToken = default);
 }

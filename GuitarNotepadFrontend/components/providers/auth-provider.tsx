@@ -42,9 +42,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const initializeAuth = async () => {
       try {
         const token = AuthService.getToken();
+        const guestUser: UserProfileResponse = {
+          id: "guest",
+          email: "",
+          nikName: "Guest",
+          role: "Guest",
+          avatarUrl: null,
+          bio: "",
+          createAt: new Date().toISOString(),
+        };
+
         if (token) {
           const userData = await AuthService.validateToken();
           setUser(userData);
+        } else {
+          setUser(guestUser);
         }
       } catch (error) {
         toast.error('uncorrect token')
@@ -94,7 +106,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const logout = () => {
     AuthService.logout();
-    setUser(null);
+    const guestUser: UserProfileResponse = {
+      id: "guest",
+      email: "",
+      nikName: "Guest",
+      role: "Guest",
+      avatarUrl: null,
+      bio: "",
+      createAt: new Date().toISOString(),
+    };
+    setUser(guestUser);
     router.push("/login");
   };
 

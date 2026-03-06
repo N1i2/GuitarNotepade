@@ -1,60 +1,50 @@
-using Application.DTOs.Song;
+using Application.Features.Commands.Songs;
 using Domain.Interfaces;
 using Domain.Interfaces.Services;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace Application.Features.Commands.Songs;
+namespace Application.Features.Commands.Comments;
 
-public class DeleteSongCommandHandler : IRequestHandler<DeleteSongCommand, bool>
+public class DeleteCommentCommandHandler : IRequestHandler<DeleteCommentCommand>
 {
-    private readonly ISongDeletionService _songDeletionService;
-    private readonly ILogger<DeleteSongCommandHandler> _logger;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogger<DeleteCommentCommandHandler> _logger;
 
-    public DeleteSongCommandHandler(
-        ISongDeletionService songDeletionService,
-        ILogger<DeleteSongCommandHandler> logger)
+    public DeleteCommentCommandHandler(
+        IUnitOfWork unitOfWork,
+        ILogger<DeleteCommentCommandHandler> logger)
     {
-        _songDeletionService = songDeletionService;
+        _unitOfWork = unitOfWork;
         _logger = logger;
     }
 
-    public async Task<bool> Handle(DeleteSongCommand request, CancellationToken cancellationToken)
+    public async Task Handle(DeleteCommentCommand request, CancellationToken cancellationToken)
     {
-        try
+        var comments = await _unitOfWork.SongComments.GetBySegmentIdAsync(
+            (request.SegmetId != null) ? 
+            request.SegmetId.Value : 
+            null,
+            cancellationToken);
+
+        var comment = comments.FirstOrDefault(c => c.UserId == request.UserId);
+
+        if (comment == null)
         {
-            _logger.LogInformation("Deleting song {SongId} by user {UserId}",
-                request.SongId, request.UserId);
+            throw new KeyNotFoundException("Comment not found");
+        }
 
-            var result = await _songDeletionService.DeleteSongWithAudioAsync(
-                request.SongId,
-                request.UserId,
-                cancellationToken);
-
-            if (result)
+        if (comment.UserId != request.UserId)
+        {
+            var user = await _unitOfWork.Users.GetByIdAsync(request.UserId, cancellationToken);
+            if (user?.Role != Domain.Common.Constants.Roles.Admin)
             {
-                _logger.LogInformation("Song {SongId} deleted successfully by user {UserId}",
-                    request.SongId, request.UserId);
+                throw new UnauthorizedAccessException("You don't have permission to delete this comment");
             }
-            else
-            {
-                _logger.LogWarning("Failed to delete song {SongId} by user {UserId}",
-                    request.SongId, request.UserId);
-            }
+        }
 
-            return result;
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            _logger.LogWarning(ex, "User {UserId} is not authorized to delete song {SongId}",
-                request.UserId, request.SongId);
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error deleting song {SongId} by user {UserId}",
-                request.SongId, request.UserId);
-            throw;
-        }
+        await _unitOfWork.SongComments.DeleteAsync(comment.Id, cancellationToken);
+
+        _logger.LogInformation("Comment {CommentId} deleted by user {UserId}", comment.Id, request.UserId);
     }
 }

@@ -1,8 +1,9 @@
-﻿using System.Net.Http.Headers;
-using System.Text;
-using Domain.Interfaces.Services;
+﻿using Domain.Interfaces.Services;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 
 namespace Infrastructure.Services;
 
@@ -344,7 +345,12 @@ public class WebDavService : IWebDavService
                 throw new ArgumentException($"Unsupported audio format: {fileExtension}. Supported formats: {string.Join(", ", _supportedAudioExtensions)}");
             }
 
-            var uniqueFileName = $"{songId}_{Guid.NewGuid():N}{fileExtension}";
+            var safeFileName = Path.GetFileNameWithoutExtension(fileName)
+                .Replace(" ", "_")
+                .Replace("[", "")
+                .Replace("]", "");
+
+            var uniqueFileName = $"{songId}_{safeFileName}_{DateTime.UtcNow.Ticks}{fileExtension}";
             var remotePath = $"{_audioFolder}/{uniqueFileName}";
 
             await EnsureAudioFolderExists();
@@ -373,7 +379,7 @@ public class WebDavService : IWebDavService
             _logger.LogInformation("Audio uploaded successfully: {FileName} for song {SongId}",
                 uniqueFileName, songId);
 
-            return uniqueFileName;
+            return uniqueFileName; 
         }
         catch (Exception ex)
         {
@@ -400,33 +406,47 @@ public class WebDavService : IWebDavService
             return cachedUrl;
         }
 
-        var exists = await AudioExistsAsync(fileName);
-        if (!exists)
+        var publicUrl = await GetDownloadUrlAsync($"{_audioFolder}/{fileName}");
+
+        if (!string.IsNullOrEmpty(publicUrl))
         {
-            _logger.LogWarning("Audio file not found: {FileName}", fileName);
-            return string.Empty;
+            _cache.Set(cacheKey, publicUrl, TimeSpan.FromHours(1));
+            return publicUrl;
         }
 
+        _logger.LogWarning("Could not generate download URL for audio: {FileName}", fileName);
+        return string.Empty;
+    }
+
+    private async Task<string?> GetDownloadUrlAsync(string remotePath)
+    {
         try
         {
-            var bytes = await GetAudioBytesAsync(fileName);
-            if (bytes == null || bytes.Length == 0)
+            var url = $"https://cloud-api.yandex.net/v1/disk/resources/download?path={Uri.EscapeDataString(remotePath)}";
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            AddAuthenticationHeader(request);
+
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
             {
-                return string.Empty;
+                return null;
             }
 
-            var mimeType = GetAudioMimeType(Path.GetExtension(fileName));
-            var base64String = Convert.ToBase64String(bytes);
-            var dataUrl = $"data:{mimeType};base64,{base64String}";
+            var content = await response.Content.ReadAsStringAsync();
+            var json = JsonDocument.Parse(content);
 
-            _cache.Set(cacheKey, dataUrl, TimeSpan.FromHours(1));
+            if (json.RootElement.TryGetProperty("href", out var hrefElement))
+            {
+                return hrefElement.GetString();
+            }
 
-            return dataUrl;
+            return null;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting audio URL for {FileName}", fileName);
-            return string.Empty;
+            _logger.LogError(ex, "Error getting download URL for {RemotePath}", remotePath);
+            return null;
         }
     }
 

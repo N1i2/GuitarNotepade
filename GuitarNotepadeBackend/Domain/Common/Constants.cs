@@ -1,4 +1,4 @@
-﻿namespace Domain.Common;
+namespace Domain.Common;
 
 public static class Constants
 {
@@ -11,13 +11,10 @@ public static class Constants
         public const int MaxReviewsPerUser = 500;
         public const int MaxPatternsPerUser = 200;
         public const int MaxChordsPerUser = 300;
-        public const int MaxReviewLength = 5000;
-        public const int MinReviewLength = 50;
 
         public const int MaxSegmentsPerSong = 255;
         public const int MaxSegmentPositionsPerSong = 1000;
         public const int MaxCommentsPerSong = 1000;
-        public const int MaxLabelsPerSegment = 10;
     }
 
     public static class Search
@@ -30,6 +27,7 @@ public static class Constants
     {
         public const string Admin = "Admin";
         public const string User = "User";
+        public const string Guest = "Guest";
     }
 
     public static class Sorting
@@ -49,8 +47,8 @@ public static class Constants
 
     public static class Review
     {
-        public const int MinLength = 500;
-        public const int MaxLength = 5000;
+        public const int MinLength = 2;
+        public const int MaxLength = 500;
         public const int MinRating = 1;
         public const int MaxRating = 5;
     }

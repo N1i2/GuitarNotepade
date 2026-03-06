@@ -1,7 +1,7 @@
-﻿using Application.DTOs.Chords;
-using Application.DTOs.StrummingPatterns;
+﻿using Application.DTOs.StrummingPatterns;
 using Domain.Interfaces;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.Commands.StrummingPatterns;
 
@@ -16,7 +16,10 @@ public class UpdatePatternCommandHandler : IRequestHandler<UpdatePatternCommand,
 
     public async Task<StrummingPatternsDto> Handle(UpdatePatternCommand request, CancellationToken cancellationToken)
     {
-        var sp = await _unitOfWork.StrummingPatterns.GetByIdAsync(request.PatternId, cancellationToken);
+        var sp = await _unitOfWork.StrummingPatterns
+            .GetQueryable()
+            .Include(p => p.CreatedBy)
+            .FirstOrDefaultAsync(p => p.Id == request.PatternId, cancellationToken);
 
         if (sp == null)
         {
@@ -28,15 +31,14 @@ public class UpdatePatternCommandHandler : IRequestHandler<UpdatePatternCommand,
             throw new UnauthorizedAccessException("You can only update pattern created by you");
         }
 
-        if (!string.IsNullOrEmpty(request.Name))
+        if (!string.IsNullOrEmpty(request.Name) && request.Name != sp.Name)
         {
             var exists = await _unitOfWork.StrummingPatterns.ExistsWithSameNameAsync(
-                request.Name ?? sp.Name,
-                cancellationToken);
+                request.Name, cancellationToken);
 
             if (exists)
             {
-                throw new InvalidOperationException($"Pattern with this name already exists");
+                throw new InvalidOperationException($"Pattern with name '{request.Name}' already exists");
             }
         }
 
@@ -57,6 +59,7 @@ public class UpdatePatternCommandHandler : IRequestHandler<UpdatePatternCommand,
             IsFingerStyle = sp.IsFingerStyle,
             Description = sp.Description,
             CreatedByUserId = sp.CreatedByUserId,
+            CreatedByNikName = sp.CreatedBy?.NikName,
             CreatedAt = sp.CreatedAt,
             UpdatedAt = sp.UpdatedAt
         };

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Application.Exceptions.Register;
 using Microsoft.AspNetCore.Http;
@@ -35,6 +35,11 @@ public class CustomExceptionFilter : IExceptionFilter
 
     private ApiErrorResponse CreateErrorResponse(Exception exception, HttpContext httpContext)
     {
+        if (exception is System.Reflection.TargetInvocationException tie && tie.InnerException != null)
+        {
+            exception = tie.InnerException;
+        }
+
         var errorResponse = exception switch
         {
             EmailException emailEx => new ApiErrorResponse(
@@ -67,11 +72,21 @@ public class CustomExceptionFilter : IExceptionFilter
                 message: notFoundEx.Message,
                 statusCode: StatusCodes.Status404NotFound),
 
+            ArgumentException argEx => new ApiErrorResponse(
+                exceptionType: nameof(ArgumentException),
+                message: argEx.Message,
+                statusCode: StatusCodes.Status400BadRequest),
+
+            InvalidOperationException opEx => new ApiErrorResponse(
+                exceptionType: nameof(InvalidOperationException),
+                message: opEx.Message,
+                statusCode: StatusCodes.Status400BadRequest),
+
             _ => new ApiErrorResponse(
                 exceptionType: exception.GetType().Name,
-                message: _environment.IsDevelopment() ? exception.Message : "An unexpected error occurred",
+                message: _environment.IsDevelopment() ? (exception.Message + (exception.InnerException != null ? " | Inner: " + exception.InnerException.Message : "")) : "An unexpected error occurred",
                 statusCode: StatusCodes.Status500InternalServerError,
-                stackTrace: _environment.IsDevelopment() ? exception.StackTrace : null)
+                stackTrace: _environment.IsDevelopment() ? (exception.StackTrace + (exception.InnerException?.StackTrace != null ? "\n--- Inner ---\n" + exception.InnerException.StackTrace : "")) : null)
         };
 
         errorResponse.Path = httpContext.Request.Path;
