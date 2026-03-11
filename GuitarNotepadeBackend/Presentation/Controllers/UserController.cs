@@ -51,16 +51,7 @@ public class UserController : ControllerBase
     {
         try
         {
-            
-            var userId = GetCurrentUserId();
-
-            var dtoWithUserId = new UpdateUserProfileWithIdDto(
-                UserId: userId,
-                NikName: dto.NikName,
-                AvatarBase64: dto.AvatarBase64,
-                Bio: dto.Bio);
-
-            var command = _mapper.Map<UpdateUserProfileCommand>(dtoWithUserId);
+            var command = _mapper.Map<UpdateUserProfileCommand>(dto);
             var result = await _mediator.Send(command);
 
             return Ok(result);

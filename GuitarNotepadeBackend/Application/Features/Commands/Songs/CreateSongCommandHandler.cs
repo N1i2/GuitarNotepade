@@ -33,6 +33,7 @@ public class CreateSongCommandHandler : IRequestHandler<CreateSongCommand, SongD
     public async Task<SongDto> Handle(CreateSongCommand request, CancellationToken cancellationToken)
     {
         var user = await _unitOfWork.Users.GetByIdAsync(request.UserId, cancellationToken);
+
         if (user == null)
         {
             throw new ArgumentException("User not found", nameof(request.UserId));

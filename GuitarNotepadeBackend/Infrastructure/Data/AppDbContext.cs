@@ -560,7 +560,7 @@ namespace Infrastructure.Data
                     .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(e => e.Song)
-                    .WithMany() 
+                    .WithMany()
                     .HasForeignKey(e => e.SongId)
                     .OnDelete(DeleteBehavior.Cascade);
 

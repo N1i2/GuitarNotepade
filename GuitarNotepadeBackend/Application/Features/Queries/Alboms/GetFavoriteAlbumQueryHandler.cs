@@ -22,7 +22,9 @@ public class GetFavoriteAlbumQueryHandler : IRequestHandler<GetFavoriteAlbumQuer
             a => a.OwnerId == request.UserId && a.Title.ToLower() == "favorite");
 
         if (favoriteAlbum == null)
+        {
             throw new KeyNotFoundException("Favorite album not found");
+        }
 
         var songs = await _unitOfWork.SongAlboms.GetSongsByAlbumIdAsync(favoriteAlbum.Id, cancellationToken);
 

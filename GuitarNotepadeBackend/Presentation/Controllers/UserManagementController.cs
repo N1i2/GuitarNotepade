@@ -1,7 +1,4 @@
-﻿using Application.Features.Commands;
-using Application.Features.Queries;
-using Domain.Entities;
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -120,7 +117,7 @@ public class UserManagementController : ControllerBase
     }
 
     [HttpPut("toggle-user-role")]
-    public async Task<ActionResult> MakeAdminByEmail([FromBody] WorkWithUserByEmailDto dto)
+    public async Task<ActionResult> ToggleUserRole([FromBody] WorkWithUserByEmailDto dto)
     {
         try
         {
@@ -134,7 +131,7 @@ public class UserManagementController : ControllerBase
 
             return Ok(new
             {
-                message = $"User with email '{dto.Email}' is now an administrator",
+                message = $"The user role with the email \"{dto.Email}\" has been changed.\r\n",
                 userId = result
             });
         }

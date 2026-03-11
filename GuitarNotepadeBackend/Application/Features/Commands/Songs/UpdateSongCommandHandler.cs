@@ -57,7 +57,7 @@ public class UpdateSongCommandHandler : IRequestHandler<UpdateSongCommand, SongD
 
                 var audioStream = ConvertBase64ToStream(request.Dto.AudioBase64);
                 var fileName = GetFileNameFromAudioType(request.Dto.AudioType);
-                
+
                 audioUrl = await _webDavService.UploadAudioAsync(audioStream, fileName, song.Id);
                 audioType = request.Dto.AudioType;
 
@@ -137,4 +137,3 @@ public class UpdateSongCommandHandler : IRequestHandler<UpdateSongCommand, SongD
         };
     }
 }
-

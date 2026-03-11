@@ -16,8 +16,6 @@ public static class FingeringRule
             throw new ArgumentException("Fingering must have exactly 6 parts separated by hyphens");
         }
 
-        var allowedDigits = new HashSet<char>("0123456789");
-
         for (int i = 0; i < parts.Length; i++)
         {
             var part = parts[i];

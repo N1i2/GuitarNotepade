@@ -379,7 +379,7 @@ public class WebDavService : IWebDavService
             _logger.LogInformation("Audio uploaded successfully: {FileName} for song {SongId}",
                 uniqueFileName, songId);
 
-            return uniqueFileName; 
+            return uniqueFileName;
         }
         catch (Exception ex)
         {
@@ -931,7 +931,7 @@ public class WebDavService : IWebDavService
             ".webp" => "image/webp",
             ".bmp" => "image/bmp",
             ".svg" => "image/svg+xml",
-            _ => "image/jpeg" 
+            _ => "image/jpeg"
         };
     }
 }

@@ -28,7 +28,7 @@ public class Song : BaseEntityWithId
 
     public virtual User Owner { get; private set; } = null!;
     public virtual Song? ParentSong { get; private set; }
-    public virtual SongStructure Structure { get; private set; } = null!;
+    public virtual SongStructure? Structure { get; private set; } 
     public virtual ICollection<Song> ChildSongs { get; private set; }
     public virtual ICollection<SongComment> Comments { get; private set; }
     public virtual ICollection<SongReview> Reviews { get; private set; }
@@ -93,7 +93,7 @@ public class Song : BaseEntityWithId
     public void Update(
         string? title = null,
         string? artist = null,
-        string? genre = null, 
+        string? genre = null,
         string? theme = null,
         string? description = null,
         string? customAudioUrl = null,
@@ -172,10 +172,13 @@ public class Song : BaseEntityWithId
             fullTextBuilder.Append(Description).Append(' ');
         }
 
-        var segmentLyrics = Structure.GetAllSegmentLyrics();
-        foreach (var lyric in segmentLyrics)
+        if (Structure != null)
         {
-            fullTextBuilder.Append(lyric).Append(' ');
+            var segmentLyrics = Structure.GetAllSegmentLyrics();
+            foreach (var lyric in segmentLyrics)
+            {
+                fullTextBuilder.Append(lyric).Append(' ');
+            }
         }
 
         FullText = fullTextBuilder.ToString().Trim();

@@ -66,7 +66,7 @@ public class SongService : ISongService
     {
         var song = await _unitOfWork.Songs.GetByIdAsync(songId, cancellationToken);
 
-        if (song == null) 
+        if (song == null)
         {
             throw new ArgumentException("Song not found", nameof(songId));
         }

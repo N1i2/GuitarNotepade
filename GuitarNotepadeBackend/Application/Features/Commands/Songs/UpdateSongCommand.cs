@@ -18,4 +18,3 @@ public class UpdateSongCommand : IRequest<SongDto>
         Dto = dto;
     }
 }
-
