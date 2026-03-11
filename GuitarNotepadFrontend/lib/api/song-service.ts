@@ -1,44 +1,38 @@
+import { CreateCommentDto } from "@/types/comments";
+import { apiClient } from "./client";
 import {
-  CreateSongDto,
-  CreateSongWithSegmentsDto,
   SongDto,
+  FullSongDto,
   SongSearchFilters,
   SongSearchResultDto,
+  CreateSongDto,
   UpdateSongDto,
-  ToggleSongVisibilityDto,
   PaginatedDto,
   SongStructureDto,
-  SongStatisticsDto,
-  ApiSongSearchResult,
-  UpdateSongWithSegmentsDto,
+  SongCommentDto,
+  SongChordDto,
+  SongPatternDto,
 } from "@/types/songs";
-import { apiClient } from "./client";
-import { SongDetailDto } from "@/types/song-detail";
 
 export class SongsService {
-  private static readonly DEFAULT_PAGE_SIZE = 20;
   private static readonly BASE_PATH = "/Songs";
 
   static async searchSongs(
-    filters: SongSearchFilters
+    filters: SongSearchFilters,
   ): Promise<SongSearchResultDto> {
     const params = new URLSearchParams();
 
-    params.append("userId", filters.userId);
+    if (filters.ownerId) params.append("ownerId", filters.ownerId);
+
+    if (filters.isPublic !== undefined)
+      params.append("isPublic", filters.isPublic.toString());
 
     if (filters.searchTerm) params.append("searchTerm", filters.searchTerm);
-    if (filters.ownerId) params.append("ownerId", filters.ownerId);
-    if (filters.isPublic !== undefined && filters.isPublic !== null)
-      params.append("isPublic", filters.isPublic.toString());
     if (filters.chordId) params.append("chordId", filters.chordId);
     if (filters.patternId) params.append("patternId", filters.patternId);
-    if (filters.key) params.append("key", filters.key);
-    if (filters.difficulty) params.append("difficulty", filters.difficulty);
-    if (filters.parentSongId)
-      params.append("parentSongId", filters.parentSongId);
-    if (filters.minRating !== undefined && filters.minRating !== null)
+    if (filters.minRating !== undefined)
       params.append("minRating", filters.minRating.toString());
-    if (filters.maxRating !== undefined && filters.maxRating !== null)
+    if (filters.maxRating !== undefined)
       params.append("maxRating", filters.maxRating.toString());
     if (filters.createdFrom)
       params.append("createdFrom", filters.createdFrom.toISOString());
@@ -48,37 +42,24 @@ export class SongsService {
     params.append("sortBy", filters.sortBy || "createdAt");
     params.append("sortOrder", filters.sortOrder || "desc");
     params.append("page", (filters.page || 1).toString());
-    params.append(
-      "pageSize",
-      (filters.pageSize || this.DEFAULT_PAGE_SIZE).toString()
-    );
+    params.append("pageSize", (filters.pageSize || 20).toString());
 
-    const result = await apiClient.get<ApiSongSearchResult>(
-      `${this.BASE_PATH}?${params.toString()}`
-    );
+    const url = `${this.BASE_PATH}?${params.toString()}`;
+    console.log("🔍 Searching songs with URL:", url);
 
-    return {
-      songs: result.songs,
-      totalCount: result.totalCount,
-      page: result.page,
-      pageSize: result.pageSize,
-      totalPages: result.totalPages,
-    };
+    return await apiClient.get<SongSearchResultDto>(url);
   }
 
+  // Получение песни по ID
   static async getSongById(
     id: string,
-    userId: string,
     includeStructure: boolean = false,
     includeChords: boolean = false,
     includePatterns: boolean = false,
     includeReviews: boolean = false,
-    includeComments: boolean = false
-  ): Promise<SongDetailDto> {
+    includeComments: boolean = false,
+  ): Promise<FullSongDto> {
     const params = new URLSearchParams();
-
-    params.append("userId", userId);
-
     if (includeStructure) params.append("includeStructure", "true");
     if (includeChords) params.append("includeChords", "true");
     if (includePatterns) params.append("includePatterns", "true");
@@ -86,20 +67,17 @@ export class SongsService {
     if (includeComments) params.append("includeComments", "true");
 
     const queryString = params.toString();
-    const url = `${this.BASE_PATH}/${id}${
-      queryString ? `?${queryString}` : ""
-    }`;
+    const url = `${this.BASE_PATH}/${id}${queryString ? `?${queryString}` : ""}`;
 
-    const result = await apiClient.get<SongDetailDto>(url);
-
-    return result;
+    return await apiClient.get<FullSongDto>(url);
   }
 
+  // Песни пользователя
   static async getUserSongs(
     userId: string,
     includePrivate: boolean = false,
     page: number = 1,
-    pageSize: number = this.DEFAULT_PAGE_SIZE
+    pageSize: number = 20,
   ): Promise<PaginatedDto<SongDto>> {
     const params = new URLSearchParams();
     if (includePrivate) params.append("includePrivate", "true");
@@ -107,14 +85,15 @@ export class SongsService {
     params.append("pageSize", pageSize.toString());
 
     return await apiClient.get<PaginatedDto<SongDto>>(
-      `${this.BASE_PATH}/user/${userId}?${params.toString()}`
+      `${this.BASE_PATH}/user/${userId}?${params.toString()}`,
     );
   }
 
+  // Мои песни
   static async getMySongs(
     includePrivate: boolean = true,
     page: number = 1,
-    pageSize: number = this.DEFAULT_PAGE_SIZE
+    pageSize: number = 20,
   ): Promise<PaginatedDto<SongDto>> {
     const params = new URLSearchParams();
     if (includePrivate) params.append("includePrivate", "true");
@@ -122,110 +101,130 @@ export class SongsService {
     params.append("pageSize", pageSize.toString());
 
     return await apiClient.get<PaginatedDto<SongDto>>(
-      `${this.BASE_PATH}/my-songs?${params.toString()}`
+      `${this.BASE_PATH}/my-songs?${params.toString()}`,
     );
   }
 
-  static async getRelatedSongs(
-    songId: string,
-    limit: number = 10
-  ): Promise<SongDto[]> {
-    return await apiClient.get<SongDto[]>(
-      `${this.BASE_PATH}/${songId}/related?limit=${limit}`
-    );
-  }
-
-  static async getSongStructure(songId: string): Promise<SongStructureDto> {
-    return await apiClient.get<SongStructureDto>(
-      `${this.BASE_PATH}/${songId}/structure`
-    );
-  }
-
-  static async getSongStatistics(songId: string): Promise<SongStatisticsDto> {
-    return await apiClient.get<SongStatisticsDto>(
-      `${this.BASE_PATH}/${songId}/statistics`
-    );
-  }
-
+  // Создание песни
   static async createSong(data: CreateSongDto): Promise<SongDto> {
-    return await apiClient.post<CreateSongDto, SongDto>(
-      `${this.BASE_PATH}`,
-      data
-    );
+    return await apiClient.post<CreateSongDto, SongDto>(this.BASE_PATH, data);
   }
 
-  static async createSongWithSegments(
-    data: CreateSongWithSegmentsDto
-  ): Promise<SongDto> {
-    try {
-      const result = await apiClient.post<CreateSongWithSegmentsDto, SongDto>(
-        `${this.BASE_PATH}/with-segments`,
-        data
-      );
-
-      return result;
-    } catch (error: any) {
-      throw error;
-    }
-  }
-
+  // Обновление песни
   static async updateSong(id: string, data: UpdateSongDto): Promise<SongDto> {
     return await apiClient.put<UpdateSongDto, SongDto>(
       `${this.BASE_PATH}/${id}`,
-      data
+      data,
     );
   }
 
-  static async updateSongWithSegments(
-    data: UpdateSongWithSegmentsDto
-  ): Promise<SongDto> {
-    return await apiClient.put<UpdateSongWithSegmentsDto, SongDto>(
-      `${this.BASE_PATH}/with-segments`,
-      data
-    );
-  }
-
+  // Удаление песни
   static async deleteSong(id: string): Promise<void> {
     await apiClient.delete<void>(`${this.BASE_PATH}/${id}`);
   }
 
-  static async copySong(songId: string): Promise<SongDto> {
-    return await apiClient.post<void, SongDto>(
-      `${this.BASE_PATH}/${songId}/copy`,
-      undefined
-    );
-  }
-
-  static async toggleSongVisibility(
+  // Создание структуры песни
+  static async buildSongStructure(
     songId: string,
-    isPublic: boolean
-  ): Promise<SongDto> {
-    return await apiClient.patch<ToggleSongVisibilityDto, SongDto>(
-      `${this.BASE_PATH}/${songId}/visibility`,
-      { isPublic }
+    segments: any[],
+    repeatGroups?: any,
+  ): Promise<SongStructureDto> {
+    return await apiClient.post<any, SongStructureDto>(
+      `${this.BASE_PATH}/${songId}/structure`,
+      { segments, repeatGroups },
     );
   }
 
-  static async addSongSegment(
+  // Получение структуры песни
+  static async getSongStructure(songId: string): Promise<SongStructureDto> {
+    return await apiClient.get<SongStructureDto>(
+      `${this.BASE_PATH}/${songId}/structure`,
+    );
+  }
+
+  // Аккорды песни
+  static async getSongChords(songId: string): Promise<SongChordDto[]> {
+    return await apiClient.get<SongChordDto[]>(
+      `${this.BASE_PATH}/${songId}/chords`,
+    );
+  }
+
+  static async addChordToSong(songId: string, chordId: string): Promise<void> {
+    await apiClient.post<void, void>(
+      `${this.BASE_PATH}/${songId}/chords/${chordId}`,
+      undefined,
+    );
+  }
+
+  static async removeChordFromSong(
     songId: string,
-    segmentData: any,
-    positionIndex?: number,
-    repeatGroup?: string
-  ): Promise<any> {
-    return await apiClient.post<any, any>(
-      `${this.BASE_PATH}/${songId}/segments`,
-      { segmentData, positionIndex, repeatGroup }
+    chordId: string,
+  ): Promise<void> {
+    await apiClient.delete<void>(
+      `${this.BASE_PATH}/${songId}/chords/${chordId}`,
     );
   }
 
-  static async addSongComment(
+  // Паттерны песни
+  static async getSongPatterns(songId: string): Promise<SongPatternDto[]> {
+    return await apiClient.get<SongPatternDto[]>(
+      `${this.BASE_PATH}/${songId}/patterns`,
+    );
+  }
+
+  static async addPatternToSong(
+    songId: string,
+    patternId: string,
+  ): Promise<void> {
+    await apiClient.post<void, void>(
+      `${this.BASE_PATH}/${songId}/patterns/${patternId}`,
+      undefined,
+    );
+  }
+
+  static async removePatternFromSong(
+    songId: string,
+    patternId: string,
+  ): Promise<void> {
+    await apiClient.delete<void>(
+      `${this.BASE_PATH}/${songId}/patterns/${patternId}`,
+    );
+  }
+
+  // Комментарии
+  static async addComment(
     songId: string,
     text: string,
-    segmentId?: string
-  ): Promise<any> {
-    return await apiClient.post<any, any>(
+    segmentId?: string,
+  ): Promise<SongCommentDto> {
+    const data: CreateCommentDto = { text, segmentId };
+    return await apiClient.post<CreateCommentDto, SongCommentDto>(
       `${this.BASE_PATH}/${songId}/comments`,
-      { text, segmentId }
+      data,
+    );
+  }
+
+  static async deleteComment(
+    songId: string,
+    segmentId?: string,
+  ): Promise<void> {
+    const params = segmentId ? `?segmentId=${segmentId}` : "";
+    await apiClient.delete<void>(
+      `${this.BASE_PATH}/${songId}/comments${params}`,
+    );
+  }
+
+  static async getSongComments(
+    songId: string,
+    page: number = 1,
+    pageSize: number = 50,
+  ): Promise<PaginatedDto<SongCommentDto>> {
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("pageSize", pageSize.toString());
+
+    return await apiClient.get<PaginatedDto<SongCommentDto>>(
+      `${this.BASE_PATH}/${songId}/comments?${params.toString()}`,
     );
   }
 }

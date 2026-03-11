@@ -268,6 +268,24 @@ export const initialEditState: SongEditState = {
   changes: initialEditChanges,
 };
 
+export interface TableSegment {
+  id: string;
+  order: number;
+  type: SegmentType;
+  text: string;
+  chordId?: string;
+  patternId?: string;
+  repeatGroup?: string;
+  color?: string;
+  backgroundColor?: string;
+  comment?: string;
+}
+
+export interface TableEditorState {
+  segments: TableSegment[];
+  repeatGroups: string[];
+}
+
 export type SongEditAction =
   | { type: "SET_EDIT_STATE"; payload: SongCreationState }
   | { type: "UPDATE_EDIT_TITLE"; payload: string }
@@ -592,7 +610,7 @@ export function convertSongCommentToUI(comment: SongCommentDto): UIComment {
 }
 
 export function convertSongCommentsToUI(
-  comments: SongCommentDto[]
+  comments: SongCommentDto[],
 ): UIComment[] {
   return comments.map(convertSongCommentToUI);
 }

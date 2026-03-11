@@ -1,6 +1,8 @@
 using Application.DTOs.Alboms;
 using Application.Features.Commands.Alboms;
 using Application.Features.Queries.Alboms;
+using Domain.Interfaces.Services;
+using Domain.Common;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,26 +15,34 @@ namespace Presentation.Controllers;
 [Authorize]
 public class AlbumsController : ControllerBase
 {
-    private readonly IMediator _mediator;
+    private readonly IMediator _mediator; 
+    private readonly IUserService _userService;
 
-    public AlbumsController(IMediator mediator)
+    public AlbumsController(IMediator mediator, IUserService userService)
     {
         _mediator = mediator;
+        _userService = userService;
     }
 
     [HttpGet]
     public async Task<ActionResult<AlbumSearchResultDto>> SearchAlbums(
-        [FromQuery] string? searchTerm = null,
-        [FromQuery] Guid? ownerId = null,
-        [FromQuery] bool? isPublic = null,
-        [FromQuery] string? genre = null,
-        [FromQuery] string? theme = null,
-        [FromQuery] string sortBy = "createdAt",
-        [FromQuery] string sortOrder = "desc",
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20)
+     [FromQuery] string? searchTerm = null,
+     [FromQuery] Guid? ownerId = null,
+     [FromQuery] bool? isPublic = null,
+     [FromQuery] string? genre = null,
+     [FromQuery] string? theme = null,
+     [FromQuery] string sortBy = "createdAt",
+     [FromQuery] string sortOrder = "desc",
+     [FromQuery] int page = 1,
+     [FromQuery] int pageSize = 20)
     {
         var currentUserId = GetCurrentUserId();
+        var currentUser = await _userService.GetByIdAsync(currentUserId);
+
+        if (currentUser.Role == Constants.Roles.Guest)
+        {
+            return Ok(new AlbumSearchResultDto { Albums = new List<AlbumDto>() });
+        }
 
         var filters = new AlbumSearchFilters
         {
@@ -141,6 +151,12 @@ public class AlbumsController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
+            var user = await _userService.GetByIdAsync(userId);
+
+            if (!user.CanCreateAlbum())
+            {
+                return Forbid("Only Premium users can create albums. Upgrade to Premium!");
+            }
 
             var command = new CreateAlbumCommand(
                 userId,

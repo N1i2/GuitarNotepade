@@ -1,18 +1,10 @@
-import {
-  AlbumDto,
-  AlbumSearchFilters,
-  AlbumSearchResultDto,
-  AlbumWithSongsDto,
-  CreateAlbumDto,
-  UpdateAlbumDto,
-} from "@/types/albom";
+import { AlbumDto, AlbumSearchFilters, AlbumSearchResultDto, AlbumWithSongsDto, CreateAlbumDto, UpdateAlbumDto } from "@/types/albom";
 import { apiClient } from "./client";
-import { AuthService } from "./auth-service";
 
-export class AlbumService {
-  private static readonly DEFAULT_PAGE_SIZE = 20;
-  private static readonly BASE_PATH = "/Albums";
+export class AlbumsService {
+  private static readonly BASE_PATH = "/albums";
 
+  // Поиск альбомов
   static async searchAlbums(
     filters: AlbumSearchFilters
   ): Promise<AlbumSearchResultDto> {
@@ -21,7 +13,7 @@ export class AlbumService {
     if (filters.userId) params.append("userId", filters.userId);
     if (filters.searchTerm) params.append("searchTerm", filters.searchTerm);
     if (filters.ownerId) params.append("ownerId", filters.ownerId);
-    if (filters.isPublic !== undefined && filters.isPublic !== null)
+    if (filters.isPublic !== undefined)
       params.append("isPublic", filters.isPublic.toString());
     if (filters.genre) params.append("genre", filters.genre);
     if (filters.theme) params.append("theme", filters.theme);
@@ -29,85 +21,47 @@ export class AlbumService {
     params.append("sortBy", filters.sortBy || "createdAt");
     params.append("sortOrder", filters.sortOrder || "desc");
     params.append("page", (filters.page || 1).toString());
-    params.append(
-      "pageSize",
-      (filters.pageSize || this.DEFAULT_PAGE_SIZE).toString()
-    );
+    params.append("pageSize", (filters.pageSize || 20).toString());
 
-    const result = await apiClient.get<AlbumSearchResultDto>(
+    return await apiClient.get<AlbumSearchResultDto>(
       `${this.BASE_PATH}?${params.toString()}`
     );
-
-    return result;
   }
 
+  // Получение альбома по ID
   static async getAlbumById(id: string): Promise<AlbumDto> {
     return await apiClient.get<AlbumDto>(`${this.BASE_PATH}/${id}`);
   }
 
-  static async createAlbum(data: CreateAlbumDto): Promise<AlbumDto> {
-    return await apiClient.post<CreateAlbumDto, AlbumDto>(
-      `${this.BASE_PATH}`,
-      data
+  // Альбом с песнями
+  static async getAlbumWithSongs(id: string): Promise<AlbumWithSongsDto> {
+    return await apiClient.get<AlbumWithSongsDto>(
+      `${this.BASE_PATH}/${id}/with-songs`
     );
   }
 
-  static async getAlbumCoverBase64(fileName: string): Promise<string> {
-    try {
-      console.log(`Fetching album cover: ${fileName}`);
+  // Альбомы пользователя
+  static async getUserAlbums(
+    userId: string,
+    includePrivate: boolean = false,
+    page: number = 1,
+    pageSize: number = 20
+  ): Promise<AlbumSearchResultDto> {
+    const params = new URLSearchParams();
+    if (includePrivate) params.append("includePrivate", "true");
+    params.append("page", page.toString());
+    params.append("pageSize", pageSize.toString());
 
-      if (fileName.startsWith("data:image/")) {
-        console.log("Already base64, returning as is");
-        return fileName;
-      }
-
-      if (fileName.startsWith("http://") || fileName.startsWith("https://")) {
-        console.log("Is URL, returning as is");
-        return fileName;
-      }
-
-      const response = await apiClient.get<{ coverBase64: string }>(
-        `${this.BASE_PATH}/cover/${encodeURIComponent(fileName)}`
-      );
-
-      if (!response.coverBase64) {
-        console.warn(`No coverBase64 returned for ${fileName}`);
-        throw new Error("Cover not found");
-      }
-
-      console.log(
-        `Cover fetched successfully for ${fileName}, length: ${response.coverBase64.length}`
-      );
-
-      return response.coverBase64;
-    } catch (error) {
-      console.error(`Failed to fetch cover ${fileName}:`, error);
-
-      const fallbackBase64 =
-        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
-
-      return fallbackBase64;
-    }
-  }
-
-  static async updateAlbum(
-    id: string,
-    data: UpdateAlbumDto
-  ): Promise<AlbumDto> {
-    return await apiClient.put<UpdateAlbumDto, AlbumDto>(
-      `${this.BASE_PATH}/${id}`,
-      data
+    return await apiClient.get<AlbumSearchResultDto>(
+      `${this.BASE_PATH}/user/${userId}?${params.toString()}`
     );
   }
 
-  static async deleteAlbum(id: string): Promise<void> {
-    await apiClient.delete<void>(`${this.BASE_PATH}/${id}`);
-  }
-
+  // Мои альбомы
   static async getMyAlbums(
     includePrivate: boolean = true,
     page: number = 1,
-    pageSize: number = this.DEFAULT_PAGE_SIZE
+    pageSize: number = 20
   ): Promise<AlbumSearchResultDto> {
     const params = new URLSearchParams();
     if (includePrivate) params.append("includePrivate", "true");
@@ -119,12 +73,28 @@ export class AlbumService {
     );
   }
 
-  static async getAlbumWithSongs(id: string): Promise<AlbumWithSongsDto> {
-    return await apiClient.get<AlbumWithSongsDto>(
-      `${this.BASE_PATH}/${id}/with-songs`
+  // Создание альбома
+  static async createAlbum(data: CreateAlbumDto): Promise<AlbumDto> {
+    return await apiClient.post<CreateAlbumDto, AlbumDto>(
+      this.BASE_PATH,
+      data
     );
   }
 
+  // Обновление альбома
+  static async updateAlbum(id: string, data: UpdateAlbumDto): Promise<AlbumDto> {
+    return await apiClient.put<UpdateAlbumDto, AlbumDto>(
+      `${this.BASE_PATH}/${id}`,
+      data
+    );
+  }
+
+  // Удаление альбома
+  static async deleteAlbum(id: string): Promise<void> {
+    await apiClient.delete<void>(`${this.BASE_PATH}/${id}`);
+  }
+
+  // Управление песнями в альбоме
   static async addSongToAlbum(albumId: string, songId: string): Promise<void> {
     await apiClient.post<void, void>(
       `${this.BASE_PATH}/${albumId}/songs/${songId}`,
@@ -132,28 +102,17 @@ export class AlbumService {
     );
   }
 
-  static async removeSongFromAlbum(
-    albumId: string,
-    songId: string
-  ): Promise<void> {
+  static async removeSongFromAlbum(albumId: string, songId: string): Promise<void> {
     await apiClient.delete<void>(
       `${this.BASE_PATH}/${albumId}/songs/${songId}`
     );
   }
 
-  static async isSongInFavorite(songId: string): Promise<boolean> {
-    try {
-      const response = await apiClient.get<boolean>(
-        `${this.BASE_PATH}/favorite/${songId}`
-      );
-      return response;
-    } catch (error: any) {
-      if (error.response?.status === 404) {
-        return false;
-      }
-      console.error("Error checking favorite status:", error);
-      return false;
-    }
+  // Избранное
+  static async getFavoriteAlbum(): Promise<AlbumWithSongsDto> {
+    return await apiClient.get<AlbumWithSongsDto>(
+      `${this.BASE_PATH}/favorite`
+    );
   }
 
   static async addSongToFavorite(songId: string): Promise<void> {
@@ -164,10 +123,17 @@ export class AlbumService {
   }
 
   static async removeSongFromFavorite(songId: string): Promise<void> {
-    await apiClient.delete<void>(`${this.BASE_PATH}/favorite/${songId}`);
+    await apiClient.delete<void>(
+      `${this.BASE_PATH}/favorite/${songId}`
+    );
   }
 
-  static async getFavoriteAlbum(): Promise<AlbumWithSongsDto> {
-    return await apiClient.get<AlbumWithSongsDto>(`${this.BASE_PATH}/favorite`);
+  static async isSongInFavorite(songId: string): Promise<boolean> {
+    try {
+      const favorite = await this.getFavoriteAlbum();
+      return favorite.songs.some(song => song.id === songId);
+    } catch {
+      return false;
+    }
   }
 }

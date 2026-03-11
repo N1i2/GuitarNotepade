@@ -1,6 +1,5 @@
 using Domain.Interfaces;
 using Domain.Interfaces.Repositories;
-using Domain.Interfaces.Services;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -38,6 +37,7 @@ public class UnitOfWork : IUnitOfWork
         SongPatterns = new SongPatternRepository(context);
         Alboms = new AlbomRepository(context);
         SongAlboms = new SongAlbomRepository(context);
+        Subscriptions = new SubscriptionRepository(context);
     }
 
     public IUserRepository Users { get; }
@@ -53,6 +53,7 @@ public class UnitOfWork : IUnitOfWork
     public ISongPatternRepository SongPatterns { get; }
     public IAlbomRepository Alboms { get; }
     public ISongAlbomRepository SongAlboms { get; }
+    public ISubscriptionRepository Subscriptions { get; }
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

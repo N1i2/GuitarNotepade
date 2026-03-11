@@ -1,64 +1,51 @@
 ﻿using Application.DTOs.StrummingPatterns;
-using Domain.Entities;
-using Domain.Interfaces;
+using Domain.Common;
+using Domain.Interfaces.Services;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.Commands.StrummingPatterns;
 
 public class CreatePatternCommandHandler : IRequestHandler<CreatePatternCommand, StrummingPatternsDto>
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IPatternService _patternService;
+    private readonly IUserService _userService;
 
-    public CreatePatternCommandHandler(IUnitOfWork unitOfWork)
+    public CreatePatternCommandHandler(
+        IPatternService patternService,
+        IUserService userService)
     {
-        _unitOfWork = unitOfWork;
+        _patternService = patternService;
+        _userService = userService;
     }
 
     public async Task<StrummingPatternsDto> Handle(CreatePatternCommand request, CancellationToken cancellationToken)
     {
-        var exists = await _unitOfWork.StrummingPatterns.ExistsWithSameNameAsync(
-            request.Name, cancellationToken);
-
-        if (exists)
+        // Проверка лимитов для бесплатных пользователей
+        if (!await _userService.CanCreateMorePatternsAsync(request.UserId, cancellationToken))
         {
-            throw new InvalidOperationException($"Pattern '{request.Name}' already exists");
+            throw new InvalidOperationException(
+                $"Free users can only create up to {Constants.Limits.FreeUserMaxPatterns} patterns. " +
+                "Upgrade to Premium for unlimited creation.");
         }
 
-        var sp = StrummingPattern.Create(
+        var pattern = await _patternService.CreatePatternAsync(
             request.Name,
             request.Pattern,
             request.IsFingerStyle,
             request.UserId,
-            request.Description);
+            request.Description,
+            cancellationToken);
 
-        await _unitOfWork.StrummingPatterns.CreateAsync(sp, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        var patternWithUser = await _unitOfWork.StrummingPatterns
-            .GetQueryable()
-            .Include(p => p.CreatedBy)
-            .FirstOrDefaultAsync(p => p.Id == sp.Id, cancellationToken);
-
-        if (patternWithUser == null)
-            throw new Exception("Failed to load created pattern");
-
-        return MapToDto(patternWithUser);
-    }
-
-    private StrummingPatternsDto MapToDto(StrummingPattern sp)
-    {
         return new StrummingPatternsDto
         {
-            Id = sp.Id,
-            Name = sp.Name,
-            Pattern = sp.Pattern,
-            IsFingerStyle = sp.IsFingerStyle,
-            Description = sp.Description,
-            CreatedByUserId = sp.CreatedByUserId,
-            CreatedByNikName = sp.CreatedBy?.NikName,
-            CreatedAt = sp.CreatedAt,
-            UpdatedAt = sp.UpdatedAt
+            Id = pattern.Id,
+            Name = pattern.Name,
+            Pattern = pattern.Pattern,
+            IsFingerStyle = pattern.IsFingerStyle,
+            Description = pattern.Description,
+            CreatedByUserId = pattern.CreatedByUserId,
+            CreatedAt = pattern.CreatedAt,
+            UpdatedAt = pattern.UpdatedAt
         };
     }
 }

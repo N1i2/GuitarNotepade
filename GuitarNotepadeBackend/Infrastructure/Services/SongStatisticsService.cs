@@ -1,5 +1,4 @@
-﻿using Domain.Entities;
-using Domain.Interfaces;
+﻿using Domain.Interfaces;
 using Domain.Interfaces.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

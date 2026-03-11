@@ -42,9 +42,9 @@ public class SongDeletionService : ISongDeletionService
                 }
             }
 
-            _logger.LogInformation("User {UserId} is deleting song {SongId}", userId, songId);
+            _logger.LogInformation("User {UserId} is deleting song {SongId}: {Title}", userId, songId, song.Title);
 
-            return await DeleteSongWithAudioAsync(songId, cancellationToken);
+            return await DeleteSongByIdAsync(songId, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -66,26 +66,38 @@ public class SongDeletionService : ISongDeletionService
 
             _logger.LogInformation("Starting deletion of song: {SongId} - {Title}", songId, song.Title);
 
-            await DeleteAudioFileIfExists(song);
-
-            var deleteResult = await _unitOfWork.Songs.DeleteAsync(songId, cancellationToken);
-
-            if (!deleteResult)
-            {
-                _logger.LogWarning("Failed to delete song from database: {SongId}", songId);
-                return false;
-            }
-
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-            _logger.LogInformation("Song deleted successfully: {SongId} - {Title}", songId, song.Title);
-            return true;
+            return await DeleteSongByIdAsync(songId, cancellationToken);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error deleting song with audio: {SongId}", songId);
             throw;
         }
+    }
+
+    private async Task<bool> DeleteSongByIdAsync(Guid songId, CancellationToken cancellationToken = default)
+    {
+        var song = await _unitOfWork.Songs.GetByIdAsync(songId, cancellationToken);
+        if (song == null)
+        {
+            _logger.LogWarning("Song not found: {SongId}", songId);
+            return false;
+        }
+
+        await DeleteAudioFileIfExists(song);
+
+        var deleteResult = await _unitOfWork.Songs.DeleteAsync(songId, cancellationToken);
+
+        if (!deleteResult)
+        {
+            _logger.LogWarning("Failed to delete song from database: {SongId}", songId);
+            return false;
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Song deleted successfully: {SongId} - {Title}", songId, song.Title);
+        return true;
     }
 
     private async Task DeleteAudioFileIfExists(Domain.Entities.Song song)

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
 import { AlbumDto, AlbumSearchResultDto } from "@/types/albom";
-import { AlbumService } from "@/lib/api/albom-service";
 import {
   Card,
   CardContent,
@@ -44,6 +43,7 @@ import {
 } from "lucide-react";
 import { Pagination } from "@/components/user-management/pagination";
 import { genres, themes } from "@/lib/validations/album";
+import { AlbumsService } from "@/lib/api/albom-service";
 
 export default function AlbumsPage() {
   const router = useRouter();
@@ -206,7 +206,7 @@ export default function AlbumsPage() {
       const userId = user?.id ? `${user.id}` : "";
 
       while (hasMore) {
-        const data: AlbumSearchResultDto = await AlbumService.searchAlbums({
+        const data: AlbumSearchResultDto = await AlbumsService.searchAlbums({
           userId: userId,
           page: currentPageNum,
           pageSize: loadPageSize,
@@ -234,7 +234,7 @@ export default function AlbumsPage() {
       } else if (error.status === 401 || error.status === 403) {
         try {
           const publicData: AlbumSearchResultDto =
-            await AlbumService.searchAlbums({
+            await AlbumsService.searchAlbums({
               userId: user?.id ? `${user.id}` : "",
               isPublic: true,
               page: 1,

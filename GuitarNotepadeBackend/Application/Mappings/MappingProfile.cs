@@ -2,6 +2,7 @@ using Application.DTOs.Alboms;
 using Application.DTOs.Chords;
 using Application.DTOs.Song;
 using Application.DTOs.StrummingPatterns;
+using Application.DTOs.Subscriptions;
 using Application.DTOs.Users;
 using Application.Features.Commands.Alboms;
 using Application.Features.Commands.Users;
@@ -120,6 +121,9 @@ public class MappingProfile : Profile
                 src.Reviews.Any(r => r.DifficultyLevel.HasValue)
                     ? (int?)Math.Round(src.Reviews.Where(r => r.DifficultyLevel.HasValue).Average(r => r.DifficultyLevel!.Value))
                     : null));
+
+        CreateMap<Subscription, SubscriptionDto>()
+            .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.User.NikName));
     }
 
     private List<SegmentDataWithPositionDto> MapSegmentsWithPositions(Song song)

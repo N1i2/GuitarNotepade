@@ -1,11 +1,15 @@
-import { CreateSongReviewDto, SongReviewDto, UpdateSongReviewDto } from "@/types/reviews";
 import { apiClient } from "./client";
+import {
+  SongReviewDto,
+  CreateSongReviewDto,
+  UpdateSongReviewDto,
+} from "@/types/reviews";
 import { PaginatedDto } from "@/types/songs";
 
 export class ReviewsService {
-  private static readonly DEFAULT_PAGE_SIZE = 20;
-  private static readonly BASE_PATH = "/Reviews";
+  private static readonly BASE_PATH = "/reviews";
 
+  // Создание отзыва
   static async createReview(
     songId: string,
     data: CreateSongReviewDto
@@ -16,14 +20,16 @@ export class ReviewsService {
     );
   }
 
+  // Получение отзыва по ID
   static async getReview(id: string): Promise<SongReviewDto> {
     return await apiClient.get<SongReviewDto>(`${this.BASE_PATH}/${id}`);
   }
 
+  // Отзывы на песню
   static async getSongReviews(
     songId: string,
     page: number = 1,
-    pageSize: number = this.DEFAULT_PAGE_SIZE,
+    pageSize: number = 20,
     sortBy: string = "createdAt",
     descending: boolean = false
   ): Promise<PaginatedDto<SongReviewDto>> {
@@ -38,6 +44,7 @@ export class ReviewsService {
     );
   }
 
+  // Обновление отзыва
   static async updateReview(
     id: string,
     data: UpdateSongReviewDto
@@ -48,6 +55,7 @@ export class ReviewsService {
     );
   }
 
+  // Удаление отзыва
   static async deleteReview(id: string): Promise<void> {
     await apiClient.delete<void>(`${this.BASE_PATH}/${id}`);
   }

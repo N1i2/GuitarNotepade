@@ -1,67 +1,96 @@
-import {
-  CreatePatternDto,
-  PaginatedPattern,
-  Pattern,
-  PatternFilters,
-  UpdatePatternDto,
-} from "@/types/patterns";
 import { apiClient } from "./client";
+import {
+  Pattern,
+  CreatePatternDto,
+  UpdatePatternDto,
+  PaginatedPattern,
+  PatternFilters,
+} from "@/types/patterns";
 
 export class PatternsService {
-  private static readonly DEFAULT_PAGE_SIZE = 20;
-  private static readonly DEFAULT_PATH = "StrummingPatterns";
+  private static readonly BASE_PATH = "/strummingpatterns";
 
-  static async getAllPatterns(
-    filters?: PatternFilters
-  ): Promise<PaginatedPattern> {
+  // Все паттерны с фильтрацией
+  static async getAllPatterns(filters?: PatternFilters): Promise<PaginatedPattern> {
     const params = new URLSearchParams();
 
     if (filters?.name) params.append("name", filters.name);
     if (filters?.myPatternsOnly) params.append("myPatternsOnly", "true");
-    if (filters?.isFingerStyle)
-      params.append("isFingerStyle", filters.isFingerStyle ? "true" : "false");
+    if (filters?.isFingerStyle !== undefined)
+      params.append("isFingerStyle", filters.isFingerStyle.toString());
 
     params.append("page", (filters?.page || 1).toString());
-    params.append(
-      "pageSize",
-      (filters?.pageSize || this.DEFAULT_PAGE_SIZE).toString()
-    );
+    params.append("pageSize", (filters?.pageSize || 20).toString());
     params.append("sortBy", filters?.sortBy || "name");
     params.append("sortOrder", filters?.sortOrder || "asc");
 
     return await apiClient.get<PaginatedPattern>(
-      `/${this.DEFAULT_PATH}?${params.toString()}`
+      `${this.BASE_PATH}?${params.toString()}`
     );
   }
 
-  static async getPatternByName(patternName: string): Promise<Pattern> {
-    return await apiClient.get<Pattern>(
-      `/${this.DEFAULT_PATH}/by-name/${patternName}`
+  // Поиск по названию
+  static async searchPatternsByName(
+    name: string,
+    page: number = 1,
+    pageSize: number = 20
+  ): Promise<PaginatedPattern> {
+    const params = new URLSearchParams();
+    params.append("name", name);
+    params.append("page", page.toString());
+    params.append("pageSize", pageSize.toString());
+
+    return await apiClient.get<PaginatedPattern>(
+      `${this.BASE_PATH}/search?${params.toString()}`
     );
   }
 
+  // Паттерн по ID
   static async getPatternById(id: string): Promise<Pattern> {
-    return await apiClient.get<Pattern>(`/${this.DEFAULT_PATH}/by-id/${id}`);
+    return await apiClient.get<Pattern>(`${this.BASE_PATH}/${id}`);
   }
 
+  // Паттерн по названию (если нужно)
+  static async getPatternByName(name: string): Promise<Pattern> {
+    const result = await this.searchPatternsByName(name, 1, 1);
+    if (result.items.length === 0) {
+      throw new Error(`Pattern "${name}" not found`);
+    }
+    return result.items[0];
+  }
+
+  // Мои паттерны
+  static async getMyPatterns(
+    page: number = 1,
+    pageSize: number = 20
+  ): Promise<PaginatedPattern> {
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("pageSize", pageSize.toString());
+
+    return await apiClient.get<PaginatedPattern>(
+      `${this.BASE_PATH}/my-patterns?${params.toString()}`
+    );
+  }
+
+  // Создание паттерна
   static async createPattern(data: CreatePatternDto): Promise<Pattern> {
     return await apiClient.post<CreatePatternDto, Pattern>(
-      `/${this.DEFAULT_PATH}`,
+      this.BASE_PATH,
       data
     );
   }
 
-  static async updatePattern(
-    id: string,
-    data: UpdatePatternDto
-  ): Promise<Pattern> {
+  // Обновление паттерна
+  static async updatePattern(id: string, data: UpdatePatternDto): Promise<Pattern> {
     return await apiClient.put<UpdatePatternDto, Pattern>(
-      `/${this.DEFAULT_PATH}/${id}`,
+      `${this.BASE_PATH}/${id}`,
       data
     );
   }
 
+  // Удаление паттерна
   static async deletePattern(id: string): Promise<void> {
-    await apiClient.delete<void>(`/${this.DEFAULT_PATH}/${id}`);
+    await apiClient.delete<void>(`${this.BASE_PATH}/${id}`);
   }
 }

@@ -44,6 +44,15 @@ public class CreateSongCommandHandler : IRequestHandler<CreateSongCommand, SongD
             throw new UnauthorizedAccessException("User is blocked");
         }
 
+        if (user.IsFreeUser)
+        {
+            var userSongsCount = await _unitOfWork.Songs.CountByUserIdAsync(user.Id, cancellationToken);
+            if (!user.CanCreateMoreSongs(userSongsCount))
+            {
+                throw new InvalidOperationException($"Free users can only create up to {Constants.Limits.FreeUserMaxSongs} songs. Upgrade to Premium for unlimited creation.");
+            }
+        }
+
         return await _unitOfWork.ExecuteInTransactionAsync(async () =>
         {
             var song = await _songService.CreateSongAsync(

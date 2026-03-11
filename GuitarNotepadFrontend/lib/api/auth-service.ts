@@ -1,105 +1,95 @@
-import {
-  AuthResponse,
-  LoginRequest,
-  RegisterRequest,
-  UserProfileResponse,
-} from "@/types/profile";
-import { apiClient } from "./client";
+import { apiClient, ApiError } from "./client";
 
-const setCookie = (name: string, value: string, days: number) => {
-  const expires = new Date(
-    Date.now() + days * 24 * 60 * 60 * 1000
-  ).toUTCString();
-  document.cookie = `${name}=${value}; expires=${expires}; path=/; Secure; SameSite=Strict`;
-};
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
 
-const deleteCookie = (name: string) => {
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-};
+export interface RegisterRequest {
+  email: string;
+  nikName: string;
+  password: string;
+  confirmPassword: string;
+}
 
-const getCookie = (name: string): string | null => {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
-  return null;
-};
+export interface AuthResponse {
+  userId: string;
+  email: string;
+  nikName: string;
+  role: string;
+  token: string;
+}
 
-let userCache: { user: UserProfileResponse | null; timestamp: number } = {
-  user: null,
-  timestamp: 0,
-};
+export interface UserProfileResponse {
+  id: string;
+  email: string;
+  nikName: string;
+  role: string;
+  avatarUrl: string | null;
+  bio: string;
+  createAt: string;
+}
 
-const CACHE_DURATION = 5 * 60 * 1000;
+const TOKEN_KEY = "auth_token";
 
 export class AuthService {
   static async login(credentials: LoginRequest): Promise<AuthResponse> {
     const response = await apiClient.post<LoginRequest, AuthResponse>(
       "/auth/login",
-      credentials
+      credentials,
     );
-    setCookie("auth_token", response.token, 7);
-    userCache = { user: null, timestamp: 0 };
+    this.setToken(response.token);
     return response;
   }
 
   static async register(userData: RegisterRequest): Promise<AuthResponse> {
     const response = await apiClient.post<RegisterRequest, AuthResponse>(
       "/auth/register",
-      userData
+      userData,
     );
-    setCookie("auth_token", response.token, 7);
-    userCache = { user: null, timestamp: 0 };
+    this.setToken(response.token);
     return response;
   }
 
   static async logout(): Promise<void> {
-    deleteCookie("auth_token");
-    userCache = { user: null, timestamp: 0 };
+    this.removeToken();
+  }
+
+  static setToken(token: string): void {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(TOKEN_KEY, token);
+    }
   }
 
   static getToken(): string | null {
-    return getCookie("auth_token");
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(TOKEN_KEY);
+    }
+    return null;
+  }
+
+  static removeToken(): void {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(TOKEN_KEY);
+    }
   }
 
   static isAuthenticated(): boolean {
     return !!this.getToken();
   }
 
-  static async validateToken(
-    force: boolean = false
-  ): Promise<UserProfileResponse | null> {
+  static async getCurrentUser(): Promise<UserProfileResponse | null> {
     try {
-      const token = this.getToken();
-      if (!token) {
-        userCache = { user: null, timestamp: 0 };
-        return null;
-      }
-
-      const now = Date.now();
-      if (
-        !force &&
-        userCache.user &&
-        now - userCache.timestamp < CACHE_DURATION
-      ) {
-        return userCache.user;
-      }
-
-      const user = await apiClient.get<UserProfileResponse>("/user/profile");
-
-      userCache = {
-        user,
-        timestamp: now,
-      };
-
-      return user;
+      return await apiClient.get<UserProfileResponse>("/user/profile");
     } catch (error) {
-      userCache = { user: null, timestamp: 0 };
-      this.logout();
+      if (error instanceof ApiError && error.status === 401) {
+        this.removeToken();
+      }
       return null;
     }
   }
-
-  static async refreshUserData(): Promise<UserProfileResponse | null> {
-    return this.validateToken(true);
+  
+  static hasToken(): boolean {
+    return !!this.getToken();
   }
 }

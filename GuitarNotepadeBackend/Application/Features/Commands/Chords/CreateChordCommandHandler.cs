@@ -1,45 +1,40 @@
 ﻿using Application.DTOs.Chords;
-using Domain.Entities;
-using Domain.Interfaces;
+using Domain.Common;
+using Domain.Interfaces.Services;
 using MediatR;
 
 namespace Application.Features.Commands.Chords;
 
 public class CreateChordCommandHandler : IRequestHandler<CreateChordCommand, ChordDto>
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IChordService _chordService;
+    private readonly IUserService _userService;
 
-    public CreateChordCommandHandler(IUnitOfWork unitOfWork)
+    public CreateChordCommandHandler(
+        IChordService chordService,
+        IUserService userService)
     {
-        _unitOfWork = unitOfWork;
+        _chordService = chordService;
+        _userService = userService;
     }
 
     public async Task<ChordDto> Handle(CreateChordCommand request, CancellationToken cancellationToken)
     {
-        var exists = await _unitOfWork.Chords.ExistsWithSameFingeringAsync(
-            request.Name,
-            request.Fingering,
-            cancellationToken);
-
-        if (exists)
+        // Проверка лимитов для бесплатных пользователей
+        if (!await _userService.CanCreateMoreChordsAsync(request.UserId, cancellationToken))
         {
-            throw new InvalidOperationException($"Chord '{request.Name}' with fingering '{request.Fingering}' already exists");
+            throw new InvalidOperationException(
+                $"Free users can only create up to {Constants.Limits.FreeUserMaxChords} chords. " +
+                "Upgrade to Premium for unlimited creation.");
         }
 
-        var chord = Chord.Create(
+        var chord = await _chordService.CreateChordAsync(
             request.Name,
             request.Fingering,
             request.UserId,
-            request.Description);
+            request.Description,
+            cancellationToken);
 
-        await _unitOfWork.Chords.CreateAsync(chord, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return MapToDto(chord);
-    }
-
-    private ChordDto MapToDto(Chord chord)
-    {
         return new ChordDto
         {
             Id = chord.Id,

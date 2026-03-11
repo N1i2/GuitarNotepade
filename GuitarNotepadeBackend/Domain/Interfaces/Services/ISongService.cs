@@ -16,6 +16,9 @@ public interface ISongService
         Guid? parentSongId = null,
         CancellationToken cancellationToken = default);
 
+    Task<bool> CanUserCreateMoreSongsAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<int> GetUserSongsCountAsync(Guid userId, bool includePrivate = true, CancellationToken cancellationToken = default);
+
     Task<Song> UpdateSongAsync(
         Guid songId,
         string? title = null,

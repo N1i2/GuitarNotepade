@@ -17,6 +17,10 @@ public class User : BaseEntityWithId
     public DateTime CreateAt { get; private set; }
 
     public bool IsBlocked => BlockedUntil.HasValue && BlockedUntil > DateTime.UtcNow;
+    public bool IsGuest => Role == Constants.Roles.Guest;
+    public bool IsPremium => Role == Constants.Roles.Premium;
+    public bool IsFreeUser => Role == Constants.Roles.User;
+    public bool IsAdmin => Role == Constants.Roles.Admin;
 
     public virtual ICollection<Song> Songs { get; private set; } = new List<Song>();
     public virtual ICollection<Chord> Chords { get; private set; } = new List<Chord>();
@@ -34,6 +38,51 @@ public class User : BaseEntityWithId
         Bio = string.Empty;
         BlockedUntil = null;
         BlockReason = null;
+    }
+
+    public bool CanCreateMoreSongs(int currentSongCount)
+    {
+        if (IsPremium || IsAdmin)
+        {
+            return true;
+        }
+
+        return currentSongCount < Constants.Limits.FreeUserMaxSongs;
+    }
+
+    public bool CanCreateMoreChords(int currentChordCount)
+    {
+        if (IsPremium || IsAdmin)
+        {
+            return true;
+        }
+
+        return currentChordCount < Constants.Limits.FreeUserMaxChords;
+    }
+
+    public bool CanCreateMorePatterns(int currentPatternCount)
+    {
+        if (IsPremium || IsAdmin) 
+        {
+            return true;
+        }
+
+        return currentPatternCount < Constants.Limits.FreeUserMaxPatterns;
+    }
+
+    public bool CanCreateAlbum()
+    {
+        return IsPremium || IsAdmin;
+    }
+
+    public bool CanHaveFavoriteAlbum()
+    {
+        return !IsGuest; 
+    }
+
+    public bool CanViewAlbums()
+    {
+        return Role != Constants.Roles.Guest;
     }
 
     public static User Create(string email, string nikName, string passwordHash, string role, string? avatar = null, string? bio = null)
@@ -119,7 +168,10 @@ public class User : BaseEntityWithId
     public void MakeAdminRole() => Role = Constants.Roles.Admin;
     public void RemoveAdminRole() => Role = Constants.Roles.User;
     public void UpdateUrl(string? url) => AvatarUrl = url;
-    
+
+    public void MakePremium() => Role = Constants.Roles.Premium;
+    public void RemovePremium() => Role = Constants.Roles.User;
+
     public (bool IsBlocked, string? Message) GetBlockStatus()
     {
         if (IsBlocked)

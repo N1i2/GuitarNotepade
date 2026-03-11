@@ -3,6 +3,7 @@ using Domain.Interfaces;
 using Domain.Interfaces.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Domain.Common;
 
 namespace Infrastructure.Services;
 
@@ -177,6 +178,11 @@ public class SongService : ISongService
 
             var saveResult = await _unitOfWork.SaveChangesAsync(cancellationToken);
             _logger.LogInformation("Структура сохранена. Затронуто строк: {SaveResult}", saveResult);
+
+            if (saveResult == 0)
+            {
+                _logger.LogWarning("No changes saved for song structure {SongId}", songId);
+            }
 
             return await _unitOfWork.SongStructures.GetWithSegmentsAsync(songId, cancellationToken)
                    ?? throw new InvalidOperationException("Не удалось загрузить созданную структуру");
@@ -401,5 +407,31 @@ public class SongService : ISongService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogDebug("Statistics updated for song: {SongId}", songId);
+    }
+
+    public async Task<bool> CanUserCreateMoreSongsAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken);
+        if (user == null)
+            return false;
+
+        if (user.IsPremium || user.IsAdmin)
+            return true;
+
+        var songsCount = await GetUserSongsCountAsync(userId, true, cancellationToken);
+        return songsCount < Constants.Limits.FreeUserMaxSongs;
+    }
+
+    public async Task<int> GetUserSongsCountAsync(Guid userId, bool includePrivate = true, CancellationToken cancellationToken = default)
+    {
+        var query = _unitOfWork.Songs.GetQueryable()
+            .Where(s => s.OwnerId == userId);
+
+        if (!includePrivate)
+        {
+            query = query.Where(s => s.IsPublic);
+        }
+
+        return await query.CountAsync(cancellationToken);
     }
 }

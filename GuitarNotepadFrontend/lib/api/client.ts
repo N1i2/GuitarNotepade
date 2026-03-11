@@ -1,19 +1,23 @@
 import { AuthService } from "./auth-service";
 
 export interface ApiErrorResponse {
-  error?: string;
+  exceptionType?: string;
   message?: string;
   errors?: { [key: string]: string[] };
-  type?: string;
   statusCode?: number;
+  timestamp?: string;
+  path?: string;
+  requestId?: string;
 }
 
 export class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
+    public exceptionType?: string,
     public errors?: { [key: string]: string[] },
-    public type?: string
+    public path?: string,
+    public requestId?: string,
   ) {
     super(message);
     this.name = "ApiError";
@@ -21,88 +25,92 @@ export class ApiError extends Error {
 }
 
 class ApiClient {
-  private baseURL: string =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  private baseURL: string = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
   ): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`;
+    // Убедимся, что endpoint начинается с /
+    const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const url = `${this.baseURL}${normalizedEndpoint}`;
 
-    const token = AuthService.getToken();
+    const token = AuthService.getToken();    
+
+    console.log(`🌐 API Request: ${options.method || 'GET'} ${url}`);
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
-    if (options.headers) {
-      if (options.headers instanceof Headers) {
-        options.headers.forEach((value, key) => {
-          headers[key] = value;
-        });
-      } else if (Array.isArray(options.headers)) {
-        options.headers.forEach(([key, value]) => {
-          headers[key] = value;
-        });
-      } else {
-        Object.entries(options.headers).forEach(([key, value]) => {
-          headers[key] = value as string;
-        });
-      }
-    }
 
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
+    if (options.headers) {
+      Object.assign(headers, options.headers);
+    }
+
     const config: RequestInit = {
       ...options,
       headers,
+      credentials: "include",
     };
 
     try {
       const response = await fetch(url, config);
 
+      console.log(`📡 Response status: ${response.status}`);
+
+      // Handle 401 Unauthorized
       if (response.status === 401) {
         AuthService.logout();
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
         throw new ApiError("Authentication failed", 401);
       }
 
+      // Handle 204 No Content
       if (response.status === 204) {
         return null as T;
       }
 
-      if (!response.ok) {
-        let errorData: ApiErrorResponse;
+      // Try to parse JSON response
+      let data: any = null;
+      const contentType = response.headers.get("content-type");
+      if (contentType?.includes("application/json")) {
         try {
-          errorData = await response.json();
-        } catch {
-          errorData = {
-            error: `HTTP error! status: ${response.status}`,
-          };
+          data = await response.json();
+        } catch (e) {
+          console.warn("Failed to parse JSON response:", e);
         }
+      }
 
+      // Handle error responses
+      if (!response.ok) {
         const errorMessage =
-          errorData.error ||
-          errorData.message ||
-          `HTTP error! status: ${response.status}`;
-
+          data?.message || data?.error || `HTTP error ${response.status}`;
         throw new ApiError(
           errorMessage,
           response.status,
-          errorData.errors,
-          errorData.type
+          data?.exceptionType,
+          data?.errors,
+          data?.path,
+          data?.requestId,
         );
       }
 
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        return null as T;
-      }
-
-      return await response.json();
+      return data as T;
     } catch (error) {
-      throw error;
+      console.error("❌ API Error:", error);
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError(
+        error instanceof Error ? error.message : "Network error",
+        0,
+      );
     }
   }
 
@@ -110,22 +118,31 @@ class ApiClient {
     return this.request<T>(endpoint, { method: "GET" });
   }
 
-  async post<T1, T2>(endpoint: string, data?: T1): Promise<T2> {
-    return this.request<T2>(endpoint, {
+  async post<TRequest, TResponse>(
+    endpoint: string,
+    data?: TRequest,
+  ): Promise<TResponse> {
+    return this.request<TResponse>(endpoint, {
       method: "POST",
       body: JSON.stringify(data),
     });
   }
 
-  async put<T1, T2>(endpoint: string, data?: T1): Promise<T2> {
-    return this.request<T2>(endpoint, {
+  async put<TRequest, TResponse>(
+    endpoint: string,
+    data?: TRequest,
+  ): Promise<TResponse> {
+    return this.request<TResponse>(endpoint, {
       method: "PUT",
       body: JSON.stringify(data),
     });
   }
 
-  async patch<T1, T2>(endpoint: string, data?: T1): Promise<T2> {
-    return this.request<T2>(endpoint, {
+  async patch<TRequest, TResponse>(
+    endpoint: string,
+    data?: TRequest,
+  ): Promise<TResponse> {
+    return this.request<TResponse>(endpoint, {
       method: "PATCH",
       body: JSON.stringify(data),
     });
@@ -136,4 +153,5 @@ class ApiClient {
   }
 }
 
+// Создаём единственный экземпляр для всего приложения
 export const apiClient = new ApiClient();
