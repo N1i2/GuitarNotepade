@@ -123,7 +123,9 @@ public class MappingProfile : Profile
                     : null));
 
         CreateMap<Subscription, SubscriptionDto>()
-            .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.User.NikName));
+            .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.Subscriber != null ? src.Subscriber.NikName : string.Empty))
+            .ForMember(dest => dest.SubName, opt => opt.Ignore()) 
+            .ForMember(dest => dest.TargetId, opt => opt.Ignore()); 
     }
 
     private List<SegmentDataWithPositionDto> MapSegmentsWithPositions(Song song)

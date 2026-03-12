@@ -2,6 +2,6 @@
 
 public class CreateSubscriptionDto
 {
-    public Guid SubId { get; set; }
+    public Guid TargetId { get; set; }
     public bool IsUserSub { get; set; }
 }

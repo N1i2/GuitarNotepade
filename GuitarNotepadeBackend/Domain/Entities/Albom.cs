@@ -17,6 +17,7 @@ public class Album : BaseEntityWithId
     public DateTime? UpdatedAt { get; private set; }
 
     public virtual User Owner { get; private set; } = null!;
+    public virtual ICollection<Subscription> Subscriptions { get; private set; } = new List<Subscription>();
     public virtual ICollection<SongAlbum> SongAlbums { get; private set; } = new List<SongAlbum>();
 
     private Album()

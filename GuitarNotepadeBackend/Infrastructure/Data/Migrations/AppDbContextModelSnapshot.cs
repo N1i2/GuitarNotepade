@@ -17,7 +17,7 @@ namespace Infrastructure.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.0")
+                .HasAnnotation("ProductVersion", "10.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -160,10 +160,6 @@ namespace Infrastructure.Data.Migrations
 
                     b.Property<bool>("IsPublic")
                         .HasColumnType("boolean");
-
-                    b.Property<string>("MyProperty")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
 
                     b.Property<Guid>("OwnerId")
                         .HasColumnType("uuid");
@@ -406,6 +402,8 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasIndex("Type");
 
+                    b.HasIndex("ChordId", "PatternId");
+
                     b.ToTable("SongSegments");
                 });
 
@@ -428,6 +426,9 @@ namespace Infrastructure.Data.Migrations
                     b.Property<Guid>("SongId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("SongStructureId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("PositionIndex");
@@ -435,6 +436,8 @@ namespace Infrastructure.Data.Migrations
                     b.HasIndex("RepeatGroup");
 
                     b.HasIndex("SegmentId");
+
+                    b.HasIndex("SongStructureId");
 
                     b.HasIndex("SongId", "PositionIndex")
                         .IsUnique();
@@ -504,6 +507,38 @@ namespace Infrastructure.Data.Migrations
                     b.ToTable("StrummingPatterns");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Subscription", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsUserSub")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("TargetId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("TargetId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "TargetId", "IsUserSub")
+                        .IsUnique();
+
+                    b.ToTable("Subscriptions");
+                });
+
             modelBuilder.Entity("Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -550,6 +585,12 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("character varying(50)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("NikName")
+                        .IsUnique();
 
                     b.ToTable("Users");
                 });
@@ -603,7 +644,7 @@ namespace Infrastructure.Data.Migrations
                         .IsRequired();
 
                     b.HasOne("Domain.Entities.Song", "Song")
-                        .WithMany()
+                        .WithMany("SongAlbums")
                         .HasForeignKey("SongId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -724,13 +765,12 @@ namespace Infrastructure.Data.Migrations
                     b.HasOne("Domain.Entities.Song", "Song")
                         .WithMany("SegmentPositions")
                         .HasForeignKey("SongId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("Domain.Entities.SongStructure", "SongStructure")
                         .WithMany("SegmentPositions")
-                        .HasForeignKey("SongId")
-                        .HasPrincipalKey("SongId")
+                        .HasForeignKey("SongStructureId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -763,9 +803,36 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("CreatedBy");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Subscription", b =>
+                {
+                    b.HasOne("Domain.Entities.Album", "TargetAlbum")
+                        .WithMany("Subscriptions")
+                        .HasForeignKey("TargetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Domain.Entities.User", "TargetUser")
+                        .WithMany()
+                        .HasForeignKey("TargetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Domain.Entities.User", "Subscriber")
+                        .WithMany("Subscriptions")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Subscriber");
+
+                    b.Navigation("TargetAlbum");
+
+                    b.Navigation("TargetUser");
+                });
+
             modelBuilder.Entity("Domain.Entities.Album", b =>
                 {
                     b.Navigation("SongAlbums");
+
+                    b.Navigation("Subscriptions");
                 });
 
             modelBuilder.Entity("Domain.Entities.Chord", b =>
@@ -783,12 +850,13 @@ namespace Infrastructure.Data.Migrations
 
                     b.Navigation("SegmentPositions");
 
+                    b.Navigation("SongAlbums");
+
                     b.Navigation("SongChords");
 
                     b.Navigation("SongPatterns");
 
-                    b.Navigation("Structure")
-                        .IsRequired();
+                    b.Navigation("Structure");
                 });
 
             modelBuilder.Entity("Domain.Entities.SongSegment", b =>
@@ -819,6 +887,8 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Songs");
 
                     b.Navigation("StrummingPatterns");
+
+                    b.Navigation("Subscriptions");
                 });
 #pragma warning restore 612, 618
         }

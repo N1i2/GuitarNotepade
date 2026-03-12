@@ -12,13 +12,13 @@ public class SubscriptionRepository : BaseRepository<Subscription>, ISubscriptio
     public async Task<Subscription?> GetSubscriptionAsync(Guid userId, Guid subId, bool isUserSub, CancellationToken cancellationToken = default)
     {
         return await _dbSet
-            .FirstOrDefaultAsync(s => s.UserId == userId && s.SubId == subId && s.IsUserSub == isUserSub, cancellationToken);
+            .FirstOrDefaultAsync(s => s.UserId == userId && s.TargetId == subId && s.IsUserSub == isUserSub, cancellationToken);
     }
 
     public async Task<bool> ExistsAsync(Guid userId, Guid subId, bool isUserSub, CancellationToken cancellationToken = default)
     {
         return await _dbSet
-            .AnyAsync(s => s.UserId == userId && s.SubId == subId && s.IsUserSub == isUserSub, cancellationToken);
+            .AnyAsync(s => s.UserId == userId && s.TargetId == subId && s.IsUserSub == isUserSub, cancellationToken);
     }
 
     public async Task<List<Subscription>> GetUserSubscriptionsAsync(Guid userId, CancellationToken cancellationToken = default)
@@ -32,7 +32,7 @@ public class SubscriptionRepository : BaseRepository<Subscription>, ISubscriptio
     public async Task<List<Subscription>> GetSubscribersAsync(Guid subId, bool isUserSub, CancellationToken cancellationToken = default)
     {
         return await _dbSet
-            .Where(s => s.SubId == subId && s.IsUserSub == isUserSub)
+            .Where(s => s.TargetId == subId && s.IsUserSub == isUserSub)
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync(cancellationToken);
     }
@@ -47,7 +47,7 @@ public class SubscriptionRepository : BaseRepository<Subscription>, ISubscriptio
     public async Task<int> CountSubscribersAsync(Guid subId, bool isUserSub, CancellationToken cancellationToken = default)
     {
         return await _dbSet
-            .Where(s => s.SubId == subId && s.IsUserSub == isUserSub)
+            .Where(s => s.TargetId == subId && s.IsUserSub == isUserSub)
             .CountAsync(cancellationToken);
     }
 }

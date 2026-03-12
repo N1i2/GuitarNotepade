@@ -21,26 +21,31 @@ public class GetUserSubscriptionsQueryHandler : IRequestHandler<GetUserSubscript
     {
         var subscriptions = await _unitOfWork.Subscriptions
             .GetQueryable()
-            .Include(s => s.User)
+            .Include(s => s.Subscriber)
+            .Include(s => s.TargetUser)
+            .Include(s => s.TargetAlbum)
             .Where(s => s.UserId == request.UserId)
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync(cancellationToken);
 
         var result = _mapper.Map<List<SubscriptionDto>>(subscriptions);
-
-        // Заполняем имена объектов подписки
+        
         foreach (var sub in result)
         {
-            if (sub.IsUserSub)
+            var subscription = subscriptions.First(s => s.Id == sub.Id);
+
+            if (subscription.IsUserSub)
             {
-                var targetUser = await _unitOfWork.Users.GetByIdAsync(sub.SubId, cancellationToken);
-                sub.SubName = targetUser?.NikName ?? "Unknown User";
+                sub.SubName = subscription.TargetUser?.NikName ?? "Unknown User";
+                sub.TargetId = subscription.TargetUser?.Id ?? Guid.Empty;
             }
             else
             {
-                var album = await _unitOfWork.Alboms.GetByIdAsync(sub.SubId, cancellationToken);
-                sub.SubName = album?.Title ?? "Unknown Album";
+                sub.SubName = subscription.TargetAlbum?.Title ?? "Unknown Album";
+                sub.TargetId = subscription.TargetAlbum?.Id ?? Guid.Empty;
             }
+
+            sub.UserName = subscription.Subscriber?.NikName ?? "Unknown User";
         }
 
         return result;

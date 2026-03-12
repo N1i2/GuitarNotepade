@@ -35,6 +35,7 @@ public class Song : BaseEntityWithId
     public virtual ICollection<SongChord> SongChords { get; private set; }
     public virtual ICollection<SongPattern> SongPatterns { get; private set; }
     public virtual ICollection<SongSegmentPosition> SegmentPositions { get; private set; }
+    public virtual ICollection<SongAlbum> SongAlbums { get; private set; } = new List<SongAlbum>();
 
     protected Song()
     {

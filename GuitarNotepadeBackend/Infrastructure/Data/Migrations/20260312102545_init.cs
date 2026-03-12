@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class InitMigration : Migration
+    public partial class init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -93,7 +93,6 @@ namespace Infrastructure.Data.Migrations
                     ParentSongId = table.Column<Guid>(type: "uuid", nullable: true),
                     Genre = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Theme = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    MyProperty = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     CustomAudioUrl = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     CustomAudioType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -139,6 +138,39 @@ namespace Infrastructure.Data.Migrations
                     table.ForeignKey(
                         name: "FK_StrummingPatterns_Users_CreatedByUserId",
                         column: x => x.CreatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Subscriptions",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    TargetId = table.Column<Guid>(type: "uuid", nullable: false),
+                    IsUserSub = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Subscriptions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Subscriptions_Albums_TargetId",
+                        column: x => x.TargetId,
+                        principalTable: "Albums",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Subscriptions_Users_TargetId",
+                        column: x => x.TargetId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Subscriptions_Users_UserId",
+                        column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
@@ -234,7 +266,6 @@ namespace Infrastructure.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_SongStructures", x => x.Id);
-                    table.UniqueConstraint("AK_SongStructures_SongId", x => x.SongId);
                     table.ForeignKey(
                         name: "FK_SongStructures_Songs_SongId",
                         column: x => x.SongId,
@@ -342,7 +373,8 @@ namespace Infrastructure.Data.Migrations
                     SongId = table.Column<Guid>(type: "uuid", nullable: false),
                     SegmentId = table.Column<Guid>(type: "uuid", nullable: false),
                     PositionIndex = table.Column<int>(type: "integer", nullable: false),
-                    RepeatGroup = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true)
+                    RepeatGroup = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    SongStructureId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -354,17 +386,17 @@ namespace Infrastructure.Data.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_SongSegmentPositions_SongStructures_SongId",
-                        column: x => x.SongId,
+                        name: "FK_SongSegmentPositions_SongStructures_SongStructureId",
+                        column: x => x.SongStructureId,
                         principalTable: "SongStructures",
-                        principalColumn: "SongId",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_SongSegmentPositions_Songs_SongId",
                         column: x => x.SongId,
                         principalTable: "Songs",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
@@ -543,9 +575,19 @@ namespace Infrastructure.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_SongSegmentPositions_SongStructureId",
+                table: "SongSegmentPositions",
+                column: "SongStructureId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_SongSegments_ChordId",
                 table: "SongSegments",
                 column: "ChordId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SongSegments_ChordId_PatternId",
+                table: "SongSegments",
+                columns: new[] { "ChordId", "PatternId" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_SongSegments_ContentHash",
@@ -582,6 +624,39 @@ namespace Infrastructure.Data.Migrations
                 name: "IX_StrummingPatterns_Name",
                 table: "StrummingPatterns",
                 column: "Name");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Subscriptions_CreatedAt",
+                table: "Subscriptions",
+                column: "CreatedAt");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Subscriptions_TargetId",
+                table: "Subscriptions",
+                column: "TargetId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Subscriptions_UserId",
+                table: "Subscriptions",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Subscriptions_UserId_TargetId_IsUserSub",
+                table: "Subscriptions",
+                columns: new[] { "UserId", "TargetId", "IsUserSub" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_Email",
+                table: "Users",
+                column: "Email",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_NikName",
+                table: "Users",
+                column: "NikName",
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -606,13 +681,16 @@ namespace Infrastructure.Data.Migrations
                 name: "SongSegmentPositions");
 
             migrationBuilder.DropTable(
-                name: "Albums");
+                name: "Subscriptions");
 
             migrationBuilder.DropTable(
                 name: "SongSegments");
 
             migrationBuilder.DropTable(
                 name: "SongStructures");
+
+            migrationBuilder.DropTable(
+                name: "Albums");
 
             migrationBuilder.DropTable(
                 name: "Chords");

@@ -24,6 +24,7 @@ public class AppDbContext : DbContext
     public DbSet<SongChord> SongChords { get; set; }
     public DbSet<Album> Albums { get; set; }
     public DbSet<SongAlbum> SongAlbums { get; set; }
+    public DbSet<Subscription> Subscriptions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -61,6 +62,11 @@ public class AppDbContext : DbContext
             entity.Property(e => e.CreateAt)
                 .IsRequired();
 
+            // Индексы
+            entity.HasIndex(e => e.Email).IsUnique();
+            entity.HasIndex(e => e.NikName).IsUnique();
+
+            // Связи
             entity.HasMany(e => e.Songs)
                 .WithOne(e => e.Owner)
                 .HasForeignKey(e => e.OwnerId)
@@ -85,6 +91,57 @@ public class AppDbContext : DbContext
                 .WithOne(e => e.User)
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Подписки, где пользователь является подписчиком
+            entity.HasMany(e => e.Subscriptions)
+                .WithOne(e => e.Subscriber)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Subscription>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.UserId)
+                .IsRequired();
+
+            entity.Property(e => e.TargetId)
+                .IsRequired();
+
+            entity.Property(e => e.IsUserSub)
+                .IsRequired();
+
+            entity.Property(e => e.CreatedAt)
+                .IsRequired();
+
+            // Связь с подписчиком
+            entity.HasOne(e => e.Subscriber)
+                .WithMany(e => e.Subscriptions)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Связь с целевым пользователем (когда IsUserSub = true)
+            entity.HasOne(e => e.TargetUser)
+                .WithMany()
+                .HasForeignKey(e => e.TargetId)
+                .HasPrincipalKey(u => u.Id)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired(false);
+
+            // Связь с целевым альбомом (когда IsUserSub = false)
+            entity.HasOne(e => e.TargetAlbum)
+                .WithMany(e => e.Subscriptions)
+                .HasForeignKey(e => e.TargetId)
+                .HasPrincipalKey(a => a.Id)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired(false);
+
+            // Индексы
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.TargetId);
+            entity.HasIndex(e => new { e.UserId, e.TargetId, e.IsUserSub }).IsUnique();
+            entity.HasIndex(e => e.CreatedAt);
         });
 
         modelBuilder.Entity<Song>(entity =>
@@ -133,6 +190,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.AverageDifficultyRating)
                 .HasColumnType("decimal(3,2)");
 
+            // Связи
             entity.HasOne(e => e.ParentSong)
                 .WithMany(e => e.ChildSongs)
                 .HasForeignKey(e => e.ParentSongId)
@@ -163,11 +221,17 @@ public class AppDbContext : DbContext
                 .HasForeignKey(e => e.SongId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            entity.HasMany(e => e.SongAlbums)
+                .WithOne(e => e.Song)
+                .HasForeignKey(e => e.SongId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             entity.HasMany(e => e.ChildSongs)
                 .WithOne(e => e.ParentSong)
                 .HasForeignKey(e => e.ParentSongId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Индексы
             entity.HasIndex(e => e.OwnerId);
             entity.HasIndex(e => e.ParentSongId);
             entity.HasIndex(e => e.IsPublic);
@@ -197,6 +261,7 @@ public class AppDbContext : DbContext
 
             entity.Property(e => e.UpdatedAt);
 
+            // Связи
             entity.HasOne(e => e.CreatedBy)
                 .WithMany(e => e.Chords)
                 .HasForeignKey(e => e.CreatedByUserId)
@@ -207,6 +272,7 @@ public class AppDbContext : DbContext
                 .HasForeignKey(e => e.ChordId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Индексы
             entity.HasIndex(e => e.CreatedByUserId);
             entity.HasIndex(e => e.Name);
         });
@@ -235,6 +301,7 @@ public class AppDbContext : DbContext
 
             entity.Property(e => e.UpdatedAt);
 
+            // Связи
             entity.HasOne(e => e.CreatedBy)
                 .WithMany(e => e.StrummingPatterns)
                 .HasForeignKey(e => e.CreatedByUserId)
@@ -245,6 +312,7 @@ public class AppDbContext : DbContext
                 .HasForeignKey(e => e.StrummingPatternId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Индексы
             entity.HasIndex(e => e.CreatedByUserId);
             entity.HasIndex(e => e.Name);
             entity.HasIndex(e => e.IsFingerStyle);
@@ -257,17 +325,13 @@ public class AppDbContext : DbContext
             entity.Property(e => e.SongId)
                 .IsRequired();
 
+            // Связи
             entity.HasOne(e => e.Song)
                 .WithOne(e => e.Structure)
                 .HasForeignKey<SongStructure>(e => e.SongId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasMany(e => e.SegmentPositions)
-                .WithOne(e => e.SongStructure)
-                .HasForeignKey(e => e.SongId)
-                .HasPrincipalKey(e => e.SongId)
-                .OnDelete(DeleteBehavior.Cascade);
-
+            // Индексы
             entity.HasIndex(e => e.SongId)
                 .IsUnique();
         });
@@ -299,6 +363,7 @@ public class AppDbContext : DbContext
 
             entity.Property(e => e.Duration);
 
+            // Связи
             entity.HasOne(e => e.Chord)
                 .WithMany()
                 .HasForeignKey(e => e.ChordId)
@@ -319,10 +384,12 @@ public class AppDbContext : DbContext
                 .HasForeignKey(e => e.SegmentId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Индексы
             entity.HasIndex(e => e.ContentHash);
             entity.HasIndex(e => e.Type);
             entity.HasIndex(e => e.ChordId);
             entity.HasIndex(e => e.PatternId);
+            entity.HasIndex(e => new { e.ChordId, e.PatternId });
         });
 
         modelBuilder.Entity<SongSegmentPosition>(entity =>
@@ -341,22 +408,13 @@ public class AppDbContext : DbContext
             entity.Property(e => e.RepeatGroup)
                 .HasMaxLength(100);
 
+            // Связи
             entity.HasOne(e => e.Segment)
                 .WithMany(e => e.Positions)
                 .HasForeignKey(e => e.SegmentId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(e => e.SongStructure)
-                .WithMany(e => e.SegmentPositions)
-                .HasForeignKey(e => e.SongId)
-                .HasPrincipalKey(e => e.SongId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(e => e.Song)
-                .WithMany(e => e.SegmentPositions)
-                .HasForeignKey(e => e.SongId)
-                .OnDelete(DeleteBehavior.Restrict);
-
+            // Индексы
             entity.HasIndex(e => new { e.SongId, e.PositionIndex })
                 .IsUnique();
 
@@ -390,6 +448,7 @@ public class AppDbContext : DbContext
 
             entity.Property(e => e.UpdatedAt);
 
+            // Связи
             entity.HasOne(e => e.User)
                 .WithMany(e => e.Reviews)
                 .HasForeignKey(e => e.UserId)
@@ -400,6 +459,7 @@ public class AppDbContext : DbContext
                 .HasForeignKey(e => e.SongId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Индексы
             entity.HasIndex(e => new { e.UserId, e.SongId })
                 .IsUnique();
 
@@ -418,9 +478,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.StrummingPatternId)
                 .IsRequired();
 
-            entity.HasIndex(e => new { e.SongId, e.StrummingPatternId })
-                .IsUnique();
-
+            // Связи
             entity.HasOne(e => e.Song)
                 .WithMany(e => e.SongPatterns)
                 .HasForeignKey(e => e.SongId)
@@ -430,6 +488,10 @@ public class AppDbContext : DbContext
                 .WithMany(e => e.SongPatterns)
                 .HasForeignKey(e => e.StrummingPatternId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Индексы
+            entity.HasIndex(e => new { e.SongId, e.StrummingPatternId })
+                .IsUnique();
         });
 
         modelBuilder.Entity<SongChord>(entity =>
@@ -442,9 +504,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.ChordId)
                 .IsRequired();
 
-            entity.HasIndex(e => new { e.SongId, e.ChordId })
-                .IsUnique();
-
+            // Связи
             entity.HasOne(e => e.Song)
                 .WithMany(e => e.SongChords)
                 .HasForeignKey(e => e.SongId)
@@ -454,6 +514,10 @@ public class AppDbContext : DbContext
                 .WithMany(e => e.SongChords)
                 .HasForeignKey(e => e.ChordId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Индексы
+            entity.HasIndex(e => new { e.SongId, e.ChordId })
+                .IsUnique();
         });
 
         modelBuilder.Entity<SongComment>(entity =>
@@ -473,6 +537,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .IsRequired();
 
+            // Связи
             entity.HasOne(e => e.User)
                 .WithMany(e => e.Comments)
                 .HasForeignKey(e => e.UserId)
@@ -488,6 +553,7 @@ public class AppDbContext : DbContext
                 .HasForeignKey(e => e.SegmentId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Индексы
             entity.HasIndex(e => e.SongId);
             entity.HasIndex(e => e.UserId);
             entity.HasIndex(e => e.SegmentId);
@@ -523,6 +589,7 @@ public class AppDbContext : DbContext
 
             entity.Property(e => e.UpdatedAt);
 
+            // Связи
             entity.HasOne(e => e.Owner)
                 .WithMany()
                 .HasForeignKey(e => e.OwnerId)
@@ -533,6 +600,13 @@ public class AppDbContext : DbContext
                 .HasForeignKey(e => e.AlbumId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            entity.HasMany(e => e.Subscriptions)
+                .WithOne(e => e.TargetAlbum)
+                .HasForeignKey(e => e.TargetId)
+                .HasPrincipalKey(e => e.Id)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Индексы
             entity.HasIndex(e => e.OwnerId);
             entity.HasIndex(e => e.Title);
             entity.HasIndex(e => e.IsPublic);
@@ -551,18 +625,20 @@ public class AppDbContext : DbContext
             entity.Property(e => e.SongId)
                 .IsRequired();
 
-            entity.HasIndex(e => new { e.AlbumId, e.SongId })
-                .IsUnique();
-
+            // Связи
             entity.HasOne(e => e.Album)
                 .WithMany(e => e.SongAlbums)
                 .HasForeignKey(e => e.AlbumId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(e => e.Song)
-                .WithMany()
+                .WithMany(e => e.SongAlbums)
                 .HasForeignKey(e => e.SongId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Индексы
+            entity.HasIndex(e => new { e.AlbumId, e.SongId })
+                .IsUnique();
 
             entity.HasIndex(e => e.AlbumId);
             entity.HasIndex(e => e.SongId);
