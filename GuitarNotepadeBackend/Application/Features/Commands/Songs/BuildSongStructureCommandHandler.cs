@@ -34,6 +34,7 @@ public class BuildSongStructureCommandHandler : IRequestHandler<BuildSongStructu
     public async Task<SongStructureDto> Handle(BuildSongStructureCommand request, CancellationToken cancellationToken)
     {
         var song = await _unitOfWork.Songs.GetByIdAsync(request.SongId, cancellationToken);
+
         if (song == null)
         {
             throw new KeyNotFoundException($"Song with id {request.SongId} not found");

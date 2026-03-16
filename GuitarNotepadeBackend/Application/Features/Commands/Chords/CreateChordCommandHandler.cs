@@ -20,7 +20,6 @@ public class CreateChordCommandHandler : IRequestHandler<CreateChordCommand, Cho
 
     public async Task<ChordDto> Handle(CreateChordCommand request, CancellationToken cancellationToken)
     {
-        // Проверка лимитов для бесплатных пользователей
         if (!await _userService.CanCreateMoreChordsAsync(request.UserId, cancellationToken))
         {
             throw new InvalidOperationException(

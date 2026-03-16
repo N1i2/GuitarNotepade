@@ -10,8 +10,9 @@ import {
 export class PatternsService {
   private static readonly BASE_PATH = "/strummingpatterns";
 
-  // Все паттерны с фильтрацией
-  static async getAllPatterns(filters?: PatternFilters): Promise<PaginatedPattern> {
+  static async getAllPatterns(
+    filters?: PatternFilters,
+  ): Promise<PaginatedPattern> {
     const params = new URLSearchParams();
 
     if (filters?.name) params.append("name", filters.name);
@@ -25,15 +26,14 @@ export class PatternsService {
     params.append("sortOrder", filters?.sortOrder || "asc");
 
     return await apiClient.get<PaginatedPattern>(
-      `${this.BASE_PATH}?${params.toString()}`
+      `${this.BASE_PATH}?${params.toString()}`,
     );
   }
 
-  // Поиск по названию
   static async searchPatternsByName(
     name: string,
     page: number = 1,
-    pageSize: number = 20
+    pageSize: number = 20,
   ): Promise<PaginatedPattern> {
     const params = new URLSearchParams();
     params.append("name", name);
@@ -41,16 +41,14 @@ export class PatternsService {
     params.append("pageSize", pageSize.toString());
 
     return await apiClient.get<PaginatedPattern>(
-      `${this.BASE_PATH}/search?${params.toString()}`
+      `${this.BASE_PATH}/search?${params.toString()}`,
     );
   }
 
-  // Паттерн по ID
   static async getPatternById(id: string): Promise<Pattern> {
     return await apiClient.get<Pattern>(`${this.BASE_PATH}/${id}`);
   }
 
-  // Паттерн по названию (если нужно)
   static async getPatternByName(name: string): Promise<Pattern> {
     const result = await this.searchPatternsByName(name, 1, 1);
     if (result.items.length === 0) {
@@ -59,37 +57,36 @@ export class PatternsService {
     return result.items[0];
   }
 
-  // Мои паттерны
   static async getMyPatterns(
     page: number = 1,
-    pageSize: number = 20
+    pageSize: number = 20,
   ): Promise<PaginatedPattern> {
     const params = new URLSearchParams();
     params.append("page", page.toString());
     params.append("pageSize", pageSize.toString());
 
     return await apiClient.get<PaginatedPattern>(
-      `${this.BASE_PATH}/my-patterns?${params.toString()}`
+      `${this.BASE_PATH}/my-patterns?${params.toString()}`,
     );
   }
 
-  // Создание паттерна
   static async createPattern(data: CreatePatternDto): Promise<Pattern> {
     return await apiClient.post<CreatePatternDto, Pattern>(
       this.BASE_PATH,
-      data
+      data,
     );
   }
 
-  // Обновление паттерна
-  static async updatePattern(id: string, data: UpdatePatternDto): Promise<Pattern> {
+  static async updatePattern(
+    id: string,
+    data: UpdatePatternDto,
+  ): Promise<Pattern> {
     return await apiClient.put<UpdatePatternDto, Pattern>(
       `${this.BASE_PATH}/${id}`,
-      data
+      data,
     );
   }
 
-  // Удаление паттерна
   static async deletePattern(id: string): Promise<void> {
     await apiClient.delete<void>(`${this.BASE_PATH}/${id}`);
   }

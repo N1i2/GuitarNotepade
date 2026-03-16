@@ -20,7 +20,6 @@ public class CreatePatternCommandHandler : IRequestHandler<CreatePatternCommand,
 
     public async Task<StrummingPatternsDto> Handle(CreatePatternCommand request, CancellationToken cancellationToken)
     {
-        // Проверка лимитов для бесплатных пользователей
         if (!await _userService.CanCreateMorePatternsAsync(request.UserId, cancellationToken))
         {
             throw new InvalidOperationException(

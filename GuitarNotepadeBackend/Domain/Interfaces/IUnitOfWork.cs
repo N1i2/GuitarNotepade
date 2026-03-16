@@ -1,4 +1,4 @@
-﻿using Domain.Interfaces.Repositories;
+using Domain.Interfaces.Repositories;
 
 namespace Domain.Interfaces;
 
@@ -18,6 +18,7 @@ public interface IUnitOfWork : IDisposable
     IAlbomRepository Alboms { get; }
     ISongAlbomRepository SongAlboms { get; }
     ISubscriptionRepository Subscriptions { get; }
+    INotificationRepository Notifications { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 

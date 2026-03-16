@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260312102545_init")]
-    partial class init
+    [Migration("20260316163156_AddNotificationEntity")]
+    partial class AddNotificationEntity
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -119,6 +119,61 @@ namespace Infrastructure.Data.Migrations
                     b.HasIndex("Name");
 
                     b.ToTable("Chords");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ActorUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AlbumId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsRead")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid?>("SongId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorUserId");
+
+                    b.HasIndex("AlbumId");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("IsRead");
+
+                    b.HasIndex("SongId");
+
+                    b.HasIndex("Type");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("Domain.Entities.Song", b =>
@@ -572,6 +627,9 @@ namespace Infrastructure.Data.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<bool>("HasPremium")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("NikName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -618,6 +676,38 @@ namespace Infrastructure.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("CreatedBy");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Notification", b =>
+                {
+                    b.HasOne("Domain.Entities.User", "ActorUser")
+                        .WithMany("CreatedNotifications")
+                        .HasForeignKey("ActorUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Domain.Entities.Album", "Album")
+                        .WithMany("Notifications")
+                        .HasForeignKey("AlbumId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Domain.Entities.Song", "Song")
+                        .WithMany("Notifications")
+                        .HasForeignKey("SongId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Domain.Entities.User", "User")
+                        .WithMany("Notifications")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ActorUser");
+
+                    b.Navigation("Album");
+
+                    b.Navigation("Song");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Domain.Entities.Song", b =>
@@ -833,6 +923,8 @@ namespace Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Domain.Entities.Album", b =>
                 {
+                    b.Navigation("Notifications");
+
                     b.Navigation("SongAlbums");
 
                     b.Navigation("Subscriptions");
@@ -848,6 +940,8 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("ChildSongs");
 
                     b.Navigation("Comments");
+
+                    b.Navigation("Notifications");
 
                     b.Navigation("Reviews");
 
@@ -884,6 +978,10 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Chords");
 
                     b.Navigation("Comments");
+
+                    b.Navigation("CreatedNotifications");
+
+                    b.Navigation("Notifications");
 
                     b.Navigation("Reviews");
 

@@ -1,12 +1,10 @@
 ﻿using Application.DTOs.Generic;
-using Application.DTOs.Users;
 using Domain.Common;
 using Domain.Entities;
 using Domain.Interfaces;
 using Domain.Interfaces.Services;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection.Metadata;
 
 namespace Application.Features.Queries.Users;
 
@@ -76,6 +74,7 @@ public class GetAllUsersQueryHandler : IRequestHandler<GetAllUsersQuery, Paginat
             user.Email,
             user.NikName,
             user.Role,
+            user.HasPremium,
             avatarUrls[index],
             user.Bio,
             user.CreateAt,

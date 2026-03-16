@@ -176,7 +176,7 @@ export function SegmentTable({
                       size="icon"
                       onClick={() => {
                         const newSegment = { ...segment, id: crypto.randomUUID() }
-                        onAddSegment() // Добавить после текущего
+                        onAddSegment() 
                       }}
                     >
                       <Copy className="h-4 w-4" />

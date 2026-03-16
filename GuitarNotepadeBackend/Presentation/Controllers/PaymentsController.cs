@@ -19,6 +19,11 @@ public class PaymentsController : ControllerBase
         _mediator = mediator;
     }
 
+    /// <summary>
+    /// Pay premium
+    /// </summary>
+    /// <param name="dto"></param>
+    /// <returns></returns>
     [HttpPost("upgrade-to-premium")]
     public async Task<ActionResult<PremiumUpgradeResultDto>> UpgradeToPremium([FromBody] UpgradeToPremiumDto dto)
     {

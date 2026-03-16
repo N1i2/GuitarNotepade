@@ -27,7 +27,6 @@ namespace Application.Features.Commands.Alboms
 
         public async Task<AlbumDto> Handle(CreateAlbumCommand request, CancellationToken cancellationToken)
         {
-            // Проверка лимитов: только Premium и Admin могут создавать альбомы
             if (!await _userService.CanCreateAlbumAsync(request.UserId, cancellationToken))
             {
                 throw new InvalidOperationException(
@@ -40,7 +39,7 @@ namespace Application.Features.Commands.Alboms
                 isPublic: request.IsPublic,
                 genre: request.Genre,
                 theme: request.Theme,
-                coverUrl: request.CoverBase64, // Сервис сам обработает Base64
+                coverUrl: request.CoverBase64, 
                 description: request.Description,
                 cancellationToken: cancellationToken);
 

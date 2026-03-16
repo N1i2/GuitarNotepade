@@ -24,6 +24,10 @@ public class SubscriptionsController : ControllerBase
         _userService = userService;
     }
 
+    /// <summary>
+    /// It only shows my subscriptions
+    /// </summary>
+    /// <returns></returns>
     [HttpGet]
     public async Task<ActionResult<List<SubscriptionDto>>> GetMySubscriptions()
     {
@@ -40,6 +44,11 @@ public class SubscriptionsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Subscribe to user
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <returns></returns>
     [HttpPost("users/{userId}")]
     public async Task<ActionResult<SubscriptionResponseDto>> SubscribeToUser(Guid userId)
     {
@@ -48,7 +57,9 @@ public class SubscriptionsController : ControllerBase
             var currentUserId = GetCurrentUserId();
 
             if (currentUserId == userId)
+            {
                 return BadRequest(new { error = "Cannot subscribe to yourself" });
+            }
 
             var user = await _userService.GetByIdAsync(currentUserId);
 
@@ -83,6 +94,11 @@ public class SubscriptionsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Unsubscribe to user
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <returns></returns>
     [HttpDelete("users/{userId}")]
     public async Task<ActionResult> UnsubscribeFromUser(Guid userId)
     {
@@ -103,6 +119,11 @@ public class SubscriptionsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Subscribe to album
+    /// </summary>
+    /// <param name="albumId"></param>
+    /// <returns></returns>
     [HttpPost("albums/{albumId}")]
     public async Task<ActionResult<SubscriptionResponseDto>> SubscribeToAlbum(Guid albumId)
     {
@@ -142,6 +163,11 @@ public class SubscriptionsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Unsubscribe to aldum
+    /// </summary>
+    /// <param name="albumId"></param>
+    /// <returns></returns>
     [HttpDelete("albums/{albumId}")]
     public async Task<ActionResult> UnsubscribeFromAlbum(Guid albumId)
     {
@@ -162,6 +188,11 @@ public class SubscriptionsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Get user subscription by id
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <returns></returns>
     [HttpGet("check/user/{userId}")]
     public async Task<ActionResult<bool>> CheckUserSubscription(Guid userId)
     {
@@ -178,6 +209,11 @@ public class SubscriptionsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Get album subscription by id
+    /// </summary>
+    /// <param name="albumId"></param>
+    /// <returns></returns>
     [HttpGet("check/album/{albumId}")]
     public async Task<ActionResult<bool>> CheckAlbumSubscription(Guid albumId)
     {

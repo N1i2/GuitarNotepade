@@ -1,4 +1,3 @@
-// components/layout/header.tsx
 "use client";
 
 import Link from "next/link";
@@ -64,7 +63,6 @@ export function Header() {
             <span className="text-2xl">🎸</span>
           </Link>
 
-          {/* Навигация доступна всем (и гость, и пользователь) */}
           <nav className="hidden md:flex items-center gap-1 text-sm">
             <Button
               asChild
@@ -114,7 +112,6 @@ export function Header() {
               </Link>
             </Button>
 
-            {/* Альбомы только для зарегистрированных (не гостей) */}
             {!isGuest && (
               <Button
                 asChild
@@ -129,11 +126,12 @@ export function Header() {
               </Button>
             )}
 
-            {/* Админка только для админов */}
             {isAdmin && (
               <Button
                 asChild
-                variant={pathname === "/home/user-management" ? "default" : "ghost"}
+                variant={
+                  pathname === "/home/user-management" ? "default" : "ghost"
+                }
                 size="sm"
                 className="gap-2"
               >
@@ -148,7 +146,6 @@ export function Header() {
 
         <div className="flex items-center gap-3">
           {isGuest ? (
-            // Гость - показываем кнопки входа/регистрации
             <div className="flex items-center gap-2">
               {pathname === "/login" || pathname === "/register" ? (
                 <Button asChild variant="outline" size="sm">
@@ -168,11 +165,13 @@ export function Header() {
               )}
             </div>
           ) : (
-            // Реальный пользователь - показываем аватар
             <>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                  <Button
+                    variant="ghost"
+                    className="relative h-9 w-9 rounded-full"
+                  >
                     <Avatar className="h-9 w-9">
                       <AvatarImage
                         src={
@@ -211,7 +210,7 @@ export function Header() {
                       </div>
                     </div>
                   </DropdownMenuLabel>
-                  
+
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link href="/home/profile" className="cursor-pointer">
@@ -219,7 +218,7 @@ export function Header() {
                       <span>Profile</span>
                     </Link>
                   </DropdownMenuItem>
-                  
+
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={logout}

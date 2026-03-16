@@ -38,6 +38,7 @@ public class UnitOfWork : IUnitOfWork
         Alboms = new AlbomRepository(context);
         SongAlboms = new SongAlbomRepository(context);
         Subscriptions = new SubscriptionRepository(context);
+        Notifications = new NotificationRepository(context);
     }
 
     public IUserRepository Users { get; }
@@ -54,6 +55,7 @@ public class UnitOfWork : IUnitOfWork
     public IAlbomRepository Alboms { get; }
     public ISongAlbomRepository SongAlboms { get; }
     public ISubscriptionRepository Subscriptions { get; }
+    public INotificationRepository Notifications { get; }
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

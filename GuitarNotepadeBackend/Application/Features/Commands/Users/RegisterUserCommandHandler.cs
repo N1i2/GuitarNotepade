@@ -17,7 +17,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, A
     public RegisterUserCommandHandler(
         IUnitOfWork unitOfWork,
         IAuthService authService,
-        IMediator mediator) 
+        IMediator mediator)
     {
         _unitOfWork = unitOfWork;
         _authService = authService;
@@ -56,6 +56,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, A
                 user.Email,
                 user.NikName,
                 user.Role,
+                user.HasPremium,
                 token
             );
         }

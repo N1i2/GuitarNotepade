@@ -50,7 +50,6 @@ export class SongsService {
     return await apiClient.get<SongSearchResultDto>(url);
   }
 
-  // Получение песни по ID
   static async getSongById(
     id: string,
     includeStructure: boolean = false,
@@ -72,7 +71,6 @@ export class SongsService {
     return await apiClient.get<FullSongDto>(url);
   }
 
-  // Песни пользователя
   static async getUserSongs(
     userId: string,
     includePrivate: boolean = false,
@@ -89,7 +87,6 @@ export class SongsService {
     );
   }
 
-  // Мои песни
   static async getMySongs(
     includePrivate: boolean = true,
     page: number = 1,
@@ -105,12 +102,10 @@ export class SongsService {
     );
   }
 
-  // Создание песни
   static async createSong(data: CreateSongDto): Promise<SongDto> {
     return await apiClient.post<CreateSongDto, SongDto>(this.BASE_PATH, data);
   }
 
-  // Обновление песни
   static async updateSong(id: string, data: UpdateSongDto): Promise<SongDto> {
     return await apiClient.put<UpdateSongDto, SongDto>(
       `${this.BASE_PATH}/${id}`,
@@ -118,12 +113,10 @@ export class SongsService {
     );
   }
 
-  // Удаление песни
   static async deleteSong(id: string): Promise<void> {
     await apiClient.delete<void>(`${this.BASE_PATH}/${id}`);
   }
 
-  // Создание структуры песни
   static async buildSongStructure(
     songId: string,
     segments: any[],
@@ -135,14 +128,12 @@ export class SongsService {
     );
   }
 
-  // Получение структуры песни
   static async getSongStructure(songId: string): Promise<SongStructureDto> {
     return await apiClient.get<SongStructureDto>(
       `${this.BASE_PATH}/${songId}/structure`,
     );
   }
 
-  // Аккорды песни
   static async getSongChords(songId: string): Promise<SongChordDto[]> {
     return await apiClient.get<SongChordDto[]>(
       `${this.BASE_PATH}/${songId}/chords`,
@@ -165,7 +156,6 @@ export class SongsService {
     );
   }
 
-  // Паттерны песни
   static async getSongPatterns(songId: string): Promise<SongPatternDto[]> {
     return await apiClient.get<SongPatternDto[]>(
       `${this.BASE_PATH}/${songId}/patterns`,
@@ -191,7 +181,6 @@ export class SongsService {
     );
   }
 
-  // Комментарии
   static async addComment(
     songId: string,
     text: string,

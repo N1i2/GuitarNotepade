@@ -25,7 +25,6 @@ public class PatternService : IPatternService
         string? description = null,
         CancellationToken cancellationToken = default)
     {
-        // Проверка на уникальность названия
         if (await _unitOfWork.StrummingPatterns.ExistsWithSameNameAsync(name, cancellationToken))
             throw new InvalidOperationException($"Pattern with name '{name}' already exists");
 
@@ -55,7 +54,6 @@ public class PatternService : IPatternService
         if (existingPattern == null)
             throw new KeyNotFoundException($"Pattern with ID {patternId} not found");
 
-        // Проверка прав: только создатель или админ
         if (!existingPattern.IsCreatedBy(userId))
         {
             var user = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken);
@@ -63,7 +61,6 @@ public class PatternService : IPatternService
                 throw new UnauthorizedAccessException("Only owner or admin can update this pattern");
         }
 
-        // Если меняется название - проверяем уникальность
         if (name != null && name != existingPattern.Name)
         {
             if (await _unitOfWork.StrummingPatterns.ExistsWithSameNameAsync(name, cancellationToken))
@@ -87,11 +84,9 @@ public class PatternService : IPatternService
         if (pattern == null)
             throw new KeyNotFoundException($"Pattern with ID {patternId} not found");
 
-        // Проверка прав: только создатель или админ
         if (!pattern.IsCreatedBy(userId) && userRole != Constants.Roles.Admin)
             throw new UnauthorizedAccessException("Only owner or admin can delete this pattern");
 
-        // Проверяем, используется ли паттерн в каких-либо песнях
         var songsWithPattern = await _unitOfWork.SongPatterns.GetSongIdsForPatternAsync(patternId, cancellationToken);
         if (songsWithPattern.Any())
         {

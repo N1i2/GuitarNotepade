@@ -1,13 +1,13 @@
-﻿using Application.DTOs;
+﻿using Domain.Common;
+using Application.DTOs.Generic;
+using Application.DTOs.Users;
 using Application.Features.Commands.Users;
-using Application.Features.Queries;
+using Application.Features.Queries.Users;
 using AutoMapper;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using Application.Features.Queries.Users;
-using Application.DTOs.Users;
 
 namespace Presentation.Controllers;
 
@@ -25,6 +25,79 @@ public class UserController : ControllerBase
         _mapper = mapper;
     }
 
+    /// <summary>
+    /// Get all users
+    /// </summary>
+    /// <param name="emailFilter"></param>
+    /// <param name="nikNameFilter"></param>
+    /// <param name="isBlocked">Only from admin</param>
+    /// <param name="role">Only from admin</param>
+    /// <param name="page"></param>
+    /// <param name="pageSize"></param>
+    /// <param name="sortBy"></param>
+    /// <param name="sortOrder"></param>
+    /// <returns></returns>
+    [HttpGet("users")]
+    public async Task<ActionResult<PaginatedDto<UserProfileDto>>> GetAllUsers(
+      [FromQuery] string? emailFilter = null,
+      [FromQuery] string? nikNameFilter = null,
+      [FromQuery] bool? isBlocked = null,
+      [FromQuery] string? role = null,
+      [FromQuery] int page = 1,
+      [FromQuery] int pageSize = Constants.DefaultPageSize,
+      [FromQuery] string sortBy = Constants.Sorting.CreatedAt,
+      [FromQuery] string sortOrder = Constants.Sorting.Descending)
+    {
+        try
+        {
+            var query = new GetAllUsersQuery(
+                emailFilter: emailFilter,
+                nikNameFilter: nikNameFilter,
+                isBlocked: isBlocked,
+                role: role,
+                page: page,
+                pageSize: pageSize,
+                sortBy: sortBy,
+                sortOrder: sortOrder);
+
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get profile by email
+    /// </summary>
+    /// <param name="email"></param>
+    /// <returns></returns>
+    [HttpGet("get-user/{email}")]
+    public async Task<ActionResult<UserProfileDto>> GetProfile(string email)
+    {
+        try
+        {
+            var query = new GetUserByEmailQuery(email);
+            var result = await _mediator.Send(query);
+
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get current profile
+    /// </summary>
+    /// <returns></returns>
     [HttpGet("profile")]
     public async Task<ActionResult<UserProfileDto>> GetProfile()
     {
@@ -46,6 +119,11 @@ public class UserController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Update information in your profile
+    /// </summary>
+    /// <param name="dto"></param>
+    /// <returns></returns>
     [HttpPut("profile")]
     public async Task<ActionResult<UserProfileDto>> UpdateProfile([FromBody] UpdateUserProfileWithIdDto dto)
     {
@@ -62,6 +140,11 @@ public class UserController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Change current password
+    /// </summary>
+    /// <param name="dto"></param>
+    /// <returns></returns>
     [HttpPut("change-password")]
     public async Task<ActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
     {

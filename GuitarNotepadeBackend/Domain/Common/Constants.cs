@@ -21,7 +21,7 @@ public static class Constants
         public const int FreeUserMaxPatterns = 3;
         public const int FreeUserMaxAlbums = 1;
 
-        public const int FreeUserMaxSubscriptions = 10;
+        public const int FreeUserMaxSubscriptions = 5;
     }
 
     public static class Search
@@ -34,7 +34,6 @@ public static class Constants
     {
         public const string Admin = "Admin";
         public const string User = "User";
-        public const string Premium = "Premium";
         public const string Guest = "Guest";
     }
 

@@ -148,24 +148,6 @@ public class ChordsController : ControllerBase
         }
     }
 
-    [HttpGet("distinct")]
-    public async Task<ActionResult<PaginatedDto<ChordDto>>> GetDistinctChordNames(
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
-        [FromQuery] string sortBy = "name",
-        [FromQuery] string sortOrder = "asc")
-    {
-        try
-        {
-            await Task.CompletedTask;
-            return Ok(new PaginatedDto<ChordDto>());
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-    }
-
     [HttpPost]
     [Authorize]
     public async Task<ActionResult<ChordDto>> CreateChord([FromBody] CreateChordDto dto)

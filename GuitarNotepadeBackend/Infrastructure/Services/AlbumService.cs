@@ -1,4 +1,4 @@
-﻿using Domain.Common;
+using Domain.Common;
 using Domain.Entities;
 using Domain.Interfaces;
 using Domain.Interfaces.Services;
@@ -11,15 +11,18 @@ public class AlbumService : IAlbumService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IWebDavService _webDavService;
+    private readonly INotificationService _notificationService;
     private readonly ILogger<AlbumService> _logger;
 
     public AlbumService(
         IUnitOfWork unitOfWork,
         IWebDavService webDavService,
+        INotificationService notificationService,
         ILogger<AlbumService> logger)
     {
         _unitOfWork = unitOfWork;
         _webDavService = webDavService;
+        _notificationService = notificationService;
         _logger = logger;
     }
 
@@ -33,7 +36,6 @@ public class AlbumService : IAlbumService
         string? description = null,
         CancellationToken cancellationToken = default)
     {
-        // Проверка на дубликат названия у пользователя
         if (await _unitOfWork.Alboms.ExistsByTitleAndOwnerAsync(title, userId, cancellationToken))
             throw new InvalidOperationException($"You already have an album with title '{title}'");
 
@@ -46,6 +48,12 @@ public class AlbumService : IAlbumService
             album.Id,
             album.Title,
             userId);
+
+        await _notificationService.NotifyUserContentChangedAsync(
+            authorId: userId,
+            message: $"User updated their content: created album \"{album.Title}\".",
+            albumId: album.Id,
+            cancellationToken: cancellationToken);
 
         return album;
     }
@@ -65,7 +73,6 @@ public class AlbumService : IAlbumService
         if (album == null)
             throw new KeyNotFoundException($"Album with ID {albumId} not found");
 
-        // Проверка прав: только владелец или админ
         if (album.OwnerId != userId)
         {
             var user = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken);
@@ -73,11 +80,9 @@ public class AlbumService : IAlbumService
                 throw new UnauthorizedAccessException("Only owner or admin can update this album");
         }
 
-        // Нельзя изменять системный альбом "Favorite"
         if (album.Title == "Favorite")
             throw new InvalidOperationException("Cannot modify the Favorite album");
 
-        // Если меняется название - проверяем уникальность
         if (title != null && title != album.Title)
         {
             if (await _unitOfWork.Alboms.ExistsByTitleAndOwnerAsync(title, album.OwnerId, cancellationToken))
@@ -88,6 +93,12 @@ public class AlbumService : IAlbumService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Album updated: {AlbumId} by user {UserId}", albumId, userId);
+
+        await _notificationService.NotifyAlbumChangedAsync(
+            albumId: album.Id,
+            message: $"Album \"{album.Title}\" was updated.",
+            cancellationToken: cancellationToken);
+
         return album;
     }
 
@@ -100,7 +111,6 @@ public class AlbumService : IAlbumService
         if (album == null)
             throw new KeyNotFoundException($"Album with ID {albumId} not found");
 
-        // Проверка прав: только владелец или админ
         if (album.OwnerId != userId)
         {
             var user = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken);
@@ -108,11 +118,9 @@ public class AlbumService : IAlbumService
                 throw new UnauthorizedAccessException("Only owner or admin can delete this album");
         }
 
-        // Нельзя удалить системный альбом "Favorite"
         if (album.Title == "Favorite")
             throw new InvalidOperationException("Cannot delete the Favorite album");
 
-        // Удаляем обложку, если она есть
         if (!string.IsNullOrEmpty(album.CoverUrl))
         {
             try
@@ -148,7 +156,6 @@ public class AlbumService : IAlbumService
 
         if (album == null)
         {
-            // Создаем избранное, если его нет
             album = Album.Create(userId, "Favorite", isPublic: false);
             album = await _unitOfWork.Alboms.CreateAsync(album, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -185,7 +192,6 @@ public class AlbumService : IAlbumService
         if (album == null)
             throw new KeyNotFoundException($"Album with ID {albumId} not found");
 
-        // Проверка прав
         if (album.OwnerId != userId)
         {
             var user = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken);
@@ -193,7 +199,6 @@ public class AlbumService : IAlbumService
                 throw new UnauthorizedAccessException("Only owner or admin can add songs to this album");
         }
 
-        // Нельзя изменять системный альбом "Favorite" через этот метод
         if (album.Title == "Favorite")
             throw new InvalidOperationException("Use AddSongToFavoriteAsync for Favorite album");
 
@@ -212,6 +217,19 @@ public class AlbumService : IAlbumService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Song {SongId} added to album {AlbumId}", songId, albumId);
+
+        await _notificationService.NotifyAlbumChangedAsync(
+            albumId: album.Id,
+            message: $"Album \"{album.Title}\" was updated: song \"{song.Title}\" was added.",
+            songId: song.Id,
+            cancellationToken: cancellationToken);
+
+        await _notificationService.NotifyUserContentChangedAsync(
+            authorId: album.OwnerId,
+            message: $"User updated their content: song \"{song.Title}\" was added to album \"{album.Title}\".",
+            songId: song.Id,
+            albumId: album.Id,
+            cancellationToken: cancellationToken);
     }
 
     public async Task RemoveSongFromAlbumAsync(
@@ -224,7 +242,6 @@ public class AlbumService : IAlbumService
         if (album == null)
             throw new KeyNotFoundException($"Album with ID {albumId} not found");
 
-        // Проверка прав
         if (album.OwnerId != userId)
         {
             var user = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken);
@@ -232,14 +249,30 @@ public class AlbumService : IAlbumService
                 throw new UnauthorizedAccessException("Only owner or admin can remove songs from this album");
         }
 
-        // Нельзя изменять системный альбом "Favorite" через этот метод
         if (album.Title == "Favorite")
             throw new InvalidOperationException("Use RemoveSongFromFavoriteAsync for Favorite album");
+
+        var song = await _unitOfWork.Songs.GetByIdAsync(songId, cancellationToken);
+        if (song == null)
+            throw new KeyNotFoundException($"Song with ID {songId} not found");
 
         await _unitOfWork.SongAlboms.DeleteByAlbumAndSongAsync(albumId, songId, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Song {SongId} removed from album {AlbumId}", songId, albumId);
+
+        await _notificationService.NotifyAlbumChangedAsync(
+            albumId: album.Id,
+            message: $"Album \"{album.Title}\" was updated: song \"{song.Title}\" was removed.",
+            songId: song.Id,
+            cancellationToken: cancellationToken);
+
+        await _notificationService.NotifyUserContentChangedAsync(
+            authorId: album.OwnerId,
+            message: $"User updated their content: song \"{song.Title}\" was removed from album \"{album.Title}\".",
+            songId: song.Id,
+            albumId: album.Id,
+            cancellationToken: cancellationToken);
     }
 
     public async Task AddSongToFavoriteAsync(

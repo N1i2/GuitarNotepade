@@ -137,7 +137,6 @@ public class Program
             WriteSuccess("Registration successful!");
             LogResponse(response);
 
-            // Auto-login after registration
             await TestLogin(email, password);
         }
     }
@@ -263,7 +262,6 @@ public class Program
         }
         else
         {
-            // PUT with no content returns 204
             WriteSuccess("Password changed (no content)");
         }
     }
@@ -281,9 +279,10 @@ public class Program
         var menu = new Dictionary<int, (string Description, Func<Task> Action)>
         {
             {1, ("Get all users", TestGetAllUsers)},
-            {2, ("Block user", TestBlockUser)},
-            {3, ("Unblock user", TestUnblockUser)},
-            {4, ("Toggle user role", TestToggleUserRole)},
+            {2, ("Get users by email", TestGetUsersByEmail)},
+            {3, ("Block user", TestBlockUser)},
+            {4, ("Unblock user", TestUnblockUser)},
+            {5, ("Toggle user role", TestToggleUserRole)},
             {0, ("Back to main menu", async () => await Task.CompletedTask)}
         };
 
@@ -306,7 +305,7 @@ public class Program
         query.Add("page=1");
         query.Add("pageSize=10");
 
-        var url = "/usermanagement/users?" + string.Join("&", query);
+        var url = "/user/users?" + string.Join("&", query);
         var response = await GetAsync(url);
 
         if (response != null)
@@ -314,7 +313,6 @@ public class Program
             WriteSuccess("Users retrieved!");
             LogResponse(response);
 
-            // Display as table
             if (response.items != null)
             {
                 var table = new ConsoleTable("ID", "Email", "NickName", "Role", "IsBlocked");
@@ -330,6 +328,22 @@ public class Program
                 }
                 table.Write();
             }
+        }
+    }
+
+    private static async Task TestGetUsersByEmail()
+    {
+        WriteSubHeader("GET USER BY EMAIL");
+
+        Console.Write("Email: ");
+        var email = Console.ReadLine();
+
+        var response = await GetAsync($"/user/get-user/{email}");
+
+        if (response != null)
+        {
+            WriteSuccess("Profile retrieved!");
+            LogResponse(response);
         }
     }
 
@@ -1773,7 +1787,6 @@ public class Program
             WriteSuccess("Premium upgrade successful!");
             LogResponse(response);
 
-            // Refresh user info
             await TestGetProfile();
         }
     }

@@ -15,61 +15,64 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Save } from "lucide-react";
 import { SegmentTable } from "@/components/song/table-editor/segment-table";
-import { TableEditorProvider, useTableEditor } from "@/app/contexts/table-editor-context";
+import {
+  TableEditorProvider,
+  useTableEditor,
+} from "@/app/contexts/table-editor-context";
 import { convertTableToDTO } from "@/lib/table-converter";
 
 function CreateSongContent() {
-  const router = useRouter()
-  const { user } = useAuth()
-  const toast = useToast()
-  const { state, dispatch } = useTableEditor()
-  
-  const [title, setTitle] = useState("")
-  const [artist, setArtist] = useState("")
-  const [genre, setGenre] = useState("")
-  const [theme, setTheme] = useState("")
-  const [description, setDescription] = useState("")
-  const [isPublic, setIsPublic] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter();
+  const { user } = useAuth();
+  const toast = useToast();
+  const { state, dispatch } = useTableEditor();
+
+  const [title, setTitle] = useState("");
+  const [artist, setArtist] = useState("");
+  const [genre, setGenre] = useState("");
+  const [theme, setTheme] = useState("");
+  const [description, setDescription] = useState("");
+  const [isPublic, setIsPublic] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         const [chordsData, patternsData] = await Promise.all([
           ChordsService.getAllChords({ pageSize: 100 }),
-          PatternsService.getAllPatterns({ pageSize: 100 })
-        ])
-        
-        dispatch({ type: "SET_CHORDS", payload: chordsData.items })
-        dispatch({ type: "SET_PATTERNS", payload: patternsData.items })
+          PatternsService.getAllPatterns({ pageSize: 100 }),
+        ]);
+
+        dispatch({ type: "SET_CHORDS", payload: chordsData.items });
+        dispatch({ type: "SET_PATTERNS", payload: patternsData.items });
       } catch (error) {
-        toast.error("Failed to load chords and patterns")
+        toast.error("Failed to load chords and patterns");
       }
-    }
-    
-    loadData()
-  }, [])
+    };
+
+    loadData();
+  }, []);
 
   const handleSubmit = async () => {
     if (!user) {
-      toast.error("Please log in")
-      return
+      toast.error("Please log in");
+      return;
     }
 
     if (!title.trim()) {
-      toast.error("Title is required")
-      return
+      toast.error("Title is required");
+      return;
     }
 
     if (state.segments.length === 0) {
-      toast.error("Add at least one segment")
-      return
+      toast.error("Add at least one segment");
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const segmentsDTO = convertTableToDTO(state.segments)
-      
+      const segmentsDTO = convertTableToDTO(state.segments);
+
       const songData = {
         title,
         artist: artist || undefined,
@@ -78,27 +81,27 @@ function CreateSongContent() {
         description: description || undefined,
         isPublic,
         segments: segmentsDTO,
-        chordIds: Array.from(new Set(
-          state.segments
-            .filter(s => s.chordId)
-            .map(s => s.chordId!)
-        )),
-        patternIds: Array.from(new Set(
-          state.segments
-            .filter(s => s.patternId)
-            .map(s => s.patternId!)
-        ))
-      }
+        chordIds: Array.from(
+          new Set(
+            state.segments.filter((s) => s.chordId).map((s) => s.chordId!),
+          ),
+        ),
+        patternIds: Array.from(
+          new Set(
+            state.segments.filter((s) => s.patternId).map((s) => s.patternId!),
+          ),
+        ),
+      };
 
-      const createdSong = await SongsService.createSong(songData)
-      toast.success(`Song "${createdSong.title}" created!`)
-      router.push(`/home/songs/${createdSong.id}`)
+      const createdSong = await SongsService.createSong(songData);
+      toast.success(`Song "${createdSong.title}" created!`);
+      router.push(`/home/songs/${createdSong.id}`);
     } catch (error: any) {
-      toast.error(error.message || "Failed to create song")
+      toast.error(error.message || "Failed to create song");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -120,7 +123,6 @@ function CreateSongContent() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Левая колонка - детали песни */}
           <div className="lg:col-span-1 space-y-6">
             <Card>
               <CardHeader>
@@ -203,13 +205,25 @@ function CreateSongContent() {
                   <div className="flex justify-between">
                     <span>Unique Chords:</span>
                     <span className="font-bold">
-                      {new Set(state.segments.filter(s => s.chordId).map(s => s.chordId)).size}
+                      {
+                        new Set(
+                          state.segments
+                            .filter((s) => s.chordId)
+                            .map((s) => s.chordId),
+                        ).size
+                      }
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Unique Patterns:</span>
                     <span className="font-bold">
-                      {new Set(state.segments.filter(s => s.patternId).map(s => s.patternId)).size}
+                      {
+                        new Set(
+                          state.segments
+                            .filter((s) => s.patternId)
+                            .map((s) => s.patternId),
+                        ).size
+                      }
                     </span>
                   </div>
                 </div>
@@ -217,7 +231,6 @@ function CreateSongContent() {
             </Card>
           </div>
 
-          {/* Правая колонка - таблица сегментов */}
           <div className="lg:col-span-3">
             <Card>
               <CardHeader>
@@ -228,15 +241,21 @@ function CreateSongContent() {
                   segments={state.segments}
                   chords={state.chords}
                   patterns={state.patterns}
-                  onUpdateSegment={(index, segment) => 
-                    dispatch({ type: "UPDATE_SEGMENT", payload: { index, segment } })
+                  onUpdateSegment={(index, segment) =>
+                    dispatch({
+                      type: "UPDATE_SEGMENT",
+                      payload: { index, segment },
+                    })
                   }
                   onDeleteSegment={(index) =>
                     dispatch({ type: "DELETE_SEGMENT", payload: index })
                   }
                   onAddSegment={() => dispatch({ type: "ADD_SEGMENT" })}
                   onReorderSegments={(from, to) =>
-                    dispatch({ type: "REORDER_SEGMENTS", payload: { from, to } })
+                    dispatch({
+                      type: "REORDER_SEGMENTS",
+                      payload: { from, to },
+                    })
                   }
                 />
               </CardContent>
@@ -272,7 +291,7 @@ function CreateSongContent() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export default function CreateTableSongPage() {
@@ -280,5 +299,5 @@ export default function CreateTableSongPage() {
     <TableEditorProvider>
       <CreateSongContent />
     </TableEditorProvider>
-  )
+  );
 }

@@ -24,6 +24,19 @@ public class AlbumsController : ControllerBase
         _userService = userService;
     }
 
+    /// <summary>
+    /// A list of all albums with a certain condition
+    /// </summary>
+    /// <param name="searchTerm">Part of the Title</param>
+    /// <param name="ownerId">Who created this albome</param>
+    /// <param name="isPublic">true = all public, false = only my and only private</param>
+    /// <param name="genre"></param>
+    /// <param name="theme"></param>
+    /// <param name="sortBy"></param>
+    /// <param name="sortOrder"></param>
+    /// <param name="page"></param>
+    /// <param name="pageSize"></param>
+    /// <returns></returns>
     [HttpGet]
     public async Task<ActionResult<AlbumSearchResultDto>> SearchAlbums(
      [FromQuery] string? searchTerm = null,
@@ -64,6 +77,11 @@ public class AlbumsController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// gives an album with a specific ID
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
     [HttpGet("{id}")]
     public async Task<ActionResult<AlbumDto>> GetAlbumById(Guid id)
     {
@@ -79,6 +97,11 @@ public class AlbumsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// gives an album with a specific ID with songs inside them
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
     [HttpGet("{id}/with-songs")]
     public async Task<ActionResult<AlbumWithSongsDto>> GetAlbumByIdWithSongs(Guid id)
     {
@@ -94,6 +117,14 @@ public class AlbumsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Gives all albums written by a specific creator
+    /// </summary>
+    /// <param name="userId">Who created those albume</param>
+    /// <param name="includePrivate">only for admin and creator</param>
+    /// <param name="page"></param>
+    /// <param name="pageSize"></param>
+    /// <returns></returns>
     [HttpGet("user/{userId}")]
     public async Task<ActionResult<AlbumSearchResultDto>> GetUserAlbums(
         Guid userId,
@@ -123,6 +154,13 @@ public class AlbumsController : ControllerBase
         return Ok(result);
     }
 
+   /// <summary>
+   /// Gives only my albums
+   /// </summary>
+   /// <param name="includePrivate"></param>
+   /// <param name="page"></param>
+   /// <param name="pageSize"></param>
+   /// <returns></returns>
     [HttpGet("my-albums")]
     public async Task<ActionResult<AlbumSearchResultDto>> GetMyAlbums(
         [FromQuery] bool includePrivate = true,
@@ -145,6 +183,11 @@ public class AlbumsController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Create new album
+    /// </summary>
+    /// <param name="dto"></param>
+    /// <returns></returns>
     [HttpPost]
     public async Task<ActionResult<AlbumDto>> CreateAlbum([FromBody] CreateAlbumDto dto)
     {
@@ -177,6 +220,12 @@ public class AlbumsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Update your album (only for creator)
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="dto"></param>
+    /// <returns></returns>
     [HttpPut("{id}")]
     public async Task<ActionResult<AlbumDto>> UpdateAlbum(Guid id, [FromBody] UpdateAlbumDto dto)
     {
@@ -211,6 +260,11 @@ public class AlbumsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Delete an existing album (only for creator and admin)
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
     [HttpDelete("{id}")]
     public async Task<ActionResult> DeleteAlbum(Guid id)
     {
@@ -237,6 +291,12 @@ public class AlbumsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Add a new, unique song to the album (your own or someone else's public one)
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="songId"></param>
+    /// <returns></returns>
     [HttpPost("{id}/songs/{songId}")]
     public async Task<ActionResult> AddSongToAlbum(Guid id, Guid songId)
     {
@@ -261,6 +321,12 @@ public class AlbumsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Remove a song from your album
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="songId"></param>
+    /// <returns></returns>
     [HttpDelete("{id}/songs/{songId}")]
     public async Task<ActionResult> RemoveSongFromAlbum(Guid id, Guid songId)
     {
@@ -281,6 +347,10 @@ public class AlbumsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Each user has one album, display this album
+    /// </summary>
+    /// <returns></returns>
     [HttpGet("favorite")]
     public async Task<ActionResult<AlbumWithSongsDto>> GetFavoriteAlbum()
     {
@@ -297,6 +367,11 @@ public class AlbumsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Add a song to your favorites album
+    /// </summary>
+    /// <param name="songId"></param>
+    /// <returns></returns>
     [HttpPost("favorite/{songId}")]
     public async Task<ActionResult> AddSongToFavorite(Guid songId)
     {
@@ -317,6 +392,11 @@ public class AlbumsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Remove a song from your Favorites album
+    /// </summary>
+    /// <param name="songId"></param>
+    /// <returns></returns>
     [HttpDelete("favorite/{songId}")]
     public async Task<ActionResult> RemoveSongFromFavorite(Guid songId)
     {

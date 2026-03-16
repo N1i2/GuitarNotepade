@@ -1,5 +1,4 @@
-﻿// Domain/Interfaces/Services/IUserService.cs
-using Domain.Entities;
+﻿using Domain.Entities;
 
 namespace Domain.Interfaces.Services;
 

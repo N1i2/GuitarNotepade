@@ -13,13 +13,13 @@ public class User : BaseEntityWithId
     public string? AvatarUrl { get; private set; }
     public string Bio { get; private set; }
     public string? BlockReason { get; private set; }
+    public bool HasPremium { get; private set; }
     public DateTime? BlockedUntil { get; private set; }
     public DateTime CreateAt { get; private set; }
 
     public bool IsBlocked => BlockedUntil.HasValue && BlockedUntil > DateTime.UtcNow;
     public bool IsGuest => Role == Constants.Roles.Guest;
-    public bool IsPremium => Role == Constants.Roles.Premium;
-    public bool IsFreeUser => Role == Constants.Roles.User;
+    public bool IsFreeUser => Role == Constants.Roles.User && !HasPremium;
     public bool IsAdmin => Role == Constants.Roles.Admin;
 
     public virtual ICollection<Song> Songs { get; private set; } = new List<Song>();
@@ -28,6 +28,8 @@ public class User : BaseEntityWithId
     public virtual ICollection<StrummingPattern> StrummingPatterns { get; private set; } = new List<StrummingPattern>();
     public virtual ICollection<SongReview> Reviews { get; private set; } = new List<SongReview>();
     public virtual ICollection<SongComment> Comments { get; private set; } = new LinkedList<SongComment>();
+    public virtual ICollection<Notification> Notifications { get; private set; } = new List<Notification>();
+    public virtual ICollection<Notification> CreatedNotifications { get; private set; } = new List<Notification>();
 
     private User()
     {
@@ -39,11 +41,12 @@ public class User : BaseEntityWithId
         Bio = string.Empty;
         BlockedUntil = null;
         BlockReason = null;
+        HasPremium = false;
     }
 
     public bool CanCreateMoreSongs(int currentSongCount)
     {
-        if (IsPremium || IsAdmin)
+        if (HasPremium || IsAdmin)
         {
             return true;
         }
@@ -53,7 +56,7 @@ public class User : BaseEntityWithId
 
     public bool CanCreateMoreChords(int currentChordCount)
     {
-        if (IsPremium || IsAdmin)
+        if (HasPremium || IsAdmin)
         {
             return true;
         }
@@ -63,7 +66,7 @@ public class User : BaseEntityWithId
 
     public bool CanCreateMorePatterns(int currentPatternCount)
     {
-        if (IsPremium || IsAdmin) 
+        if (HasPremium || IsAdmin) 
         {
             return true;
         }
@@ -73,7 +76,7 @@ public class User : BaseEntityWithId
 
     public bool CanCreateAlbum()
     {
-        return IsPremium || IsAdmin;
+        return HasPremium || IsAdmin;
     }
 
     public bool CanHaveFavoriteAlbum()
@@ -168,10 +171,19 @@ public class User : BaseEntityWithId
 
     public void MakeAdminRole() => Role = Constants.Roles.Admin;
     public void RemoveAdminRole() => Role = Constants.Roles.User;
+
     public void UpdateUrl(string? url) => AvatarUrl = url;
 
-    public void MakePremium() => Role = Constants.Roles.Premium;
-    public void RemovePremium() => Role = Constants.Roles.User;
+    public void MakePremium()
+    {
+        HasPremium = true;
+    }
+
+    public void RemovePremium()
+    {
+        HasPremium = false;
+        Role = Constants.Roles.User;
+    }
 
     public (bool IsBlocked, string? Message) GetBlockStatus()
     {

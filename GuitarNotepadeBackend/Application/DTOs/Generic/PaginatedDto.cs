@@ -1,6 +1,4 @@
-﻿using Application.DTOs.Chords;
-
-namespace Application.DTOs.Generic;
+﻿namespace Application.DTOs.Generic;
 
 public class PaginatedDto<T>
 {

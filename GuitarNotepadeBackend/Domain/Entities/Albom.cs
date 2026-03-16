@@ -19,6 +19,7 @@ public class Album : BaseEntityWithId
     public virtual User Owner { get; private set; } = null!;
     public virtual ICollection<Subscription> Subscriptions { get; private set; } = new List<Subscription>();
     public virtual ICollection<SongAlbum> SongAlbums { get; private set; } = new List<SongAlbum>();
+    public virtual ICollection<Notification> Notifications { get; private set; } = new List<Notification>();
 
     private Album()
     {

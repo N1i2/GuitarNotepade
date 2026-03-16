@@ -31,7 +31,6 @@ public static class DependencyInjection
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-        // Репозитории
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IChordRepository, ChordRepository>();
         services.AddScoped<IStrummingPatternRepository, StrummingPatternRepository>();
@@ -47,10 +46,8 @@ public static class DependencyInjection
         services.AddScoped<ISongAlbomRepository, SongAlbomRepository>();
         services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
 
-        // Стратегии и утилиты
         services.AddScoped<IExecutionStrategy, ExecutionStrategy>();
 
-        // Сервисы аутентификации и файлов
         services.AddScoped<IAuthService, AuthService>();
         services.AddHttpClient<IWebDavService, WebDavService>((serviceProvider, client) =>
         {
@@ -61,7 +58,6 @@ public static class DependencyInjection
         });
         services.AddMemoryCache();
 
-        // Бизнес-сервисы
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<ISongService, SongService>();
         services.AddScoped<ISongReviewService, SongReviewService>();
@@ -70,10 +66,10 @@ public static class DependencyInjection
         services.AddScoped<ISongStatisticsService, SongStatisticsService>();
         services.AddScoped<ISongDeletionService, SongDeletionService>();
 
-        // TODO: Добавить эти сервисы в следующих итерациях
          services.AddScoped<IChordService, ChordService>();
         services.AddScoped<IPatternService, PatternService>();
         services.AddScoped<IAlbumService, AlbumService>();
+        services.AddScoped<INotificationService, NotificationService>();
 
         return services;
     }

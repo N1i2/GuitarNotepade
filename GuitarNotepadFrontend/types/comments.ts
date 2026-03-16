@@ -1,4 +1,3 @@
-// types/comments.ts
 export interface CreateCommentDto {
   text: string;
   segmentId?: string;

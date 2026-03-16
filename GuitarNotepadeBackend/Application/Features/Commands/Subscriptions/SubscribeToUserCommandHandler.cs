@@ -25,11 +25,9 @@ public class SubscribeToUserCommandHandler : IRequestHandler<SubscribeToUserComm
 
     public async Task<SubscriptionResponseDto> Handle(SubscribeToUserCommand request, CancellationToken cancellationToken)
     {
-        // Нельзя подписаться на самого себя
         if (request.UserId == request.TargetUserId)
             throw new InvalidOperationException("Cannot subscribe to yourself");
 
-        // Проверяем существование пользователей
         var user = await _userService.GetByIdAsync(request.UserId, cancellationToken);
         if (user == null)
             throw new KeyNotFoundException($"User with ID {request.UserId} not found");
@@ -38,7 +36,6 @@ public class SubscribeToUserCommandHandler : IRequestHandler<SubscribeToUserComm
         if (targetUser == null)
             throw new KeyNotFoundException($"Target user with ID {request.TargetUserId} not found");
 
-        // Проверяем, не подписан ли уже
         var exists = await _unitOfWork.Subscriptions.ExistsAsync(
             request.UserId,
             request.TargetUserId,
@@ -48,7 +45,6 @@ public class SubscribeToUserCommandHandler : IRequestHandler<SubscribeToUserComm
         if (exists)
             throw new InvalidOperationException("Already subscribed to this user");
 
-        // Проверяем лимит подписок для бесплатных пользователей
         if (user.IsFreeUser)
         {
             var subscriptionsCount = await _unitOfWork.Subscriptions
@@ -62,11 +58,10 @@ public class SubscribeToUserCommandHandler : IRequestHandler<SubscribeToUserComm
             }
         }
 
-        // Создаем подписку
         var subscription = Domain.Entities.Subscription.Create(
             request.UserId,
             request.TargetUserId,
-            true); // IsUserSub = true
+            true); 
 
         await _unitOfWork.Subscriptions.CreateAsync(subscription, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

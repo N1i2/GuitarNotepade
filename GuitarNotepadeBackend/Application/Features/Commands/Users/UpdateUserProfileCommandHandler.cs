@@ -1,5 +1,4 @@
-﻿using Application.DTOs;
-using Domain.Interfaces;
+﻿using Domain.Interfaces;
 using Domain.Interfaces.Services;
 using MediatR;
 
@@ -27,7 +26,6 @@ public class UpdateUserProfileCommandHandler : IRequestHandler<UpdateUserProfile
         if (user == null)
             throw new Exception("User not found");
 
-        // Обработка аватара
         string? newAvatarFileName = null;
         bool avatarBase64WasProvided = request.GetType().GetProperty("AvatarBase64")?.GetValue(request) != null;
 
@@ -36,7 +34,6 @@ public class UpdateUserProfileCommandHandler : IRequestHandler<UpdateUserProfile
             newAvatarFileName = await HandleAvatarUpdate(request, user, cancellationToken);
         }
 
-        // Обновление ника
         if (!string.IsNullOrEmpty(request.NikName) && request.NikName != user.NikName)
         {
             var existingUser = await _unitOfWork.Users.GetByNikNameAsync(request.NikName, cancellationToken);
@@ -44,7 +41,6 @@ public class UpdateUserProfileCommandHandler : IRequestHandler<UpdateUserProfile
                 throw new Exception("Nickname is already taken");
         }
 
-        // Обновление профиля
         user.UpdateProfile(
             nikName: !string.IsNullOrEmpty(request.NikName) ? request.NikName : null,
             avatarUrl: avatarBase64WasProvided ? newAvatarFileName : null,
@@ -52,7 +48,6 @@ public class UpdateUserProfileCommandHandler : IRequestHandler<UpdateUserProfile
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // Получаем аватар для ответа
         string? avatarBase64 = await GetAvatarBase64(user, cancellationToken);
 
         return new UserProfileDto(
@@ -60,6 +55,7 @@ public class UpdateUserProfileCommandHandler : IRequestHandler<UpdateUserProfile
             user.Email,
             user.NikName,
             user.Role,
+            user.HasPremium,
             avatarBase64,
             user.Bio,
             user.CreateAt,
@@ -72,7 +68,6 @@ public class UpdateUserProfileCommandHandler : IRequestHandler<UpdateUserProfile
     {
         if (string.IsNullOrEmpty(request.AvatarBase64))
         {
-            // Удаление аватара
             if (!string.IsNullOrEmpty(user.AvatarUrl))
             {
                 await _webDavService.DeleteAvatarAsync(user.AvatarUrl);
@@ -84,7 +79,6 @@ public class UpdateUserProfileCommandHandler : IRequestHandler<UpdateUserProfile
                   request.AvatarBase64.StartsWith("/9j/") ||
                   request.AvatarBase64.StartsWith("iVBORw")))
         {
-            // Загрузка нового аватара
             if (!string.IsNullOrEmpty(user.AvatarUrl))
             {
                 await _webDavService.DeleteAvatarAsync(user.AvatarUrl);
@@ -113,7 +107,6 @@ public class UpdateUserProfileCommandHandler : IRequestHandler<UpdateUserProfile
         }
         catch (FileNotFoundException)
         {
-            // Игнорируем, используем дефолтный
         }
 
         var defaultBytes = await _webDavService.GetAvatarBytesAsync(null!);

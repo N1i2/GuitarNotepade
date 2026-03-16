@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Application.Exceptions.Register;
-using Microsoft.AspNetCore.Http;
 using System.Diagnostics;
 using System.ComponentModel.DataAnnotations;
 

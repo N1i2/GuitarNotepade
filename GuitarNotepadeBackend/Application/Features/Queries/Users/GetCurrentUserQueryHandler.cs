@@ -58,6 +58,7 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, U
             user.Email,
             user.NikName,
             user.Role,
+            user.HasPremium,
             avatarBase64,
             user.Bio,
             user.CreateAt,

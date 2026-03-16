@@ -11,15 +11,18 @@ public class SongService : ISongService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ISongSegmentService _songSegmentService;
+    private readonly INotificationService _notificationService;
     private readonly ILogger<SongService> _logger;
 
     public SongService(
         IUnitOfWork unitOfWork,
         ISongSegmentService songSegmentService,
+        INotificationService notificationService,
         ILogger<SongService> logger)
     {
         _unitOfWork = unitOfWork;
         _songSegmentService = songSegmentService;
+        _notificationService = notificationService;
         _logger = logger;
     }
 
@@ -52,6 +55,13 @@ public class SongService : ISongService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Song created: {SongId} by user {UserId}", song.Id, ownerId);
+
+        await _notificationService.NotifyUserContentChangedAsync(
+            authorId: ownerId,
+            message: $"User updated their content: created song \"{song.Title}\".",
+            songId: song.Id,
+            cancellationToken: cancellationToken);
+
         return song;
     }
 
@@ -77,6 +87,13 @@ public class SongService : ISongService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Song updated: {SongId}", songId);
+
+        await _notificationService.NotifyUserContentChangedAsync(
+            authorId: song.OwnerId,
+            message: $"User updated their content: song \"{song.Title}\" was updated.",
+            songId: song.Id,
+            cancellationToken: cancellationToken);
+
         return song;
     }
 
@@ -184,8 +201,16 @@ public class SongService : ISongService
                 _logger.LogWarning("No changes saved for song structure {SongId}", songId);
             }
 
-            return await _unitOfWork.SongStructures.GetWithSegmentsAsync(songId, cancellationToken)
+            var structureWithSegments = await _unitOfWork.SongStructures.GetWithSegmentsAsync(songId, cancellationToken)
                    ?? throw new InvalidOperationException("Не удалось загрузить созданную структуру");
+
+            await _notificationService.NotifyUserContentChangedAsync(
+                authorId: song.OwnerId,
+                message: $"User updated their content: structure of song \"{song.Title}\" was updated.",
+                songId: song.Id,
+                cancellationToken: cancellationToken);
+
+            return structureWithSegments;
 
         }, cancellationToken);
     }
@@ -415,7 +440,7 @@ public class SongService : ISongService
         if (user == null)
             return false;
 
-        if (user.IsPremium || user.IsAdmin)
+        if (user.HasPremium || user.IsAdmin)
             return true;
 
         var songsCount = await GetUserSongsCountAsync(userId, true, cancellationToken);

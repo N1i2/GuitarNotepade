@@ -90,7 +90,6 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// 🔥 ИСПРАВЛЕНИЕ: Правильные CORS настройки
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>

@@ -1,5 +1,4 @@
-﻿// Domain/Interfaces/Services/IPatternService.cs
-using Domain.Entities;
+﻿using Domain.Entities;
 
 namespace Domain.Interfaces.Services;
 

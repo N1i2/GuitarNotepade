@@ -28,6 +28,7 @@ public class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, AuthRes
             user.Email,
             user.NikName,
             user.Role,
+            user.HasPremium,
             token);
     }
 }

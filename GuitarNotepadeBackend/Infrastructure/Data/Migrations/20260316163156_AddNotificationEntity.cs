@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class init : Migration
+    public partial class AddNotificationEntity : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -23,6 +23,7 @@ namespace Infrastructure.Data.Migrations
                     AvatarUrl = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     Bio = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
                     BlockReason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    HasPremium = table.Column<bool>(type: "boolean", nullable: false),
                     BlockedUntil = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreateAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
@@ -170,6 +171,49 @@ namespace Infrastructure.Data.Migrations
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Subscriptions_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Notifications",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Message = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    ActorUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    SongId = table.Column<Guid>(type: "uuid", nullable: true),
+                    AlbumId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsRead = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Notifications", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Notifications_Albums_AlbumId",
+                        column: x => x.AlbumId,
+                        principalTable: "Albums",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Notifications_Songs_SongId",
+                        column: x => x.SongId,
+                        principalTable: "Songs",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Notifications_Users_ActorUserId",
+                        column: x => x.ActorUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Notifications_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
@@ -440,6 +484,41 @@ namespace Infrastructure.Data.Migrations
                 column: "Name");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Notifications_ActorUserId",
+                table: "Notifications",
+                column: "ActorUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notifications_AlbumId",
+                table: "Notifications",
+                column: "AlbumId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notifications_CreatedAt",
+                table: "Notifications",
+                column: "CreatedAt");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notifications_IsRead",
+                table: "Notifications",
+                column: "IsRead");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notifications_SongId",
+                table: "Notifications",
+                column: "SongId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notifications_Type",
+                table: "Notifications",
+                column: "Type");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notifications_UserId",
+                table: "Notifications",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_SongAlbums_AlbumId",
                 table: "SongAlbums",
                 column: "AlbumId");
@@ -662,6 +741,9 @@ namespace Infrastructure.Data.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "Notifications");
+
             migrationBuilder.DropTable(
                 name: "SongAlbums");
 

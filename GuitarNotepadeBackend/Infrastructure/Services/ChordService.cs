@@ -24,7 +24,6 @@ public class ChordService : IChordService
         string? description = null,
         CancellationToken cancellationToken = default)
     {
-        // Проверка на дубликат (одинаковое название + аппликатура)
         if (await _unitOfWork.Chords.ExistsWithSameFingeringAsync(name, fingering, cancellationToken))
             throw new InvalidOperationException($"Chord with name '{name}' and fingering '{fingering}' already exists");
 
@@ -53,7 +52,6 @@ public class ChordService : IChordService
         if (chord == null)
             throw new KeyNotFoundException($"Chord with ID {chordId} not found");
 
-        // Проверка прав: только создатель или админ
         if (!chord.IsCreatedBy(userId))
         {
             var user = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken);
@@ -61,7 +59,6 @@ public class ChordService : IChordService
                 throw new UnauthorizedAccessException("Only owner or admin can update this chord");
         }
 
-        // Если меняется название или аппликатура - проверяем уникальность
         if ((name != null && name != chord.Name) ||
             (fingering != null && fingering != chord.Fingering))
         {
@@ -89,11 +86,9 @@ public class ChordService : IChordService
         if (chord == null)
             throw new KeyNotFoundException($"Chord with ID {chordId} not found");
 
-        // Проверка прав: только создатель или админ
         if (!chord.IsCreatedBy(userId) && userRole != Constants.Roles.Admin)
             throw new UnauthorizedAccessException("Only owner or admin can delete this chord");
 
-        // Проверяем, используется ли аккорд в каких-либо песнях
         var songsWithChord = await _unitOfWork.SongChords.GetSongIdsForChordAsync(chordId, cancellationToken);
         if (songsWithChord.Any())
         {
@@ -102,8 +97,6 @@ public class ChordService : IChordService
                 chordId,
                 songsWithChord.Count);
 
-            // Можно либо запретить удаление, либо каскадно удалить связи
-            // Пока запрещаем
             throw new InvalidOperationException(
                 $"Cannot delete chord that is used in {songsWithChord.Count} songs. Remove it from songs first.");
         }

@@ -28,21 +28,17 @@ public class SubscribeToAlbumCommandHandler : IRequestHandler<SubscribeToAlbumCo
 
     public async Task<SubscriptionResponseDto> Handle(SubscribeToAlbumCommand request, CancellationToken cancellationToken)
     {
-        // Проверяем существование пользователя
         var user = await _userService.GetByIdAsync(request.UserId, cancellationToken);
         if (user == null)
             throw new KeyNotFoundException($"User with ID {request.UserId} not found");
 
-        // Проверяем существование альбома
         var album = await _albumService.GetAlbumByIdAsync(request.AlbumId, cancellationToken);
         if (album == null)
             throw new KeyNotFoundException($"Album with ID {request.AlbumId} not found");
 
-        // Нельзя подписаться на приватный альбом
         if (!album.IsPublic)
             throw new InvalidOperationException("Cannot subscribe to private album");
 
-        // Проверяем, не подписан ли уже
         var exists = await _unitOfWork.Subscriptions.ExistsAsync(
             request.UserId,
             request.AlbumId,
@@ -52,7 +48,6 @@ public class SubscribeToAlbumCommandHandler : IRequestHandler<SubscribeToAlbumCo
         if (exists)
             throw new InvalidOperationException("Already subscribed to this album");
 
-        // Проверяем лимит подписок для бесплатных пользователей
         if (user.IsFreeUser)
         {
             var subscriptionsCount = await _unitOfWork.Subscriptions
@@ -66,11 +61,10 @@ public class SubscribeToAlbumCommandHandler : IRequestHandler<SubscribeToAlbumCo
             }
         }
 
-        // Создаем подписку
         var subscription = Domain.Entities.Subscription.Create(
             request.UserId,
             request.AlbumId,
-            false); // IsUserSub = false
+            false); 
 
         await _unitOfWork.Subscriptions.CreateAsync(subscription, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

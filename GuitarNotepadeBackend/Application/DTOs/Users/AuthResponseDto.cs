@@ -5,4 +5,5 @@ public record AuthResponseDto(
     string Email,
     string NikName,
     string Role,
+    bool HasPremium,
     string Token);

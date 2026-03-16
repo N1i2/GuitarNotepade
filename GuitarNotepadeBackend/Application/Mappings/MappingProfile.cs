@@ -4,7 +4,7 @@ using Application.DTOs.Song;
 using Application.DTOs.StrummingPatterns;
 using Application.DTOs.Subscriptions;
 using Application.DTOs.Users;
-using Application.Features.Commands.Alboms;
+using Application.DTOs.Notifications;
 using Application.Features.Commands.Users;
 using AutoMapper;
 using Domain.Entities;
@@ -126,6 +126,9 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.Subscriber != null ? src.Subscriber.NikName : string.Empty))
             .ForMember(dest => dest.SubName, opt => opt.Ignore()) 
             .ForMember(dest => dest.TargetId, opt => opt.Ignore()); 
+
+        CreateMap<Notification, NotificationDto>()
+            .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString()));
     }
 
     private List<SegmentDataWithPositionDto> MapSegmentsWithPositions(Song song)

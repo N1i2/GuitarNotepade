@@ -25,19 +25,21 @@ export class ApiError extends Error {
 }
 
 class ApiClient {
-  private baseURL: string = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+  private baseURL: string =
+    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
 
   private async request<T>(
     endpoint: string,
     options: RequestInit = {},
   ): Promise<T> {
-    // Убедимся, что endpoint начинается с /
-    const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const normalizedEndpoint = endpoint.startsWith("/")
+      ? endpoint
+      : `/${endpoint}`;
     const url = `${this.baseURL}${normalizedEndpoint}`;
 
-    const token = AuthService.getToken();    
+    const token = AuthService.getToken();
 
-    console.log(`🌐 API Request: ${options.method || 'GET'} ${url}`);
+    console.log(`🌐 API Request: ${options.method || "GET"} ${url}`);
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -62,7 +64,6 @@ class ApiClient {
 
       console.log(`📡 Response status: ${response.status}`);
 
-      // Handle 401 Unauthorized
       if (response.status === 401) {
         AuthService.logout();
         if (typeof window !== "undefined") {
@@ -71,12 +72,10 @@ class ApiClient {
         throw new ApiError("Authentication failed", 401);
       }
 
-      // Handle 204 No Content
       if (response.status === 204) {
         return null as T;
       }
 
-      // Try to parse JSON response
       let data: any = null;
       const contentType = response.headers.get("content-type");
       if (contentType?.includes("application/json")) {
@@ -87,7 +86,6 @@ class ApiClient {
         }
       }
 
-      // Handle error responses
       if (!response.ok) {
         const errorMessage =
           data?.message || data?.error || `HTTP error ${response.status}`;
@@ -153,5 +151,4 @@ class ApiClient {
   }
 }
 
-// Создаём единственный экземпляр для всего приложения
 export const apiClient = new ApiClient();

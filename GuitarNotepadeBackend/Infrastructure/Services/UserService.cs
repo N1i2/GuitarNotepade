@@ -30,7 +30,7 @@ public class UserService : IUserService
         var user = await GetByIdAsync(userId, cancellationToken);
         if (user == null) return false;
 
-        if (user.IsPremium || user.IsAdmin) return true;
+        if (user.HasPremium || user.IsAdmin) return true;
 
         var songsCount = await GetUserSongsCountAsync(userId, cancellationToken);
         return songsCount < Constants.Limits.FreeUserMaxSongs;
@@ -41,7 +41,7 @@ public class UserService : IUserService
         var user = await GetByIdAsync(userId, cancellationToken);
         if (user == null) return false;
 
-        if (user.IsPremium || user.IsAdmin) return true;
+        if (user.HasPremium || user.IsAdmin) return true;
 
         var chordsCount = await GetUserChordsCountAsync(userId, cancellationToken);
         return chordsCount < Constants.Limits.FreeUserMaxChords;
@@ -52,7 +52,7 @@ public class UserService : IUserService
         var user = await GetByIdAsync(userId, cancellationToken);
         if (user == null) return false;
 
-        if (user.IsPremium || user.IsAdmin) return true;
+        if (user.HasPremium || user.IsAdmin) return true;
 
         var patternsCount = await GetUserPatternsCountAsync(userId, cancellationToken);
         return patternsCount < Constants.Limits.FreeUserMaxPatterns;
@@ -66,7 +66,7 @@ public class UserService : IUserService
             return false;
         }
 
-        return user.IsPremium || user.IsAdmin;
+        return user.HasPremium || user.IsAdmin;
     }
 
     public async Task<int> GetUserSongsCountAsync(Guid userId, CancellationToken cancellationToken = default)
@@ -100,8 +100,11 @@ public class UserService : IUserService
     public async Task UpgradeToPremiumAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var user = await GetByIdAsync(userId, cancellationToken);
+
         if (user == null)
+        {
             throw new KeyNotFoundException($"User with ID {userId} not found");
+        }
 
         user.MakePremium();
         await _unitOfWork.SaveChangesAsync(cancellationToken);

@@ -15,11 +15,9 @@ namespace Presentation.Controllers;
 public class StrummingPatternsController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly IMapper _mapper;
 
-    public StrummingPatternsController(IMediator mediator, IMapper mapper)
+    public StrummingPatternsController(IMediator mediator)
     {
-        _mapper = mapper;
         _mediator = mediator;
     }
 

@@ -2,14 +2,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using Domain.Common;
 using Application.DTOs.Users;
-using Application.Features.Queries.Users;
 using Application.Features.Commands.Users;
-using Application.DTOs.Generic;
 
 namespace Presentation.Controllers;
 
+/// <summary>
+/// Only from admin
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Policy = "Admin")] 
@@ -22,38 +22,11 @@ public class UserManagementController : ControllerBase
         _mediator = mediator;
     }
 
-    [HttpGet("users")]
-    public async Task<ActionResult<PaginatedDto<UserProfileDto>>> GetAllUsers(
-        [FromQuery] string? emailFilter = null,
-        [FromQuery] string? nikNameFilter = null,
-        [FromQuery] bool? isBlocked = null,
-        [FromQuery] string? role = null,
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = Constants.DefaultPageSize,
-        [FromQuery] string sortBy = Constants.Sorting.CreatedAt,
-        [FromQuery] string sortOrder = Constants.Sorting.Descending)
-    {
-        try
-        {
-            var query = new GetAllUsersQuery(
-                emailFilter: emailFilter,
-                nikNameFilter: nikNameFilter,
-                isBlocked: isBlocked,
-                role: role,
-                page: page,
-                pageSize: pageSize,
-                sortBy: sortBy,
-                sortOrder: sortOrder);
-
-            var result = await _mediator.Send(query);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-    }
-
+    /// <summary>
+    /// Block user by email with required reason and date
+    /// </summary>
+    /// <param name="dto"></param>
+    /// <returns></returns>
     [HttpPut("block-user")]
     public async Task<ActionResult<BlockUserResponseDto>> BlockUser([FromBody] BlockUserDto dto)
     {
@@ -88,6 +61,11 @@ public class UserManagementController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Unblock blocked user
+    /// </summary>
+    /// <param name="dto"></param>
+    /// <returns></returns>
     [HttpPut("unblock-user")]
     public async Task<ActionResult<BlockUserResponseDto>> UnblockUser([FromBody] WorkWithUserByEmailDto dto)
     {
@@ -116,6 +94,11 @@ public class UserManagementController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Toggle user role
+    /// </summary>
+    /// <param name="dto"></param>
+    /// <returns></returns>
     [HttpPut("toggle-user-role")]
     public async Task<ActionResult> ToggleUserRole([FromBody] WorkWithUserByEmailDto dto)
     {
