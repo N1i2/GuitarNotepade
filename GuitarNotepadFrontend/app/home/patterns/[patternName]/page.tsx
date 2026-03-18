@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
 import { PatternsService } from "@/lib/api/patterns-service";
@@ -35,10 +35,12 @@ import { DeletePatternDialog } from "@/components/patterns/delete-pattern-dialog
 export default function PatternDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const toast = useToast();
 
   const patternName = decodeURIComponent(params.patternName as string);
+  const returnTo = searchParams.get('returnTo');
 
   const [pattern, setPattern] = useState<Pattern | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,14 +73,26 @@ export default function PatternDetailPage() {
     loadPattern();
   }, [patternName]);
 
+  const handleBack = () => {
+    if (returnTo === 'song-create') {
+      router.push('/home/songs/create');
+    } else {
+      router.push('/home/patterns');
+    }
+  };
+
   const handleEdit = () => {
     if (!pattern) return;
-    router.push(`/home/patterns/edit/${pattern.id}`);
+    router.push(`/home/patterns/edit/${pattern.id}?returnTo=${returnTo || ''}`);
   };
 
   const handleDeleteSuccess = () => {
     toast.success(`Pattern "${pattern?.name}" deleted successfully`);
-    router.push('/home/patterns');
+    if (returnTo === 'song-create') {
+      router.push('/home/songs/create');
+    } else {
+      router.push('/home/patterns');
+    }
   };
 
   const canEdit = pattern && user?.id === pattern.createdByUserId;
@@ -109,7 +123,7 @@ export default function PatternDetailPage() {
             <Button
               variant="outline"
               className="mt-4"
-              onClick={() => router.push('/home/patterns')}
+              onClick={handleBack}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Go Back
@@ -123,17 +137,17 @@ export default function PatternDetailPage() {
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
       <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push('/home/patterns')}
-              className="mb-2"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Go Back
-            </Button>
+        <div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBack}
+            className="mb-2"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-3xl font-bold tracking-tight">
                 {pattern.name}
@@ -142,51 +156,52 @@ export default function PatternDetailPage() {
                 {pattern.isFingerStyle ? "Fingerstyle" : "Strumming"}
               </Badge>
             </div>
-            <p className="text-muted-foreground mt-2">
-              {pattern.isFingerStyle
-                ? "Fingerstyle pattern for guitar"
-                : "Strumming pattern for guitar"}
-            </p>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowLegend(!showLegend)}
-            >
-              {showLegend ? (
-                <>
-                  <EyeOff className="h-4 w-4 mr-2" />
-                  Hide Legend
-                </>
-              ) : (
-                <>
-                  <Eye className="h-4 w-4 mr-2" />
-                  Show Legend
-                </>
-              )}
-            </Button>
-
-            {canEdit && (
-              <Button variant="outline" size="sm" onClick={handleEdit}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
-            )}
-
-            {canDelete && (
+            <div className="flex flex-wrap items-center gap-2">
               <Button
-                variant="destructive"
+                variant="outline"
                 size="sm"
-                onClick={() => setDeleteDialogOpen(true)}
+                onClick={() => setShowLegend(!showLegend)}
               >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
+                {showLegend ? (
+                  <>
+                    <EyeOff className="h-4 w-4 mr-2" />
+                    Hide Legend
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4 mr-2" />
+                    Show Legend
+                  </>
+                )}
               </Button>
-            )}
+
+              {canEdit && (
+                <Button variant="outline" size="sm" onClick={handleEdit}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              )}
+
+              {canDelete && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              )}
+            </div>
           </div>
+          <p className="text-muted-foreground mt-2">
+            {pattern.isFingerStyle
+              ? "Fingerstyle pattern for guitar"
+              : "Strumming pattern for guitar"}
+          </p>
         </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <Card className="border-2">
@@ -202,7 +217,7 @@ export default function PatternDetailPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="border rounded-lg p-4 bg-gradient-to-b from-background to-muted/20">
+                <div className="border rounded-lg p-4 from-background to-muted/20">
                   {pattern.isFingerStyle ? (
                     <FingerStyleDiagram
                       pattern={pattern.pattern}

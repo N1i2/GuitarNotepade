@@ -83,9 +83,9 @@ export function FretboardEditor({
         Click on frets to place fingers (up to 12th fret)
       </div>
 
-      <div className="border rounded-lg p-4 bg-gradient-to-b from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20">
+      <div className="border rounded-lg p-4 from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20">
         <div className="flex mb-4">
-          <div className="w-22 flex-shrink-0"></div>
+          <div className="w-22"></div>
           <div className="flex-1 grid grid-cols-6 gap-0 px-8">
             {strings.map((string) => (
               <div key={string.number} className="text-center">
@@ -117,7 +117,7 @@ export function FretboardEditor({
                       size="sm"
                       variant={currentValue === 0 ? "default" : "outline"}
                       onClick={() => handleStringAction(stringIndex, "open")}
-                      className="h-10 w-full max-w-[64px] justify-center"
+                      className="h-10 w-full justify-center"
                     >
                       <span>Open</span>
                     </Button>
@@ -125,7 +125,7 @@ export function FretboardEditor({
                       size="sm"
                       variant={currentValue === "X" ? "default" : "outline"}
                       onClick={() => handleStringAction(stringIndex, "mute")}
-                      className="h-10 w-full max-w-[64px] justify-center"
+                      className="h-10 w-full justify-center"
                     >
                       <span>Mute</span>
                     </Button>
@@ -153,7 +153,7 @@ export function FretboardEditor({
                       key={string.number}
                       variant={isActive ? "default" : "outline"}
                       size="lg"
-                      className={`h-12 text-lg mx-auto w-full max-w-[64px] ${
+                      className={`h-12 text-lg mx-auto w-full ${
                         isActive ? getFretColor(fret + 1) : ""
                       }`}
                       onClick={() => handleFretClick(stringIndex, fret + 1)}

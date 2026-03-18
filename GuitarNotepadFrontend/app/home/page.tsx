@@ -13,11 +13,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowRight, FileMusic, FileText, Hand, ListMusic } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useEffect } from "react";
 
 export default function HomePage() {
   const { user, isLoading } = useAuth();
-  const router = useRouter();
 
   const isGuest = user?.role === "Guest";
 
@@ -160,6 +158,102 @@ export default function HomePage() {
                   <Link href="/home/albums">
                     <ArrowRight className="h-4 w-4 mr-2" />
                     Go to Albums
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+          {!isGuest && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Users
+                </CardTitle>
+                <CardDescription>
+                  Browse users
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Get access to other users' accounts.
+                </p>
+                <Button asChild className="w-full">
+                  <Link href="/home/users">
+                    <ArrowRight className="h-4 w-4 mr-2" />
+                    Go to Users
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+          {!isGuest && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Subscriptions
+                </CardTitle>
+                <CardDescription>
+                  Your Subscriptions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  You can view your subscriptions to users and albums.
+                </p>
+                <Button asChild className="w-full">
+                  <Link href="/home/subscriptions">
+                    <ArrowRight className="h-4 w-4 mr-2" />
+                    Go to Subscriptions
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+          {!isGuest && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Premium
+                </CardTitle>
+                <CardDescription>
+                  My premium
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  You can buy premium here.
+                </p>
+                <Button asChild className="w-full">
+                  <Link href="/home/premium">
+                    <ArrowRight className="h-4 w-4 mr-2" />
+                    Go to Premium
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+          {!isGuest && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Messages
+                </CardTitle>
+                <CardDescription>
+                  Your Messages
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Notifications about changes in the content of your subscriptions.
+                </p>
+                <Button asChild className="w-full">
+                  <Link href="/home/messages">
+                    <ArrowRight className="h-4 w-4 mr-2" />
+                    Go to Messages
                   </Link>
                 </Button>
               </CardContent>

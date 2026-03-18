@@ -38,6 +38,7 @@ class ApiClient {
     const url = `${this.baseURL}${normalizedEndpoint}`;
 
     const token = AuthService.getToken();
+    const hasAuthToken = Boolean(token);
 
     console.log(`🌐 API Request: ${options.method || "GET"} ${url}`);
 
@@ -65,9 +66,11 @@ class ApiClient {
       console.log(`📡 Response status: ${response.status}`);
 
       if (response.status === 401) {
-        AuthService.logout();
-        if (typeof window !== "undefined") {
-          window.location.href = "/login";
+        if (hasAuthToken) {
+          AuthService.logout();
+          if (typeof window !== "undefined") {
+            window.location.href = "/login";
+          }
         }
         throw new ApiError("Authentication failed", 401);
       }

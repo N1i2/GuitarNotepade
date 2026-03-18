@@ -1,4 +1,5 @@
 ﻿using Application.DTOs.Subscriptions;
+using Application.Features.Commands.Songs;
 using Application.Features.Commands.Subscriptions;
 using Application.Features.Queries.Subscriptions;
 using Domain.Common;
@@ -228,6 +229,17 @@ public class SubscriptionsController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
+    }
+
+    [HttpGet("count-of-create")]
+    [Authorize]
+    public async Task<int> CountOfCreateSubscription()
+    {
+        var userId = GetCurrentUserId();
+
+        var command = new CountOfCreateSubscriptionCommand(userId);
+
+        return await _mediator.Send(command);
     }
 
     private Guid GetCurrentUserId()

@@ -58,6 +58,25 @@ export class ProfileService {
     );
   }
 
+  static async getUsers(filters: FiltersForUsers): Promise<PaginatedUsers> {
+    const params = new URLSearchParams();
+
+    if (filters.emailFilter) params.append("emailFilter", filters.emailFilter);
+    if (filters.nikNameFilter)
+      params.append("nikNameFilter", filters.nikNameFilter);
+    if (filters.isBlocked !== undefined && filters.isBlocked !== null)
+      params.append("isBlocked", filters.isBlocked.toString());
+
+    params.append("page", (filters.page || 1).toString());
+    params.append("pageSize", (filters.pageSize || 10).toString());
+    params.append("sortBy", filters.sortBy || "createdAt");
+    params.append("sortOrder", filters.sortOrder || "desc");
+
+    return await apiClient.get<PaginatedUsers>(
+      `${this.BASE_PATH}/users?${params.toString()}`,
+    );
+  }
+
   static async blockUser(data: BlockUserRequest): Promise<void> {
     await apiClient.put(`${this.ADMIN_PATH}/block-user`, data);
   }

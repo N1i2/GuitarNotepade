@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
-import { AlbumService } from "@/lib/api/albom-service";
 import { AlbumWithSongsDto, SongInAlbumDto } from "@/types/albom";
 import {
   Card,
@@ -46,6 +45,7 @@ import {
 } from "@/components/ui/dialog";
 import { SongDto } from "@/types/songs";
 import { SongsService } from "@/lib/api/song-service";
+import { AlbumService } from "@/lib/api/albom-service";
 
 export default function AlbumDetailPage() {
   const params = useParams();
@@ -68,20 +68,21 @@ export default function AlbumDetailPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSongs, setSelectedSongs] = useState<string[]>([]);
 
-  const loadAlbum = async () => {
+  const loadAlbum = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await AlbumService.getAlbumWithSongs(albumId);
       setAlbum(data);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to load album");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load album";
+      toast.error(message);
       router.push("/home/albums");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [albumId, router, toast]);
 
-  const loadAvailableSongs = async () => {
+  const loadAvailableSongs = useCallback(async () => {
     if (!user) return;
 
     setIsLoadingSongs(true);
@@ -100,24 +101,24 @@ export default function AlbumDetailPage() {
       );
 
       setAvailableSongs(filteredSongs);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error("Failed to load available songs");
     } finally {
       setIsLoadingSongs(false);
     }
-  };
+  }, [album, toast, user]);
 
   useEffect(() => {
     if (!authLoading && albumId) {
       loadAlbum();
     }
-  }, [albumId, authLoading]);
+  }, [albumId, authLoading, loadAlbum]);
 
   useEffect(() => {
     if (addSongsDialogOpen && album && user) {
       loadAvailableSongs();
     }
-  }, [addSongsDialogOpen, album, user]);
+  }, [addSongsDialogOpen, album, user, loadAvailableSongs]);
 
   const handleEdit = () => {
     router.push(`/home/albums/edit/${albumId}`);
@@ -131,8 +132,9 @@ export default function AlbumDetailPage() {
       await AlbumService.deleteAlbum(albumId);
       toast.success(`Album "${album.title}" deleted successfully`);
       router.push("/home/albums");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete album");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to delete album";
+      toast.error(message);
     } finally {
       setIsDeleting(false);
       setDeleteDialogOpen(false);
@@ -509,7 +511,7 @@ export default function AlbumDetailPage() {
                     <Music className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-lg font-semibold">No songs yet</h3>
                     <p className="text-muted-foreground mt-2">
-                      This album doesn't have any songs yet.
+                      This album does not have any songs yet.
                     </p>
                     <Button
                       onClick={() => setAddSongsDialogOpen(true)}

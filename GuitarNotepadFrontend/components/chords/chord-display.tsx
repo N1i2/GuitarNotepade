@@ -54,7 +54,7 @@ export function ChordDisplay({ fingering, name }: ChordDisplayProps) {
   };
 
   return (
-    <div className="border rounded-lg p-4 bg-gradient-to-b from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20">
+    <div className="border rounded-lg p-4 from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20">
       <div className="text-center mb-6">
         {name && <div className="text-3xl font-bold mb-2">{name}</div>}
         <div className="text-lg text-muted-foreground font-mono bg-muted/50 px-4 py-2 rounded-lg inline-block">
@@ -63,7 +63,7 @@ export function ChordDisplay({ fingering, name }: ChordDisplayProps) {
       </div>
 
       <div className="flex mb-2">
-        <div className="w-28 flex-shrink-0"></div>
+        <div className="w-28"></div>
         <div className="flex-1 grid grid-cols-6 gap-0 px-2">
           {strings.map((string) => (
             <div key={string.number} className="text-center">
@@ -138,7 +138,7 @@ export function ChordDisplay({ fingering, name }: ChordDisplayProps) {
                   return (
                     <div
                       key={string.number}
-                      className={`h-12 flex items-center justify-center mx-auto w-full max-w-[64px] border ${
+                      className={`h-12 flex items-center justify-center mx-auto w-full border ${
                         fretNum === 1
                           ? "border-t-2 border-amber-600"
                           : "border-gray-300"

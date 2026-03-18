@@ -37,7 +37,7 @@ export function SVGChordDiagram({
   const diagramHeight = height - padding * 2;
 
   const frets = values.filter(
-    (v) => typeof v === "number" && v > 0
+    (v) => typeof v === "number" && v > 0,
   ) as number[];
 
   const getDisplayRange = (): { baseFret: number; fretSpan: number } => {
@@ -142,7 +142,7 @@ export function SVGChordDiagram({
 
   return (
     <div className="relative">
-      <div className="border-2 rounded-xl p-6 bg-gradient-to-b from-background to-muted/5 shadow-sm">
+      <div className="border-2 rounded-xl p-6 from-background to-muted/5 shadow-sm">
         <div className="text-center mb-6">
           {name && <div className="text-3xl font-bold mb-2">{name}</div>}
           <div className="text-lg text-muted-foreground font-mono bg-muted/50 px-4 py-2 rounded-lg inline-block">
@@ -154,7 +154,7 @@ export function SVGChordDiagram({
           <svg
             width={width}
             height={height}
-            className="border-4 border-amber-800 rounded-lg bg-gradient-to-b from-amber-900 via-amber-800 to-amber-900 shadow-lg"
+            className="border-4 border-amber-800 rounded-lg from-amber-900 via-amber-800 to-amber-900 shadow-lg"
           >
             <rect
               x={padding}
@@ -378,7 +378,7 @@ export function SVGChordDiagram({
               return (
                 <div
                   key={index}
-                  className="text-center p-3 bg-gradient-to-b from-muted to-muted/50 rounded-lg border"
+                  className="text-center p-3 from-muted to-muted/50 rounded-lg border"
                 >
                   <div className="text-xs text-muted-foreground">
                     String {stringNum} ({note})
@@ -388,15 +388,15 @@ export function SVGChordDiagram({
                       value === "X"
                         ? "text-red-500"
                         : value === 0
-                        ? "text-green-500"
-                        : "text-blue-500"
+                          ? "text-green-500"
+                          : "text-blue-500"
                     }`}
                   >
                     {value === 0
                       ? "Open"
                       : value === "X"
-                      ? "Mute"
-                      : `Fret ${value}`}
+                        ? "Mute"
+                        : `Fret ${value}`}
                   </div>
                 </div>
               );

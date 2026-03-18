@@ -25,7 +25,9 @@ public class ChordService : IChordService
         CancellationToken cancellationToken = default)
     {
         if (await _unitOfWork.Chords.ExistsWithSameFingeringAsync(name, fingering, cancellationToken))
+        {
             throw new InvalidOperationException($"Chord with name '{name}' and fingering '{fingering}' already exists");
+        }
 
         var chord = Chord.Create(name, fingering, userId, description);
         chord = await _unitOfWork.Chords.CreateAsync(chord, cancellationToken);

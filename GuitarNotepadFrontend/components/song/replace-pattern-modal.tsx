@@ -192,7 +192,7 @@ export function ReplacePatternModal({
                           </Badge>
                         </div>
                         {selectedPatternId === pattern.id && (
-                          <Check className="h-4 w-4 ml-2 flex-shrink-0" />
+                          <Check className="h-4 w-4 ml-2" />
                         )}
                       </div>
                     </Button>

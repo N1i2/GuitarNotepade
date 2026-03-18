@@ -243,6 +243,17 @@ public class ChordsController : ControllerBase
         }
     }
 
+    [HttpGet("count-of-create")]
+    [Authorize]
+    public async Task<int> CountOfCreateChord()
+    {
+        var userId = GetCurrentUserId();
+
+        var command = new CountOfCreateChordCommand(userId);
+
+        return await _mediator.Send(command);
+    }
+
     private bool IsUserAuthenticated()
     {
         return User.Identity?.IsAuthenticated == true;

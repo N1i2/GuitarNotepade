@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { usePathname } from "next/navigation";
 import {
-  Shield,
   Home,
   User,
   LogOut,
@@ -14,6 +13,11 @@ import {
   Hand,
   FileMusic,
   FileText,
+  Bell,
+  Menu,
+  Users,
+  BookOpen,
+  Star,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -24,6 +28,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { useNotifications } from "@/hooks/use-notifications";
+
+function NotificationBell() {
+  const { unreadCount } = useNotifications(true);
+
+  return (
+    <Button asChild variant="ghost" size="sm" className="relative">
+      <Link href="/home/messages" className="flex items-center">
+        <Bell className="h-5 w-5" />
+        {unreadCount > 0 && (
+          <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full text-[10px]">
+            {unreadCount}
+          </Badge>
+        )}
+      </Link>
+    </Button>
+  );
+}
 
 export function Header() {
   const { user, isGuest, isAdmin, logout, isLoading } = useAuth();
@@ -57,7 +80,7 @@ export function Header() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-20 flex h-16 max-w-screen-2xl items-center justify-between">
         <div className="flex items-center gap-6">
           <Link href="/home" className="flex items-center gap-2">
-            <span className="text-xl font-bold from-foreground via-foreground/80 to-teal-500 dark:to-teal-400 bg-clip-text text-transparent">
+            <span className="text-xl font-bold text-teal-500 dark:text-teal-400">
               GuitarNotepad
             </span>
             <span className="text-2xl">🎸</span>
@@ -113,35 +136,139 @@ export function Header() {
             </Button>
 
             {!isGuest && (
-              <Button
-                asChild
-                variant={pathname === "/home/albums" ? "default" : "ghost"}
-                size="sm"
-                className="gap-2"
-              >
-                <Link href="/home/albums">
-                  <FileText className="h-4 w-4" />
-                  Albums
-                </Link>
-              </Button>
-            )}
+              <>
+                <Button
+                  asChild
+                  variant={pathname === "/home/albums" ? "default" : "ghost"}
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Link href="/home/albums">
+                    <FileText className="h-4 w-4" />
+                    Albums
+                  </Link>
+                </Button>
 
-            {isAdmin && (
-              <Button
-                asChild
-                variant={
-                  pathname === "/home/user-management" ? "default" : "ghost"
-                }
-                size="sm"
-                className="gap-2"
-              >
-                <Link href="/home/user-management">
-                  <Shield className="h-4 w-4" />
-                  User Management
-                </Link>
-              </Button>
+                <Button
+                  asChild
+                  variant={pathname === "/home/users" ? "default" : "ghost"}
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Link href="/home/users">
+                    <Users className="h-4 w-4" />
+                    Users
+                  </Link>
+                </Button>
+
+                <Button
+                  asChild
+                  variant={
+                    pathname === "/home/subscriptions" ? "default" : "ghost"
+                  }
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Link href="/home/subscriptions">
+                    <BookOpen className="h-4 w-4" />
+                    Subscriptions
+                  </Link>
+                </Button>
+
+                <Button
+                  asChild
+                  variant={pathname === "/home/premium" ? "default" : "ghost"}
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Link href="/home/premium">
+                    <Star className="h-4 w-4" />
+                    Premium
+                  </Link>
+                </Button>
+              </>
             )}
           </nav>
+
+          <div className="md:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="p-2">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem asChild>
+                  <Link href="/home" className="flex items-center gap-2">
+                    <Home className="h-4 w-4" /> Home
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/home/chords" className="flex items-center gap-2">
+                    <Hand className="h-4 w-4" /> Chords
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link
+                    href="/home/patterns"
+                    className="flex items-center gap-2"
+                  >
+                    <ListMusic className="h-4 w-4" /> Patterns
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/home/songs" className="flex items-center gap-2">
+                    <FileMusic className="h-4 w-4" /> Songs
+                  </Link>
+                </DropdownMenuItem>
+                {!isGuest && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/home/albums"
+                        className="flex items-center gap-2"
+                      >
+                        <FileText className="h-4 w-4" /> Albums
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/home/users"
+                        className="flex items-center gap-2"
+                      >
+                        <Users className="h-4 w-4" /> Users
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/home/subscriptions"
+                        className="flex items-center gap-2"
+                      >
+                        <BookOpen className="h-4 w-4" /> Subscriptions
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/home/premium"
+                        className="flex items-center gap-2"
+                      >
+                        <Star className="h-4 w-4" /> Premium
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/home/messages"
+                        className="flex items-center gap-2"
+                      >
+                        <Bell className="h-4 w-4" /> Messages
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -166,6 +293,8 @@ export function Header() {
             </div>
           ) : (
             <>
+              <NotificationBell />
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button

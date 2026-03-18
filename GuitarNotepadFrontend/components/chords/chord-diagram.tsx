@@ -49,7 +49,7 @@ export function ChordDiagram({
   };
 
   const numberValues = values.filter(
-    (v) => typeof v === "number" && v > 0
+    (v) => typeof v === "number" && v > 0,
   ) as number[];
 
   const getDisplayFrets = () => {
@@ -85,7 +85,7 @@ export function ChordDiagram({
 
   return (
     <div className={`relative ${sizeClasses[size]} mx-auto`}>
-      <div className="absolute inset-0 bg-gradient-to-b from-amber-800 to-amber-900 rounded-lg shadow-lg"></div>
+      <div className="absolute inset-0 from-amber-800 to-amber-900 rounded-lg shadow-lg"></div>
       <div className="absolute inset-x-4 inset-y-8">
         {Array.from({ length: displayFrets + 1 }).map((_, fret) => (
           <div

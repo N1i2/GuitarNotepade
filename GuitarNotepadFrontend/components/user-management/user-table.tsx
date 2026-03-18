@@ -33,13 +33,17 @@ interface UserTableProps {
   users: User[];
   currentUserId?: string;
   isActionLoading: string | null;
-  onToggleBlock: (
+  onToggleBlock?: (
     user: User,
     reason?: string,
-    blockedUntil?: Date
+    blockedUntil?: Date,
   ) => Promise<void>;
-  onToggleRole: (user: User) => Promise<void>;
+  onToggleRole?: (user: User) => Promise<void>;
+  onToggleSubscribe?: (user: User) => Promise<void>;
+  isSubscribed?: (user: User) => boolean;
   isCurrentUser: (user: User) => boolean;
+  showAdminActions?: boolean;
+  showSubscribeAction?: boolean;
 }
 
 export function UserTable({
@@ -48,7 +52,11 @@ export function UserTable({
   isActionLoading,
   onToggleBlock,
   onToggleRole,
+  onToggleSubscribe,
+  isSubscribed,
   isCurrentUser,
+  showAdminActions = true,
+  showSubscribeAction = true,
 }: UserTableProps) {
   const [pendingAction, setPendingAction] = useState<{
     type: "block" | "role";
@@ -72,9 +80,13 @@ export function UserTable({
 
     try {
       if (pendingAction.type === "block") {
-        await onToggleBlock(pendingAction.user);
+        if (onToggleBlock) {
+          await onToggleBlock(pendingAction.user);
+        }
       } else {
-        await onToggleRole(pendingAction.user);
+        if (onToggleRole) {
+          await onToggleRole(pendingAction.user);
+        }
       }
     } finally {
       setPendingAction(null);
@@ -87,14 +99,14 @@ export function UserTable({
   };
 
   const handleBlock = async (reason: string, blockedUntil: Date) => {
-    if (!selectedUser) return;
+    if (!selectedUser || !onToggleBlock) return;
     await onToggleBlock(selectedUser, reason, blockedUntil);
     setManageBlockDialogOpen(false);
   };
 
   const handleUnblock = async () => {
-    if (!selectedUser) return;
-    await onToggleBlock(selectedUser); 
+    if (!selectedUser || !onToggleBlock) return;
+    await onToggleBlock(selectedUser);
     setManageBlockDialogOpen(false);
   };
 
@@ -193,11 +205,20 @@ export function UserTable({
                     >
                       {user.isBlocked ? "Blocked" : "Active"}
                     </Badge>
-                    {user.isBlocked && user.blockedUntil && (
-                      <div className="text-xs text-muted-foreground">
-                        Until:{" "}
-                        {new Date(user.blockedUntil).toLocaleDateString()}
-                      </div>
+                    {user.isBlocked && (
+                      <>
+                        {user.blockedUntil && (
+                          <div className="text-xs text-muted-foreground">
+                            Until:{" "}
+                            {new Date(user.blockedUntil).toLocaleDateString()}
+                          </div>
+                        )}
+                        {user.blockReason && (
+                          <div className="text-xs text-muted-foreground">
+                            Reason: {user.blockReason}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </TableCell>
@@ -214,64 +235,93 @@ export function UserTable({
 
                 <TableCell className="text-right border-r pr-6 py-3">
                   <div className="flex justify-end gap-2">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant={user.isBlocked ? "default" : "destructive"}
-                            size="sm"
-                            onClick={() => handleManageBlockClick(user)}
-                            disabled={isSelf || isBlockActionLoading}
-                            className="w-32"
-                          >
-                            {isBlockActionLoading ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : user.isBlocked ? (
-                              <AlertTriangle className="h-4 w-4 mr-1" />
-                            ) : (
-                              <AlertTriangle className="h-4 w-4 mr-1" />
-                            )}
-                            {user.isBlocked ? "Manage Block" : "Block"}
-                          </Button>
-                        </TooltipTrigger>
-                        {isSelf && (
-                          <TooltipContent>
-                            <p className="flex items-center gap-1">
-                              <AlertCircle className="h-3 w-3" />
-                              Cannot block yourself
-                            </p>
-                          </TooltipContent>
+                    {showSubscribeAction && onToggleSubscribe && (
+                      <Button
+                        variant={isSubscribed?.(user) ? "outline" : "secondary"}
+                        size="sm"
+                        onClick={() => onToggleSubscribe(user)}
+                        disabled={
+                          isSelf ||
+                          isBlockActionLoading ||
+                          user.isBlocked ||
+                          isActionLoading === user.id
+                        }
+                        className="w-32"
+                      >
+                        {isActionLoading === user.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : isSubscribed?.(user) ? (
+                          "Unsubscribe"
+                        ) : (
+                          "Subscribe"
                         )}
-                      </Tooltip>
-                    </TooltipProvider>
+                      </Button>
+                    )}
 
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              setPendingAction({ type: "role", user })
-                            }
-                            disabled={isSelf || isBlockActionLoading}
-                            className="w-32"
-                          >
-                            {user.role === "Admin"
-                              ? "Remove Admin"
-                              : "Make Admin"}
-                          </Button>
-                        </TooltipTrigger>
-                        {isSelf && (
-                          <TooltipContent>
-                            <p className="flex items-center gap-1">
-                              <AlertCircle className="h-3 w-3" />
-                              Cannot change your own role
-                            </p>
-                          </TooltipContent>
-                        )}
-                      </Tooltip>
-                    </TooltipProvider>
+                    {showAdminActions && onToggleBlock && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant={
+                                user.isBlocked ? "default" : "destructive"
+                              }
+                              size="sm"
+                              onClick={() => handleManageBlockClick(user)}
+                              disabled={isSelf || isBlockActionLoading}
+                              className="w-32"
+                            >
+                              {isBlockActionLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : user.isBlocked ? (
+                                <AlertTriangle className="h-4 w-4 mr-1" />
+                              ) : (
+                                <AlertTriangle className="h-4 w-4 mr-1" />
+                              )}
+                              {user.isBlocked ? "Manage Block" : "Block"}
+                            </Button>
+                          </TooltipTrigger>
+                          {isSelf && (
+                            <TooltipContent>
+                              <p className="flex items-center gap-1">
+                                <AlertCircle className="h-3 w-3" />
+                                Cannot block yourself
+                              </p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+
+                    {showAdminActions && onToggleRole && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                setPendingAction({ type: "role", user })
+                              }
+                              disabled={isSelf || isBlockActionLoading}
+                              className="w-32"
+                            >
+                              {user.role === "Admin"
+                                ? "Remove Admin"
+                                : "Make Admin"}
+                            </Button>
+                          </TooltipTrigger>
+                          {isSelf && (
+                            <TooltipContent>
+                              <p className="flex items-center gap-1">
+                                <AlertCircle className="h-3 w-3" />
+                                Cannot change your own role
+                              </p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

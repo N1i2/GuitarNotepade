@@ -1,5 +1,6 @@
 ﻿using Application.DTOs.Generic;
 using Application.DTOs.StrummingPatterns;
+using Application.Features.Commands.Chords;
 using Application.Features.Commands.StrummingPatterns;
 using Application.Features.Queries.StrummingPatterns;
 using AutoMapper;
@@ -239,6 +240,17 @@ public class StrummingPatternsController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
+    }
+
+    [HttpGet("count-of-create")]
+    [Authorize]
+    public async Task<int> CountOfCreatePattern()
+    {
+        var userId = GetCurrentUserId();
+
+        var command = new CountOfCreatePatternCommand(userId);
+
+        return await _mediator.Send(command);
     }
 
     private bool IsUserAuthenticated()

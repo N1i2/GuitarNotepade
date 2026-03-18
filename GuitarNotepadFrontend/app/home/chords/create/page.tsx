@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { ChordsService } from "@/lib/api/chords-service";
 import {
@@ -64,6 +64,8 @@ type CreateChordFormValues = z.infer<typeof createChordSchema>;
 
 export default function CreateChordPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
   const toast = useToast();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -94,6 +96,14 @@ export default function CreateChordPage() {
     });
   };
 
+  const handleBack = () => {
+    if (returnTo === 'song-create') {
+      router.push('/home/songs/create');
+    } else {
+      router.push('/home/chords');
+    }
+  };
+
   const onSubmit = async () => {
     const isValid = await trigger();
     if (!isValid) {
@@ -110,16 +120,23 @@ export default function CreateChordPage() {
       });
 
       toast.success(`Chord ${createdChord.name} created successfully!`);
-      router.push(`/home/chords/${createdChord.name}`);
+      
+      if (returnTo === 'song-create') {
+        router.push('/home/songs/create');
+      } else {
+        router.push(`/home/chords/${createdChord.name}`);
+      }
     } catch (error: unknown) {
       const isApiError =
         error && typeof error === "object" && "status" in error;
 
       if (isApiError) {
         const apiError = error as { status: number; message?: string };
-        if (apiError.status === 409) {
+
+        if(apiError.message === null){
           toast.error("Chord with this fingering already exists");
-        } else {
+        }
+        else{
           toast.error(apiError.message || "Failed to create chord");
         }
       } else if (error instanceof Error) {
@@ -135,24 +152,22 @@ export default function CreateChordPage() {
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push("/home/chords")}
-              className="mb-2"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Chords
-            </Button>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Create New Chord
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Create a new chord diagram for the library
-            </p>
-          </div>
+        <div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBack}
+            className="mb-2"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Create New Chord
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Create a new chord diagram for the library
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -254,7 +269,7 @@ export default function CreateChordPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => router.push("/home/chords")}
+                      onClick={handleBack}
                       className="flex-1"
                     >
                       Cancel

@@ -185,10 +185,11 @@ export default function EditChordPage() {
       
       if (isApiError) {
         const apiError = error as { status: number; message?: string };
-        if (apiError.status === 409) {
+       if(apiError.message === null){
           toast.error("Chord with this fingering already exists");
-        } else {
-          toast.error(apiError.message || "Failed to update chord");
+        }
+        else{
+          toast.error(apiError.message || "Failed to create chord");
         }
       } else if (error instanceof Error) {
         toast.error(error.message || "Failed to update chord");

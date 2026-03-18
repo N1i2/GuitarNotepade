@@ -43,7 +43,8 @@ import {
 } from "lucide-react";
 import { Pagination } from "@/components/user-management/pagination";
 import { genres, themes } from "@/lib/validations/album";
-import { AlbumsService } from "@/lib/api/albom-service";
+import { AlbumService } from "@/lib/api/albom-service";
+import { SubscriptionsService } from "@/lib/api/subscriptions-service";
 
 export default function AlbumsPage() {
   const router = useRouter();
@@ -62,6 +63,13 @@ export default function AlbumsPage() {
   const [sortOrder, setSortOrder] = useState<string>("desc");
   const [selectedGenre, setSelectedGenre] = useState<string>("all");
   const [selectedTheme, setSelectedTheme] = useState<string>("all");
+
+  const [subscribedAlbumIds, setSubscribedAlbumIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [subscriptionLoadingId, setSubscriptionLoadingId] = useState<
+    string | null
+  >(null);
 
   const pageSize = 12;
 
@@ -206,7 +214,7 @@ export default function AlbumsPage() {
       const userId = user?.id ? `${user.id}` : "";
 
       while (hasMore) {
-        const data: AlbumSearchResultDto = await AlbumsService.searchAlbums({
+        const data: AlbumSearchResultDto = await AlbumService.searchAlbums({
           userId: userId,
           page: currentPageNum,
           pageSize: loadPageSize,
@@ -234,7 +242,7 @@ export default function AlbumsPage() {
       } else if (error.status === 401 || error.status === 403) {
         try {
           const publicData: AlbumSearchResultDto =
-            await AlbumsService.searchAlbums({
+            await AlbumService.searchAlbums({
               userId: user?.id ? `${user.id}` : "",
               isPublic: true,
               page: 1,
@@ -256,9 +264,50 @@ export default function AlbumsPage() {
     }
   };
 
+  const loadSubscriptions = async () => {
+    if (!user) return;
+
+    try {
+      const subs = await SubscriptionsService.getMySubscriptions();
+      const albumSubs = new Set(
+        subs.filter((s) => !s.isUserSub).map((s) => s.targetId),
+      );
+      setSubscribedAlbumIds(albumSubs);
+    } catch (error) {}
+  };
+
+  const handleToggleAlbumSubscription = async (
+    albumId: string,
+    e: React.MouseEvent,
+  ) => {
+    e.stopPropagation();
+    if (!user) return;
+
+    setSubscriptionLoadingId(albumId);
+    try {
+      const isSubscribed = subscribedAlbumIds.has(albumId);
+      if (isSubscribed) {
+        await SubscriptionsService.unsubscribeFromAlbum(albumId);
+        setSubscribedAlbumIds((prev) => {
+          const next = new Set(prev);
+          next.delete(albumId);
+          return next;
+        });
+      } else {
+        await SubscriptionsService.subscribeToAlbum(albumId);
+        setSubscribedAlbumIds((prev) => new Set(prev).add(albumId));
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Subscription action failed");
+    } finally {
+      setSubscriptionLoadingId(null);
+    }
+  };
+
   useEffect(() => {
     if (!authLoading) {
       loadAllAlbums();
+      loadSubscriptions();
     }
   }, [authLoading]);
 
@@ -765,22 +814,20 @@ export default function AlbumsPage() {
                                   if (parent) {
                                     parent.innerHTML = `
                                       <div class="w-full h-full ${getAlbumGradient(
-                                        album.title
+                                        album.title,
                                       )}"></div>
                                     `;
                                   }
                                 }}
                               />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                              <div className="absolute inset-0 from-black/80 via-black/40 to-transparent" />
                             </div>
                           ) : (
                             <div
                               className={`absolute inset-0 ${getAlbumGradient(
-                                album.title
+                                album.title,
                               )} ${
-                                isFavorite
-                                  ? "bg-gradient-to-br from-amber-500 to-orange-600"
-                                  : ""
+                                isFavorite ? "from-amber-500 to-orange-600" : ""
                               }`}
                             />
                           )}
@@ -831,6 +878,28 @@ export default function AlbumsPage() {
                                   </Badge>
                                 )}
                               </div>
+
+                              {user && !isFavorite && (
+                                <Button
+                                  size="sm"
+                                  variant={
+                                    subscribedAlbumIds.has(album.id)
+                                      ? "outline"
+                                      : "secondary"
+                                  }
+                                  onClick={(e) =>
+                                    handleToggleAlbumSubscription(album.id, e)
+                                  }
+                                  disabled={subscriptionLoadingId === album.id}
+                                  className="flex items-center gap-1"
+                                >
+                                  {subscriptionLoadingId === album.id
+                                    ? "..."
+                                    : subscribedAlbumIds.has(album.id)
+                                      ? "Unsubscribe"
+                                      : "Subscribe"}
+                                </Button>
+                              )}
                             </div>
 
                             <div className="mb-4">
@@ -985,8 +1054,8 @@ export default function AlbumsPage() {
                         searchTerm || ownerNicknameFilter
                       }"`
                     : showOnlyMyAlbums
-                    ? "You haven't created any albums yet. Create your first one!"
-                    : "No albums available yet. Create the first one!"}
+                      ? "You haven't created any albums yet. Create your first one!"
+                      : "No albums available yet. Create the first one!"}
                 </p>
                 {(searchTerm ||
                   ownerNicknameFilter !== "all" ||

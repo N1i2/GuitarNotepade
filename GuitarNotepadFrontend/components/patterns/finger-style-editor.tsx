@@ -132,7 +132,7 @@ export function FingerStyleEditor({
         cells: {} as CellState,
       },
     ],
-    []
+    [],
   );
 
   const [rows, setRows] = useState<Row[]>(initialRows);
@@ -194,7 +194,7 @@ export function FingerStyleEditor({
 
         symbols.forEach((symbol) => {
           const row = newRows.find(
-            (r) => r.symbol === (symbol as FingerStyleSymbol)
+            (r) => r.symbol === (symbol as FingerStyleSymbol),
           );
           if (row) {
             row.cells[columnId] = true;
@@ -208,7 +208,7 @@ export function FingerStyleEditor({
 
       return newRows;
     },
-    [initialRows]
+    [initialRows],
   );
 
   useEffect(() => {
@@ -225,7 +225,7 @@ export function FingerStyleEditor({
       if (isParsing) return;
 
       const sortedColumns = [...updatedColumns].sort(
-        (a, b) => a.order - b.order
+        (a, b) => a.order - b.order,
       );
       let result = "";
 
@@ -249,7 +249,7 @@ export function FingerStyleEditor({
 
       onPatternChange(result);
     },
-    [onPatternChange, isParsing]
+    [onPatternChange, isParsing],
   );
 
   const handleCellToggle = useCallback(
@@ -273,7 +273,7 @@ export function FingerStyleEditor({
         return newRows;
       });
     },
-    [columns, updatePattern]
+    [columns, updatePattern],
   );
 
   const handleAddColumn = useCallback(() => {
@@ -342,7 +342,7 @@ export function FingerStyleEditor({
         return newRows;
       });
     },
-    [columns, updatePattern]
+    [columns, updatePattern],
   );
 
   const handleClearAll = useCallback(() => {
@@ -381,7 +381,7 @@ export function FingerStyleEditor({
       e.preventDefault();
       const draggedColumnId = parseInt(
         e.dataTransfer.getData("text/plain"),
-        10
+        10,
       );
 
       if (isNaN(draggedColumnId) || draggedColumnId === targetColumnId) {
@@ -434,7 +434,7 @@ export function FingerStyleEditor({
 
       setDragOverColumn(null);
     },
-    [columns, updatePattern]
+    [columns, updatePattern],
   );
 
   const handleTextInput = (value: string) => {
@@ -484,7 +484,7 @@ export function FingerStyleEditor({
         return newRows;
       });
     },
-    [columns, updatePattern]
+    [columns, updatePattern],
   );
 
   const sortedColumns = [...columns].sort((a, b) => a.order - b.order);
@@ -560,7 +560,7 @@ export function FingerStyleEditor({
             <div className="border rounded-lg overflow-x-auto">
               <div className="min-w-max">
                 <div className="flex border-b bg-muted/50 dark:bg-gray-800/50">
-                  <div className="w-40 flex-shrink-0 p-3 border-r">
+                  <div className="w-40 p-3 border-r">
                     <div className="text-xs font-medium text-muted-foreground">
                       String / Action
                     </div>
@@ -570,7 +570,7 @@ export function FingerStyleEditor({
                     const isDragged = draggedColumn === column.id;
                     const isDragOver = dragOverColumn === column.id;
                     const selectedCount = rows.filter(
-                      (row) => row.cells[column.id]
+                      (row) => row.cells[column.id],
                     ).length;
 
                     return (
@@ -582,7 +582,7 @@ export function FingerStyleEditor({
                         onDragEnd={handleDragEnd}
                         onDrop={(e) => handleDrop(e, column.id)}
                         className={`
-                          w-16 flex-shrink-0 p-2 border-r relative
+                          w-16 p-2 border-r relative
                           ${isDragged ? "opacity-50" : ""}
                           ${
                             isDragOver
@@ -654,7 +654,7 @@ export function FingerStyleEditor({
                     );
                   })}
 
-                  <div className="w-16 flex-shrink-0 p-2 border-r flex items-center justify-center">
+                  <div className="w-16 p-2 border-r flex items-center justify-center">
                     <Button
                       type="button"
                       variant="outline"
@@ -672,7 +672,7 @@ export function FingerStyleEditor({
                 {rows.map((row) => (
                   <div key={row.id} className="flex border-b last:border-b-0">
                     <div
-                      className={`w-40 flex-shrink-0 p-3 border-r flex items-center gap-3 ${row.bgColor}`}
+                      className={`w-40 p-3 border-r flex items-center gap-3 ${row.bgColor}`}
                     >
                       <div
                         className={`w-8 h-8 rounded-full flex items-center justify-center ${row.color} border ${row.borderColor}`}
@@ -696,7 +696,7 @@ export function FingerStyleEditor({
                       return (
                         <div
                           key={`${row.id}-${column.id}`}
-                          className="w-16 flex-shrink-0 p-4 border-r flex items-center justify-center hover:bg-muted/20 dark:hover:bg-gray-700/20 cursor-pointer"
+                          className="w-16 p-4 border-r flex items-center justify-center hover:bg-muted/20 dark:hover:bg-gray-700/20 cursor-pointer"
                           onClick={() => handleCellToggle(row.id, column.id)}
                           title={`${row.label} - Step ${
                             sortedColumns.findIndex((c) => c.id === column.id) +
@@ -734,7 +734,7 @@ export function FingerStyleEditor({
                       );
                     })}
 
-                    <div className="w-16 flex-shrink-0 p-4 border-r"></div>
+                    <div className="w-16 p-4 border-r"></div>
                   </div>
                 ))}
               </div>

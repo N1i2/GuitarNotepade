@@ -8,7 +8,7 @@ import {
 } from "@/types/albom";
 import { apiClient } from "./client";
 
-export class AlbumsService {
+export class AlbumService {
   private static readonly BASE_PATH = "/albums";
 
   static async searchAlbums(
@@ -111,6 +111,27 @@ export class AlbumsService {
 
   static async getFavoriteAlbum(): Promise<AlbumWithSongsDto> {
     return await apiClient.get<AlbumWithSongsDto>(`${this.BASE_PATH}/favorite`);
+  }
+
+  static async getAlbumCoverBase64(coverUrl: string): Promise<string> {
+    const response = await fetch(coverUrl);
+    if (!response.ok) {
+      throw new Error("Failed to fetch album cover");
+    }
+    const blob = await response.blob();
+
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === "string") {
+          resolve(reader.result);
+        } else {
+          reject(new Error("Failed to convert cover to base64"));
+        }
+      };
+      reader.onerror = () => reject(new Error("Failed to read cover blob"));
+      reader.readAsDataURL(blob);
+    });
   }
 
   static async addSongToFavorite(songId: string): Promise<void> {

@@ -19,6 +19,7 @@ export function convertUIToTable(
     color: segment.color,
     backgroundColor: segment.backgroundColor,
     repeatGroup: undefined,
+    comment: segment.comments?.[0]?.text || "",
   }));
 }
 
@@ -55,8 +56,19 @@ export function convertTableToUI(segments: TableSegment[]): UISegment[] {
       patternId: segment.patternId,
       color: segment.color,
       backgroundColor: segment.backgroundColor,
-      commentIds: [],
-      comments: [],
+      commentIds: segment.comment ? [segment.id] : [],
+      comments: segment.comment
+        ? [
+            {
+              id: `${segment.id}-comment`,
+              segmentId: segment.id,
+              authorId: "current-user",
+              authorName: "You",
+              text: segment.comment,
+              createdAt: new Date().toISOString(),
+            },
+          ]
+        : [],
     };
   });
 }

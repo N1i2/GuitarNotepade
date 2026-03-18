@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { SongResourcesPanel } from "@/components/song/table-editor/song-resources-panel";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
@@ -20,12 +21,23 @@ import {
   useTableEditor,
 } from "@/app/contexts/table-editor-context";
 import { convertTableToDTO } from "@/lib/table-converter";
+import { useSongEditorState } from "@/hooks/use-song-editor-state";
 
 function CreateSongContent() {
   const router = useRouter();
   const { user } = useAuth();
   const toast = useToast();
   const { state, dispatch } = useTableEditor();
+  const {
+    saveState,
+    saveMetadata,
+    loadState,
+    loadMetadata,
+    clearState,
+    validateResources,
+    refreshResources,
+  } = useSongEditorState();
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const [title, setTitle] = useState("");
   const [artist, setArtist] = useState("");
@@ -35,23 +47,114 @@ function CreateSongContent() {
   const [isPublic, setIsPublic] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [chordsData, patternsData] = await Promise.all([
-          ChordsService.getAllChords({ pageSize: 100 }),
-          PatternsService.getAllPatterns({ pageSize: 100 }),
-        ]);
+  const loadInitialData = useCallback(async () => {
+    try {
+      const [chordsData, patternsData] = await Promise.all([
+        ChordsService.getAllChords({ pageSize: 100 }),
+        PatternsService.getAllPatterns({ pageSize: 100 }),
+      ]);
 
-        dispatch({ type: "SET_CHORDS", payload: chordsData.items });
-        dispatch({ type: "SET_PATTERNS", payload: patternsData.items });
-      } catch (error) {
-        toast.error("Failed to load chords and patterns");
+      dispatch({ type: "SET_CHORDS", payload: chordsData.items });
+      dispatch({ type: "SET_PATTERNS", payload: patternsData.items });
+    } catch (error) {
+      toast.error("Failed to load chords and patterns");
+    }
+  }, [dispatch, toast]);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      if (isInitialized) {
+        validateResources();
       }
     };
 
-    loadData();
-  }, []);
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [isInitialized, validateResources]);
+
+  useEffect(() => {
+    loadInitialData();
+  }, [loadInitialData]);
+
+  useEffect(() => {
+    if (
+      state.chords.length > 0 &&
+      state.patterns.length > 0 &&
+      !isInitialized
+    ) {
+      const loadSavedState = async () => {
+        const savedStateLoaded = loadState();
+        const savedMetadata = loadMetadata();
+
+        if (savedStateLoaded) {
+          toast.info("Restored your previous work");
+        }
+
+        if (savedMetadata) {
+          setTitle(savedMetadata.title || "");
+          setArtist(savedMetadata.artist || "");
+          setGenre(savedMetadata.genre || "");
+          setTheme(savedMetadata.theme || "");
+          setDescription(savedMetadata.description || "");
+          setIsPublic(savedMetadata.isPublic || false);
+        }
+
+        setIsInitialized(true);
+
+        await validateResources();
+      };
+
+      loadSavedState();
+    }
+  }, [
+    state.chords.length,
+    state.patterns.length,
+    isInitialized,
+    loadState,
+    loadMetadata,
+    validateResources,
+    toast,
+  ]);
+
+  useEffect(() => {
+    if (isInitialized && state.segments.length > 0) {
+      saveState();
+    }
+  }, [state.segments, isInitialized, saveState]);
+
+  useEffect(() => {
+    if (isInitialized) {
+      saveMetadata({
+        title,
+        artist,
+        genre,
+        theme,
+        description,
+        isPublic,
+      });
+    }
+  }, [
+    title,
+    artist,
+    genre,
+    theme,
+    description,
+    isPublic,
+    isInitialized,
+    saveMetadata,
+  ]);
+
+  useEffect(() => {
+    const handleReturn = async () => {
+      if (document.visibilityState === "visible" && isInitialized) {
+        await refreshResources();
+        await validateResources();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleReturn);
+    return () => document.removeEventListener("visibilitychange", handleReturn);
+  }, [isInitialized, refreshResources, validateResources]);
 
   const handleSubmit = async () => {
     if (!user) {
@@ -94,6 +197,7 @@ function CreateSongContent() {
       };
 
       const createdSong = await SongsService.createSong(songData);
+      clearState();
       toast.success(`Song "${createdSong.title}" created!`);
       router.push(`/home/songs/${createdSong.id}`);
     } catch (error: any) {
@@ -102,6 +206,69 @@ function CreateSongContent() {
       setIsLoading(false);
     }
   };
+
+  const handleDeleteChord = (chordId: string) => {
+    dispatch({ type: "DELETE_CHORD_FROM_SONG", payload: chordId });
+  };
+
+  const handleDeletePattern = (patternId: string) => {
+    dispatch({ type: "DELETE_PATTERN_FROM_SONG", payload: patternId });
+  };
+
+  const handleReplaceChord = (oldChordId: string, newChordId: string) => {
+    dispatch({ type: "REPLACE_CHORD", payload: { oldChordId, newChordId } });
+  };
+
+  const handleReplacePattern = (oldPatternId: string, newPatternId: string) => {
+    dispatch({
+      type: "REPLACE_PATTERN",
+      payload: { oldPatternId, newPatternId },
+    });
+  };
+
+  const handleNavigateToChord = (chordId: string) => {
+    saveState();
+    saveMetadata({ title, artist, genre, theme, description, isPublic });
+    router.push(`/home/chords/${chordId}?returnTo=song-create`);
+  };
+
+  const handleNavigateToPattern = (patternId: string) => {
+    saveState();
+    saveMetadata({ title, artist, genre, theme, description, isPublic });
+    router.push(`/home/patterns/${patternId}?returnTo=song-create`);
+  };
+
+  const handleCreateChord = () => {
+    saveState();
+    saveMetadata({ title, artist, genre, theme, description, isPublic });
+    router.push("/home/chords/create?returnTo=song-create");
+  };
+
+  const handleCreatePattern = () => {
+    saveState();
+    saveMetadata({ title, artist, genre, theme, description, isPublic });
+    router.push("/home/patterns/create?returnTo=song-create");
+  };
+
+  const completedSegments = state.segments.filter(
+    (s) => s.chordId && s.patternId,
+  ).length;
+  const completionPercentage = Math.round(
+    (completedSegments / Math.max(1, state.segments.length)) * 100,
+  );
+
+  const textOnlyCount = state.segments.filter(
+    (s) => s.text && !s.patternId,
+  ).length;
+  const playbackOnlyCount = state.segments.filter(
+    (s) => !s.text && s.patternId,
+  ).length;
+  const fullSectionsCount = state.segments.filter(
+    (s) => s.text && s.patternId,
+  ).length;
+  const spacesCount = state.segments.filter(
+    (s) => !s.text && !s.patternId,
+  ).length;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -192,19 +359,37 @@ function CreateSongContent() {
               </CardContent>
             </Card>
 
+            <SongResourcesPanel
+              segments={state.segments}
+              chords={state.chords}
+              patterns={state.patterns}
+              onChordClick={handleNavigateToChord}
+              onPatternClick={handleNavigateToPattern}
+              onDeleteChord={handleDeleteChord}
+              onDeletePattern={handleDeletePattern}
+              onReplaceChord={handleReplaceChord}
+              onReplacePattern={handleReplacePattern}
+              onCreateChord={handleCreateChord}
+              onCreatePattern={handleCreatePattern}
+            />
+
             <Card>
               <CardHeader>
-                <CardTitle>Stats</CardTitle>
+                <CardTitle>Statistics</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Segments:</span>
-                    <span className="font-bold">{state.segments.length}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Segments:</span>
+                    <span className="font-bold text-lg">
+                      {state.segments.length}
+                    </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Unique Chords:</span>
-                    <span className="font-bold">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">
+                      Unique Chords:
+                    </span>
+                    <span className="font-bold text-lg">
                       {
                         new Set(
                           state.segments
@@ -214,9 +399,11 @@ function CreateSongContent() {
                       }
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Unique Patterns:</span>
-                    <span className="font-bold">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">
+                      Unique Patterns:
+                    </span>
+                    <span className="font-bold text-lg">
                       {
                         new Set(
                           state.segments
@@ -227,6 +414,61 @@ function CreateSongContent() {
                     </span>
                   </div>
                 </div>
+
+                <div className="space-y-1 pt-2 border-t">
+                  <div className="flex justify-between text-xs">
+                    <span>Completion</span>
+                    <span>{completionPercentage}%</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all"
+                      style={{ width: `${completionPercentage}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-2 border-t">
+                  <h4 className="text-xs font-medium">Segment Types</h4>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Text only:</span>
+                      <span className="font-medium">{textOnlyCount}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Playback only:
+                      </span>
+                      <span className="font-medium">{playbackOnlyCount}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Full sections:
+                      </span>
+                      <span className="font-medium">{fullSectionsCount}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Spaces:</span>
+                      <span className="font-medium">{spacesCount}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {state.segments.length === 0 && (
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-xs">
+                    <p className="text-blue-800 dark:text-blue-300">
+                      💡 Click "Add New Segment" to start building your song
+                    </p>
+                  </div>
+                )}
+
+                {state.segments.length > 0 && completionPercentage < 100 && (
+                  <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-xs">
+                    <p className="text-amber-800 dark:text-amber-300">
+                      💡 Add patterns to text segments to create full sections
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -250,7 +492,16 @@ function CreateSongContent() {
                   onDeleteSegment={(index) =>
                     dispatch({ type: "DELETE_SEGMENT", payload: index })
                   }
-                  onAddSegment={() => dispatch({ type: "ADD_SEGMENT" })}
+                  onAddSegment={(copyFromSegment) => {
+                    if (copyFromSegment) {
+                      dispatch({
+                        type: "ADD_SEGMENT",
+                        payload: copyFromSegment,
+                      });
+                    } else {
+                      dispatch({ type: "ADD_SEGMENT" });
+                    }
+                  }}
                   onReorderSegments={(from, to) =>
                     dispatch({
                       type: "REORDER_SEGMENTS",

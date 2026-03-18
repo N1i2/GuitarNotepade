@@ -97,6 +97,13 @@ public class UserService : IUserService
             .CountAsync(cancellationToken);
     }
 
+    public async Task<int> GetUserSubscriptionsCountAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return await _unitOfWork.Subscriptions.GetQueryable()
+            .Where(p => p.UserId == userId)
+            .CountAsync(cancellationToken);
+    }
+
     public async Task UpgradeToPremiumAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var user = await GetByIdAsync(userId, cancellationToken);

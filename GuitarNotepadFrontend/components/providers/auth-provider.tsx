@@ -10,25 +10,47 @@ const GUEST_USER: UserProfileResponse = {
   email: "",
   nikName: "Guest",
   role: "Guest",
+  hasPremium: false,
   avatarUrl: null,
   bio: "",
   createAt: new Date().toISOString(),
+  isBlocked: false,
 };
 
 interface AuthContextType {
   user: UserProfileResponse | null;
+  setUser: React.Dispatch<React.SetStateAction<UserProfileResponse | null>>;
   isLoading: boolean;
   isAuthenticated: boolean;
   isGuest: boolean;
   isUser: boolean;
   isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, nikName: string, password: string, confirmPassword: string) => Promise<void>;
+  register: (
+    email: string,
+    nikName: string,
+    password: string,
+    confirmPassword: string,
+  ) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const normalizeUserData = (userData: any): UserProfileResponse => {
+  return {
+    id: userData.id,
+    email: userData.email || "",
+    nikName: userData.nikName || userData.userName || "",
+    role: userData.role || "User",
+    hasPremium: userData.hasPremium ?? false,
+    avatarUrl: userData.avatarUrl || null,
+    bio: userData.bio || "",
+    createAt: userData.createAt || new Date().toISOString(),
+    isBlocked: userData.isBlocked ?? false,
+  };
+};
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfileResponse | null>(null);
@@ -46,13 +68,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         if (AuthService.hasToken()) {
           const userData = await AuthService.getCurrentUser();
-          setUser(userData);
+
+          setUser(normalizeUserData(userData));
         } else {
           setUser(GUEST_USER);
         }
       } catch (error) {
         console.error("Auth error:", error);
-
         setUser(GUEST_USER);
       } finally {
         setIsLoading(false);
@@ -72,13 +94,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       router.push("/home");
       return;
     }
-
   }, [isLoading, isGuest, user, pathname, router]);
 
   const login = async (email: string, password: string) => {
     const response = await AuthService.login({ email, password });
     const userData = await AuthService.getCurrentUser();
-    setUser(userData);
+
+    setUser(normalizeUserData(userData));
     router.push("/home");
   };
 
@@ -95,20 +117,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       confirmPassword,
     });
     const userData = await AuthService.getCurrentUser();
-    setUser(userData);
+
+    setUser(normalizeUserData(userData));
     router.push("/home");
   };
 
   const logout = () => {
     AuthService.logout();
-    setUser(GUEST_USER); 
+    setUser(GUEST_USER);
     router.push("/home");
   };
 
   const refreshUser = async () => {
     try {
       const userData = await AuthService.getCurrentUser();
-      setUser(userData || GUEST_USER);
+
+      setUser(userData ? normalizeUserData(userData) : GUEST_USER);
     } catch (error) {
       setUser(GUEST_USER);
     }
@@ -118,6 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
+        setUser,
         isLoading,
         isAuthenticated,
         isGuest,

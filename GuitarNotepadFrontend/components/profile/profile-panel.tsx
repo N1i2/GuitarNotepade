@@ -31,6 +31,8 @@ import { validatePassword } from "@/lib/utils/password-validation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useUsageCounters } from "@/hooks/use-usage-counters";
+import { Badge } from "@/components/ui/badge";
 
 const profileSchema = z
   .object({
@@ -96,23 +98,6 @@ export function ProfilePanel() {
     defaultValues: formDefaults,
   });
 
-  useEffect(() => {
-    if (user) {
-      reset({
-        nikName: user.nikName || "",
-        bio: user.bio || "",
-        currentPassword: "",
-        password: "",
-        confirmPassword: "",
-      });
-      if (user.avatarUrl) {
-        processAvatarFromBackend(user.avatarUrl);
-      } else {
-        setAvatarSrc("");
-      }
-    }
-  }, [user, reset]);
-
   const processAvatarFromBackend = (avatarData: string) => {
     if (!avatarData) {
       setAvatarSrc("");
@@ -130,6 +115,23 @@ export function ProfilePanel() {
     const dataUrl = `data:${mimeType};base64,${avatarData}`;
     setAvatarSrc(dataUrl);
   };
+
+  useEffect(() => {
+    if (user) {
+      reset({
+        nikName: user.nikName || "",
+        bio: user.bio || "",
+        currentPassword: "",
+        password: "",
+        confirmPassword: "",
+      });
+      if (user.avatarUrl) {
+        processAvatarFromBackend(user.avatarUrl);
+      } else {
+        setAvatarSrc("");
+      }
+    }
+  }, [user, reset]);
 
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -224,6 +226,20 @@ export function ProfilePanel() {
     reader.readAsDataURL(file);
   };
 
+  const { isLoading: usageLoading, error: usageError, chordsCount, patternsCount, songsCount, subscriptionsCount } = useUsageCounters();
+
+  const freeLimits = {
+    chords: 3,
+    patterns: 3,
+    songs: 5,
+    subscriptions: 5,
+  };
+
+  const formatUsage = (count: number | null, limit: number) => {
+    if (count === null) return "—";
+    return `${count} / ${limit}`;
+  };
+
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader className="flex flex-row items-start justify-between">
@@ -242,6 +258,62 @@ export function ProfilePanel() {
             All changes are saved automatically when you click "Save Changes"
           </AlertDescription>
         </Alert>
+
+        <Card className="border-primary/20">
+          <CardHeader>
+            <CardTitle>Usage</CardTitle>
+            <CardDescription>
+              Free users are limited to a few items. Upgrade to Premium for unlimited access.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-4">
+            <div>
+              <div className="text-xs font-medium text-muted-foreground mb-1">
+                Chords created
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-semibold">
+                  {formatUsage(chordsCount, freeLimits.chords)}
+                </span>
+                <Badge variant="secondary">{usageLoading ? "Loading" : "Free"}</Badge>
+              </div>
+            </div>
+            <div>
+              <div className="text-xs font-medium text-muted-foreground mb-1">
+                Patterns created
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-semibold">
+                  {formatUsage(patternsCount, freeLimits.patterns)}
+                </span>
+                <Badge variant="secondary">{usageLoading ? "Loading" : "Free"}</Badge>
+              </div>
+            </div>
+            <div>
+              <div className="text-xs font-medium text-muted-foreground mb-1">
+                Songs created
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-semibold">
+                  {formatUsage(songsCount, freeLimits.songs)}
+                </span>
+                <Badge variant="secondary">{usageLoading ? "Loading" : "Free"}</Badge>
+              </div>
+            </div>
+            <div>
+              <div className="text-xs font-medium text-muted-foreground mb-1">
+                Subscriptions
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-semibold">
+                  {formatUsage(subscriptionsCount, freeLimits.subscriptions)}
+                </span>
+                <Badge variant="secondary">{usageLoading ? "Loading" : "Free"}</Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <form
           className="space-y-8"
           onSubmit={handleSubmit(onSubmit)}

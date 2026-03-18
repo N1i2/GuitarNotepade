@@ -198,7 +198,7 @@ export function FingerStyleDiagram({
                     className="absolute left-0 right-0 flex items-center"
                     style={{ top: `${stringIndex * 40}px` }}
                   >
-                    <div className="w-24 flex-shrink-0 flex items-center justify-end pr-4">
+                    <div className="w-24 flex items-center justify-end pr-4">
                       <div
                         className={`w-8 h-8 rounded-full flex items-center justify-center ${stringColors[string]} text-white font-bold`}
                       >
@@ -334,7 +334,7 @@ export function FingerStyleDiagram({
                   key={index}
                   data-step-button={index}
                   variant={activeStep === index ? "default" : "outline"}
-                  className="flex flex-col items-center justify-center h-24 w-24 flex-shrink-0 transition-all hover:scale-105"
+                  className="flex flex-col items-center justify-center h-24 w-24 transition-all hover:scale-105"
                   onClick={() => scrollToStep(index)}
                 >
                   <div className="text-xs text-muted-foreground mb-1">Step</div>

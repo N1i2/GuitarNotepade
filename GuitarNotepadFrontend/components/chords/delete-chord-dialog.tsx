@@ -41,7 +41,9 @@ export function DeleteChordDialog({
       onSuccess();
       onClose();
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : "Failed to delete chord");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete chord",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -68,7 +70,7 @@ export function DeleteChordDialog({
                 <span className="font-mono font-bold">{chord.fingering}</span>?
                 This action cannot be undone.
               </p>
-              
+
               <div className="mt-4 p-3 bg-muted rounded-md">
                 <div className="flex items-center gap-3 mb-2">
                   <Music className="h-5 w-5 text-muted-foreground" />
@@ -77,13 +79,13 @@ export function DeleteChordDialog({
                     {chord.fingering}
                   </div>
                 </div>
-                
+
                 {chord.description && (
                   <p className="text-sm text-muted-foreground">
                     {chord.description}
                   </p>
                 )}
-                
+
                 <div className="mt-2 text-xs text-muted-foreground">
                   <div>Created by: {chord.createdByNikName || "Unknown"}</div>
                   <div>
@@ -100,12 +102,8 @@ export function DeleteChordDialog({
                       Permissions:
                     </p>
                     <ul className="list-disc list-inside mt-1 space-y-1">
-                      {isCreator && (
-                        <li>You created this chord</li>
-                      )}
-                      {isAdmin && (
-                        <li>You have admin privileges</li>
-                      )}
+                      {isCreator && <li>You created this chord</li>}
+                      {isAdmin && <li>You have admin privileges</li>}
                     </ul>
                   </div>
                 </div>
@@ -113,7 +111,7 @@ export function DeleteChordDialog({
             </div>
           </DialogDescription>
         </DialogHeader>
-        
+
         <DialogFooter className="flex flex-col sm:flex-row gap-3 sm:gap-2 pt-4">
           <Button
             type="button"

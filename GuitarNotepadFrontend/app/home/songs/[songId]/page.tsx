@@ -177,7 +177,7 @@ function ChordModal({
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="border rounded-lg p-6 bg-gradient-to-b from-background to-muted/20">
+            <div className="border rounded-lg p-6 from-background to-muted/20">
               <h3 className="text-lg font-semibold mb-4 text-center">
                 Chord Diagram
               </h3>
@@ -345,7 +345,7 @@ function PatternModal({
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="border rounded-lg p-6 bg-gradient-to-b from-background to-muted/20">
+            <div className="border rounded-lg p-6 from-background to-muted/20">
               <h3 className="text-lg font-semibold mb-4 text-center">
                 Pattern Visualization
               </h3>
@@ -529,7 +529,6 @@ export default function SongDetailPage() {
     try {
       const data = await SongsService.getSongById(
         songId,
-        user?.id || "",
         true,
         true,
         true,

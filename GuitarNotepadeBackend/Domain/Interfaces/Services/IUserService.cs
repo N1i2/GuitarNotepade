@@ -14,5 +14,6 @@ public interface IUserService
     Task<int> GetUserChordsCountAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<int> GetUserPatternsCountAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<int> GetUserAlbumsCountAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<int> GetUserSubscriptionsCountAsync(Guid userId, CancellationToken cancellationToken = default);
     Task UpgradeToPremiumAsync(Guid userId, CancellationToken cancellationToken = default);
 }

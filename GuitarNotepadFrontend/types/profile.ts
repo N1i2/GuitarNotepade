@@ -32,6 +32,7 @@ export interface User {
   email: string;
   nikName: string;
   role: string;
+  hasPremium?: boolean;
   avatarUrl?: string;
   bio: string;
   createAt: string;
@@ -45,6 +46,7 @@ export interface AuthResponse {
   email: string
   nikName: string
   role: string
+  hasPremium: boolean
   token: string
 }
 
@@ -65,9 +67,13 @@ export interface UserProfileResponse {
   email: string
   nikName: string
   role: string
+  hasPremium: boolean
   avatarUrl: string | null
   bio: string
   createAt: string
+  isBlocked: boolean
+  blockedUntil?: string
+  blockReason?: string
 }
 
 export interface BlockUserRequest {

@@ -1,4 +1,5 @@
-import { toast as sonnerToast } from 'sonner';
+import { useMemo } from "react";
+import { toast as sonnerToast } from "sonner";
 
 export interface ToastOptions {
   className?: string;
@@ -26,15 +27,24 @@ export interface ToastInterface {
   dismiss: (id?: string | number) => string | number;
 }
 
-export const useToast = () => {
-  return {
-    success: (message: string, options?: ToastOptions) => sonnerToast.success(message, options),
-    error: (message: string, options?: ToastOptions) => sonnerToast.error(message, options),
-    warning: (message: string, options?: ToastOptions) => sonnerToast.warning(message, options),
-    info: (message: string, options?: ToastOptions) => sonnerToast.info(message, options),
-    loading: (message: string, options?: ToastOptions) => sonnerToast.loading(message, options),
-    message: (message: string, options?: ToastOptions) => sonnerToast.message(message, options),
-    promise: sonnerToast.promise,
-    dismiss: (id?: string | number) => sonnerToast.dismiss(id),
-  };
+export const useToast = (): ToastInterface => {
+  return useMemo(
+    () => ({
+      success: (message: string, options?: ToastOptions) =>
+        sonnerToast.success(message, options),
+      error: (message: string, options?: ToastOptions) =>
+        sonnerToast.error(message, options),
+      warning: (message: string, options?: ToastOptions) =>
+        sonnerToast.warning(message, options),
+      info: (message: string, options?: ToastOptions) =>
+        sonnerToast.info(message, options),
+      loading: (message: string, options?: ToastOptions) =>
+        sonnerToast.loading(message, options),
+      message: (message: string, options?: ToastOptions) =>
+        sonnerToast.message(message, options),
+      promise: sonnerToast.promise,
+      dismiss: (id?: string | number) => sonnerToast.dismiss(id),
+    }),
+    [],
+  );
 };

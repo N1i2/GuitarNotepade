@@ -292,7 +292,6 @@ function EditSongContent() {
       try {
         const songData = await SongsService.getSongById(
           songId,
-          user.id,
           true,
           true,
           true,

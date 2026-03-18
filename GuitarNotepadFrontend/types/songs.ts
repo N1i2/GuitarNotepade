@@ -519,25 +519,6 @@ export interface SongMetadataDto {
   segmentLabels: Array<{ segmentId: string; labelId: string }>;
 }
 
-export interface SongSearchFilters {
-  searchTerm?: string;
-  ownerId?: string;
-  isPublic?: boolean;
-  chordId?: string;
-  patternId?: string;
-  key?: string;
-  difficulty?: string;
-  parentSongId?: string;
-  minRating?: number;
-  maxRating?: number;
-  createdFrom?: Date;
-  createdTo?: Date;
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
-  page?: number;
-  pageSize?: number;
-}
-
 export const createSongSchema = z.object({
   title: z.string().min(1, "Title is required").max(200, "Title too long"),
   artist: z.string().max(200).optional(),

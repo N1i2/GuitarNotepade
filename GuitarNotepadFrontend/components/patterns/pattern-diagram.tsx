@@ -180,7 +180,7 @@ export function PatternDiagram({ pattern, name }: PatternDiagramProps) {
 
   return (
     <div className="relative w-full">
-      <div className="border-2 rounded-xl p-6 bg-gradient-to-b from-background to-muted/5 shadow-sm">
+      <div className="border-2 rounded-xl p-6 from-background to-muted/5 shadow-sm">
         <div className="text-center mb-6">
           {name && <div className="text-3xl font-bold mb-2">{name}</div>}
           <div className="text-lg text-muted-foreground font-mono bg-muted/50 px-4 py-2 rounded-lg inline-block">
@@ -189,7 +189,7 @@ export function PatternDiagram({ pattern, name }: PatternDiagramProps) {
         </div>
 
         <div className="flex justify-center">
-          <div className="border-4 border-amber-800 rounded-lg bg-gradient-to-b from-amber-900 via-amber-800 to-amber-900 shadow-lg p-4 w-full max-w-4xl">
+          <div className="border-4 border-amber-800 rounded-lg from-amber-900 via-amber-800 to-amber-900 shadow-lg p-4 w-full max-w-4xl">
             {symbols.length === 0 ? (
               <div className="h-40 flex items-center justify-center text-gray-400">
                 <div className="text-center">
@@ -206,7 +206,7 @@ export function PatternDiagram({ pattern, name }: PatternDiagramProps) {
                       return (
                         <div
                           key={index}
-                          className="flex-shrink-0 flex flex-col items-center gap-1.5 w-24"
+                          className="flex flex-col items-center gap-1.5 w-24"
                         >
                           <div
                             className={`${config.bgColor} ${config.color} p-2.5 rounded-lg border border-current/20`}
@@ -243,7 +243,7 @@ export function PatternDiagram({ pattern, name }: PatternDiagramProps) {
               return (
                 <div
                   key={symbol}
-                  className="text-center p-2 bg-gradient-to-b from-muted to-muted/50 rounded border"
+                  className="text-center p-2 from-muted to-muted/50 rounded border"
                 >
                   <div className="text-[11px] text-muted-foreground mb-1">
                     {config.label}

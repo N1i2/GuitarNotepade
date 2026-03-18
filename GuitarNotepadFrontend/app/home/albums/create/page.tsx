@@ -364,7 +364,7 @@ export default function CreateAlbumPage() {
                               alt="Album cover preview"
                               className="w-full h-full object-cover"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                            <div className="absolute inset-0 from-black/60 via-transparent to-transparent" />
                           </div>
                           <div className="absolute top-2 right-2 w-12 h-12 rounded-md overflow-hidden border-2 border-white/30 shadow-lg z-10">
                             <img
@@ -375,7 +375,7 @@ export default function CreateAlbumPage() {
                           </div>
                         </>
                       ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-400 to-purple-500">
+                        <div className="w-full h-full flex flex-col items-center justify-center p-4 from-blue-400 to-purple-500">
                           <div className="h-16 w-16 rounded-full bg-white/20 flex items-center justify-center mb-4 backdrop-blur-sm">
                             <span className="text-white text-2xl font-bold">
                               {currentValues.title

@@ -372,7 +372,7 @@ export default function EditPatternPage() {
       const apiError = error as ApiError;
 
       if (apiError.status !== undefined) {
-        if (apiError.status === 409) {
+        if (apiError.message === null) {
           errorMessage = "Pattern with this name already exists";
         } else if (apiError.status === 403) {
           errorMessage = "You don't have permission to edit this pattern";

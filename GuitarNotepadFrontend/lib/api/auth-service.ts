@@ -17,6 +17,7 @@ export interface AuthResponse {
   email: string;
   nikName: string;
   role: string;
+  hasPremium: boolean;
   token: string;
 }
 

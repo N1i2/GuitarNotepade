@@ -493,6 +493,17 @@ public class SongsController : ControllerBase
         }
     }
 
+    [HttpGet("count-of-create")]
+    [Authorize]
+    public async Task<int> CountOfCreateSong()
+    {
+        var userId = GetCurrentUserId();
+
+        var command = new CountOfCreateSongCommand(userId);
+
+        return await _mediator.Send(command);
+    }
+
     private Guid GetCurrentUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)

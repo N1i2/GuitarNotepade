@@ -7,6 +7,7 @@ import {
   SongSearchResultDto,
   CreateSongDto,
   UpdateSongDto,
+  UpdateSongWithSegmentsDto,
   PaginatedDto,
   SongStructureDto,
   SongCommentDto,
@@ -111,6 +112,31 @@ export class SongsService {
       `${this.BASE_PATH}/${id}`,
       data,
     );
+  }
+
+  static async updateSongWithSegments(
+    data: UpdateSongWithSegmentsDto,
+  ): Promise<SongDto> {
+    const songUpdatePayload: any = {
+      title: data.title ?? undefined,
+      artist: data.artist ?? undefined,
+      description: data.description ?? undefined,
+      genre: data.genre ?? undefined,
+      theme: data.theme ?? undefined,
+      isPublic: data.isPublic ?? undefined,
+      audioBase64:
+        data.customAudioUrl ?? (data.isDeleteAudio ? null : undefined),
+      audioType:
+        data.customAudioType ?? (data.isDeleteAudio ? null : undefined),
+    };
+
+    const updatedSong = await this.updateSong(data.id, songUpdatePayload);
+
+    if (data.segments || data.segmentComments) {
+      await this.buildSongStructure(data.id, data.segments ?? []);
+    }
+
+    return updatedSong;
   }
 
   static async deleteSong(id: string): Promise<void> {

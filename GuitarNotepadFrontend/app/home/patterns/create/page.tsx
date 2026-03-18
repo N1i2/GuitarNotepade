@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { PatternsService } from "@/lib/api/patterns-service";
 import {
@@ -39,6 +39,8 @@ interface ExtendedPatternFormData {
 
 export default function CreatePatternPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
   const toast = useToast();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -181,6 +183,14 @@ export default function CreatePatternPage() {
     updateFormField("isFingerStyle", isFingerStyle);
   };
 
+  const handleBack = () => {
+    if (returnTo === 'song-create') {
+      router.push('/home/songs/create');
+    } else {
+      router.push('/home/patterns');
+    }
+  };
+
   const handleSubmit = async () => {
     if (!validateForm()) {
       toast.error("Please fix the errors in the form");
@@ -197,16 +207,21 @@ export default function CreatePatternPage() {
       });
 
       toast.success(`Pattern "${createdPattern.name}" created successfully!`);
-      router.push(`/home/patterns/${createdPattern.name}`);
+      
+      if (returnTo === 'song-create') {
+        router.push('/home/songs/create');
+      } else {
+        router.push(`/home/patterns/${createdPattern.name}`);
+      }
     } catch (error: unknown) {
       let errorMessage = "Failed to create pattern";
 
       if (error && typeof error === "object" && "status" in error) {
         const err = error as { status: number; message?: string };
-        if (err.status === 409) {
+        if (err.message === null) {
           errorMessage = "Pattern with this name already exists";
-        } else if (err.message) {
-          errorMessage = err.message;
+        } else {
+          errorMessage = err.message ?? "Failed to create pattern";
         }
       }
 
@@ -223,24 +238,22 @@ export default function CreatePatternPage() {
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push("/home/patterns")}
-              className="mb-2"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Patterns
-            </Button>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Create New Pattern
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Create a new strumming or fingerstyle pattern for the library
-            </p>
-          </div>
+        <div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBack}
+            className="mb-2"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Create New Pattern
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Create a new strumming or fingerstyle pattern for the library
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -374,7 +387,7 @@ export default function CreatePatternPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => router.push("/home/patterns")}
+                      onClick={handleBack}
                       className="flex-1"
                     >
                       Cancel
