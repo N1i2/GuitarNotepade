@@ -11,6 +11,7 @@ import {
   Trash2,
   Replace,
   MoreVertical,
+  Music2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -21,6 +22,8 @@ import {
 import { SongChordDto, SongPatternDto, TableSegment } from "@/types/songs";
 import { DeleteResourceDialog } from "./delete-resource-dialog";
 import { ReplaceResourceDialog } from "./replace-resource-dialog";
+import { AudioInputData } from "@/types/audio";
+import { AudioInputSection } from "../audio-input-section";
 
 interface SongResourcesPanelProps {
   segments: TableSegment[];
@@ -34,6 +37,8 @@ interface SongResourcesPanelProps {
   onReplacePattern?: (oldPatternId: string, newPatternId: string) => void;
   onCreateChord?: () => void;
   onCreatePattern?: () => void;
+  audioData?: AudioInputData;
+  onAudioChange?: (data: AudioInputData) => void;
 }
 
 export function SongResourcesPanel({
@@ -48,6 +53,8 @@ export function SongResourcesPanel({
   onReplacePattern,
   onCreateChord,
   onCreatePattern,
+  audioData,
+  onAudioChange,
 }: SongResourcesPanelProps) {
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -185,7 +192,7 @@ export function SongResourcesPanel({
                   >
                     <div
                       className="flex items-center gap-3 flex-1 cursor-pointer"
-                      onClick={() => onChordClick?.(chord.id)}
+                      onClick={() => onChordClick?.(chord.name)}
                     >
                       <div
                         className="w-6 h-6 rounded-full shrink-0"
@@ -337,6 +344,24 @@ export function SongResourcesPanel({
               </div>
             </ScrollArea>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Music2 className="h-5 w-5" />
+            Audio
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {audioData && onAudioChange ? (
+            <AudioInputSection value={audioData} onChange={onAudioChange} />
+          ) : (
+            <div className="text-sm text-muted-foreground text-center py-4">
+              No audio selected
+            </div>
+          )}
         </CardContent>
       </Card>
 

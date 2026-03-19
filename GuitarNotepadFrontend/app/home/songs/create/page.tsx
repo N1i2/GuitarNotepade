@@ -1,6 +1,7 @@
 "use client";
 
 import { SongResourcesPanel } from "@/components/song/table-editor/song-resources-panel";
+import { AudioInputSection } from "@/components/song/audio-input-section";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -22,6 +23,7 @@ import {
 } from "@/app/contexts/table-editor-context";
 import { convertTableToDTO } from "@/lib/table-converter";
 import { useSongEditorState } from "@/hooks/use-song-editor-state";
+import { AudioInputData, AudioInputType } from "@/types/audio";
 
 function CreateSongContent() {
   const router = useRouter();
@@ -46,6 +48,9 @@ function CreateSongContent() {
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [audioData, setAudioData] = useState<AudioInputData>({
+    type: AudioInputType.NONE,
+  });
 
   const loadInitialData = useCallback(async () => {
     try {
@@ -97,6 +102,9 @@ function CreateSongContent() {
           setTheme(savedMetadata.theme || "");
           setDescription(savedMetadata.description || "");
           setIsPublic(savedMetadata.isPublic || false);
+          if (savedMetadata.audioData) {
+            setAudioData(savedMetadata.audioData);
+          }
         }
 
         setIsInitialized(true);
@@ -131,6 +139,7 @@ function CreateSongContent() {
         theme,
         description,
         isPublic,
+        audioData,
       });
     }
   }, [
@@ -140,6 +149,7 @@ function CreateSongContent() {
     theme,
     description,
     isPublic,
+    audioData,
     isInitialized,
     saveMetadata,
   ]);
@@ -174,6 +184,31 @@ function CreateSongContent() {
 
     setIsLoading(true);
     try {
+      let audioBase64;
+      let audioType;
+
+      if (audioData.type === AudioInputType.FILE && audioData.file) {
+        audioBase64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(audioData.file!);
+        });
+        audioType = audioData.file.type;
+      } else if (
+        audioData.type === AudioInputType.RECORD &&
+        audioData.audioBlob
+      ) {
+        audioBase64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(audioData.audioBlob!);
+        });
+        audioType = "audio/webm";
+      } else if (audioData.type === AudioInputType.URL && audioData.url) {
+        audioBase64 = audioData.url;
+        audioType = "url";
+      }
+
       const segmentsDTO = convertTableToDTO(state.segments);
 
       const songData = {
@@ -194,6 +229,8 @@ function CreateSongContent() {
             state.segments.filter((s) => s.patternId).map((s) => s.patternId!),
           ),
         ),
+        audioBase64,
+        audioType,
       };
 
       const createdSong = await SongsService.createSong(songData);
@@ -228,25 +265,57 @@ function CreateSongContent() {
 
   const handleNavigateToChord = (chordId: string) => {
     saveState();
-    saveMetadata({ title, artist, genre, theme, description, isPublic });
+    saveMetadata({
+      title,
+      artist,
+      genre,
+      theme,
+      description,
+      isPublic,
+      audioData,
+    });
     router.push(`/home/chords/${chordId}?returnTo=song-create`);
   };
 
   const handleNavigateToPattern = (patternId: string) => {
     saveState();
-    saveMetadata({ title, artist, genre, theme, description, isPublic });
+    saveMetadata({
+      title,
+      artist,
+      genre,
+      theme,
+      description,
+      isPublic,
+      audioData,
+    });
     router.push(`/home/patterns/${patternId}?returnTo=song-create`);
   };
 
   const handleCreateChord = () => {
     saveState();
-    saveMetadata({ title, artist, genre, theme, description, isPublic });
+    saveMetadata({
+      title,
+      artist,
+      genre,
+      theme,
+      description,
+      isPublic,
+      audioData,
+    });
     router.push("/home/chords/create?returnTo=song-create");
   };
 
   const handleCreatePattern = () => {
     saveState();
-    saveMetadata({ title, artist, genre, theme, description, isPublic });
+    saveMetadata({
+      title,
+      artist,
+      genre,
+      theme,
+      description,
+      isPublic,
+      audioData,
+    });
     router.push("/home/patterns/create?returnTo=song-create");
   };
 
@@ -371,6 +440,8 @@ function CreateSongContent() {
               onReplacePattern={handleReplacePattern}
               onCreateChord={handleCreateChord}
               onCreatePattern={handleCreatePattern}
+              audioData={audioData}
+              onAudioChange={setAudioData}
             />
 
             <Card>

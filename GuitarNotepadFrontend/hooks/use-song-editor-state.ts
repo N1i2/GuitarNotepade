@@ -25,6 +25,7 @@ export interface SongMetadata {
   theme: string;
   description: string;
   isPublic: boolean;
+  audioData?: any;
 }
 
 export function useSongEditorState() {
