@@ -119,15 +119,20 @@ class ApiClient {
     return this.request<T>(endpoint, { method: "GET" });
   }
 
-  async post<TRequest, TResponse>(
-    endpoint: string,
-    data?: TRequest,
-  ): Promise<TResponse> {
-    return this.request<TResponse>(endpoint, {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
+async post<TRequest, TResponse>(
+  endpoint: string,
+  data?: TRequest,
+): Promise<TResponse> {
+  console.log(`📤 POST ${endpoint}`, {
+    hasAudio: !!(data as any)?.audioBase64,
+    audioType: (data as any)?.audioType,
+    audioLength: (data as any)?.audioBase64?.length
+  });
+  return this.request<TResponse>(endpoint, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
 
   async put<TRequest, TResponse>(
     endpoint: string,

@@ -1,3 +1,5 @@
+// Application.DTOs.Song.CreateSongDto
+
 namespace Application.DTOs.Song;
 
 public class CreateSongDto
@@ -11,5 +13,6 @@ public class CreateSongDto
     public string? AudioBase64 { get; set; }
     public string? AudioType { get; set; }
     public Guid? ParentSongId { get; set; }
+    public string? CustomAudioUrl { get; set; }
+    public string? CustomAudioType { get; set; }
 }
-

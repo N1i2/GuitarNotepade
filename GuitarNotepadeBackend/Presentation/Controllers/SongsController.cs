@@ -1,14 +1,16 @@
 using Application.DTOs.Generic;
 using Application.DTOs.Song;
-using Application.Features.Commands.Songs;
+using Application.DTOs.Song.Comment;
 using Application.Features.Commands.Chords;
+using Application.Features.Commands.Songs;
 using Application.Features.Commands.StrummingPatterns;
 using Application.Features.Queries.Songs;
+using Domain.Interfaces;
+using Domain.Interfaces.Services;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using Application.DTOs.Song.Comment;
 
 namespace Presentation.Controllers;
 
@@ -17,10 +19,20 @@ namespace Presentation.Controllers;
 public class SongsController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IWebDavService _webDavService;
+    private readonly ILogger<SongsController> _logger;
 
-    public SongsController(IMediator mediator)
+    public SongsController(
+        IMediator mediator,
+        IUnitOfWork unitOfWork,
+        IWebDavService webDavService,
+        ILogger<SongsController> logger)
     {
         _mediator = mediator;
+        _unitOfWork = unitOfWork;
+        _webDavService = webDavService;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -180,7 +192,9 @@ public class SongsController : ControllerBase
                 dto.Artist,
                 dto.Description,
                 dto.IsPublic,
-                dto.ParentSongId);
+                dto.ParentSongId,
+                dto.CustomAudioUrl,
+                dto.CustomAudioType);
 
             var result = await _mediator.Send(command);
 
@@ -490,6 +504,118 @@ public class SongsController : ControllerBase
         catch (UnauthorizedAccessException)
         {
             return Forbid();
+        }
+    }
+
+    // Presentation/Controllers/SongsController.cs - метод UploadAudio
+
+    [HttpPost("{id}/audio")]
+    [Authorize]
+    [RequestSizeLimit(100_000_000)]
+    [DisableRequestSizeLimit]
+    public async Task<ActionResult> UploadAudio(
+    Guid id,
+    IFormFile audioFile,
+    CancellationToken cancellationToken)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+
+            var song = await _unitOfWork.Songs.GetByIdAsync(id, cancellationToken);
+            if (song == null)
+            {
+                _logger.LogWarning("Song not found: {SongId}", id);
+                return NotFound(new { error = "Song not found" });
+            }
+
+            if (song.OwnerId != userId)
+            {
+                _logger.LogWarning("User {UserId} not authorized to upload audio for song {SongId}", userId, id);
+                return Forbid();
+            }
+
+            if (audioFile == null || audioFile.Length == 0)
+            {
+                return BadRequest(new { error = "No audio file provided" });
+            }
+
+            if (audioFile.Length > 100_000_000) // 100 MB
+            {
+                return BadRequest(new { error = "File too large. Maximum size is 100MB" });
+            }
+
+            // Поддерживаемые типы аудио
+            var allowedTypes = new[]
+            {
+            "audio/mpeg",      // mp3
+            "audio/wav",       // wav
+            "audio/ogg",       // ogg
+            "audio/mp4",       // m4a, mp4
+            "audio/aac",       // aac
+            "audio/flac",      // flac
+            "audio/opus",      // opus
+            "audio/webm"       // webm (запись с микрофона)
+        };
+
+            if (!allowedTypes.Contains(audioFile.ContentType))
+            {
+                _logger.LogWarning("Unsupported audio type: {ContentType}", audioFile.ContentType);
+                return BadRequest(new { error = $"Unsupported audio type: {audioFile.ContentType}. Supported: mp3, wav, ogg, m4a, aac, flac, opus, webm" });
+            }
+
+            // Определяем расширение файла
+            string fileExtension;
+            if (!string.IsNullOrEmpty(Path.GetExtension(audioFile.FileName)))
+            {
+                fileExtension = Path.GetExtension(audioFile.FileName);
+            }
+            else
+            {
+                // Если нет расширения, определяем по ContentType
+                fileExtension = audioFile.ContentType switch
+                {
+                    "audio/mpeg" => ".mp3",
+                    "audio/wav" => ".wav",
+                    "audio/ogg" => ".ogg",
+                    "audio/mp4" => ".m4a",
+                    "audio/aac" => ".aac",
+                    "audio/flac" => ".flac",
+                    "audio/opus" => ".opus",
+                    "audio/webm" => ".webm",
+                    _ => ".mp3"
+                };
+            }
+
+            var fileName = $"{song.Id}{fileExtension}";
+
+            _logger.LogInformation("Uploading audio for song {SongId}: {FileName}, Size: {Size} bytes, Type: {ContentType}",
+                song.Id, fileName, audioFile.Length, audioFile.ContentType);
+
+            using var stream = audioFile.OpenReadStream();
+            var uploadedFileName = await _webDavService.UploadAudioAsync(stream, fileName, song.Id);
+
+            song.Update(
+                customAudioUrl: uploadedFileName,
+                customAudioType: audioFile.ContentType);
+
+            await _unitOfWork.Songs.UpdateAsync(song, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Audio uploaded successfully for song {SongId}: {FileName}",
+                song.Id, uploadedFileName);
+
+            return Ok(new
+            {
+                fileName = uploadedFileName,
+                audioType = audioFile.ContentType,
+                size = audioFile.Length
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error uploading audio for song {SongId}", id);
+            return StatusCode(500, new { error = "Failed to upload audio", details = ex.Message });
         }
     }
 

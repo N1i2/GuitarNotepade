@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +19,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   ArrowLeft,
   Edit,
@@ -216,15 +222,15 @@ function ChordModal({
                             fretValue === "0"
                               ? "text-green-600"
                               : fretValue === "X" || fretValue === "x"
-                              ? "text-red-600"
-                              : "text-blue-600"
+                                ? "text-red-600"
+                                : "text-blue-600"
                           }`}
                         >
                           {fretValue === "0"
                             ? "Open"
                             : fretValue === "X" || fretValue === "x"
-                            ? "Mute"
-                            : `Fret ${fretValue}`}
+                              ? "Mute"
+                              : `Fret ${fretValue}`}
                         </div>
                       </div>
                     );
@@ -515,14 +521,19 @@ export default function SongDetailPage() {
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
   const [selectedChordName, setSelectedChordName] = useState<string | null>(
-    null
+    null,
   );
   const [selectedPatternName, setSelectedPatternName] = useState<string | null>(
-    null
+    null,
   );
 
   const [isFavorite, setIsFavorite] = useState(false);
   const [isCheckingFavorite, setIsCheckingFavorite] = useState(false);
+
+  const [allComments, setAllComments] = useState<UIComment[]>([]);
+  const [hoveredSegmentId, setHoveredSegmentId] = useState<string | null>(null);
+  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   const loadSong = async () => {
     setIsLoading(true);
@@ -533,7 +544,7 @@ export default function SongDetailPage() {
         true,
         true,
         false,
-        true
+        true,
       );
 
       setSong(data);
@@ -545,7 +556,6 @@ export default function SongDetailPage() {
       setUiChords(chords);
       setUiPatterns(patterns);
       setSongText(text);
-
       setAllComments(comments);
 
       await loadReviews();
@@ -556,8 +566,6 @@ export default function SongDetailPage() {
       setIsLoading(false);
     }
   };
-
-  const [allComments, setAllComments] = useState<UIComment[]>([]);
 
   const loadReviews = async () => {
     if (!songId) return;
@@ -584,7 +592,7 @@ export default function SongDetailPage() {
       const isFav = await AlbumService.isSongInFavorite(songId);
       setIsFavorite(isFav);
     } catch (error) {
-      console.error('Error checking favorite status:', error);
+      console.error("Error checking favorite status:", error);
       setIsFavorite(false);
     } finally {
       setIsCheckingFavorite(false);
@@ -619,13 +627,11 @@ export default function SongDetailPage() {
   const handleSubmitReview = async () => {
     if (!user) {
       toast.error("Please log in to submit a review");
-
       return;
     }
 
     if (!reviewText.trim()) {
       toast.error("Please enter review text");
-
       return;
     }
 
@@ -683,6 +689,27 @@ export default function SongDetailPage() {
     }
   };
 
+  const handleSegmentMouseEnter = (
+    segmentId: string,
+    event: React.MouseEvent,
+  ) => {
+    if (hoverTimeout) clearTimeout(hoverTimeout);
+    setMousePos({ x: event.clientX, y: event.clientY });
+    const timeout = setTimeout(() => {
+      setHoveredSegmentId(segmentId);
+    }, 300);
+    setHoverTimeout(timeout);
+  };
+
+  const handleSegmentMouseLeave = () => {
+    if (hoverTimeout) clearTimeout(hoverTimeout);
+    setHoveredSegmentId(null);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    setMousePos({ x: e.clientX, y: e.clientY });
+  };
+
   const canEdit = song && user?.id === song.ownerId;
   const canDelete =
     song && (user?.id === song.ownerId || user?.role === "Admin");
@@ -703,7 +730,7 @@ export default function SongDetailPage() {
     if (!songText) return null;
 
     const segments = [...uiSegments].sort(
-      (a, b) => a.startIndex - b.startIndex
+      (a, b) => a.startIndex - b.startIndex,
     );
     const result: React.ReactNode[] = [];
     let lastIndex = 0;
@@ -720,70 +747,72 @@ export default function SongDetailPage() {
               className="whitespace-pre-wrap"
             >
               {beforeText}
-            </span>
+            </span>,
           );
         }
       }
 
       const segmentEnd = Math.min(
         segment.startIndex + segment.length,
-        songText.length
+        songText.length,
       );
       const segmentText = songText.substring(segment.startIndex, segmentEnd);
 
-      if (!segmentText) {
-        lastIndex = segmentEnd;
-        return;
-      }
+      const hasContent = segmentText.trim().length > 0;
+      const hasChord = !!segment.chordId;
+      const hasPattern = !!segment.patternId;
+      const isEmptyPlayback = !hasContent && (hasChord || hasPattern);
 
       const segmentStyles: React.CSSProperties = {
-        position: "relative" as "relative",
+        position: "relative" as const,
         display: "inline-block",
+        padding: "2px 0",
       };
 
-      if (segment.color) {
+      if (hasChord && segment.color) {
         segmentStyles.borderBottom = `3px solid ${segment.color}`;
       }
 
-      if (segment.backgroundColor) {
+      if (hasPattern && segment.backgroundColor) {
         segmentStyles.backgroundColor = segment.backgroundColor;
-        segmentStyles.paddingLeft = "3px";
-        segmentStyles.paddingRight = "3px";
-        segmentStyles.paddingTop = "1px";
-        segmentStyles.paddingBottom = "1px";
-        segmentStyles.borderRadius = "3px";
-        segmentStyles.marginLeft = "1px";
-        segmentStyles.marginRight = "1px";
-        if (segment.color) {
-          segmentStyles.marginBottom = "3px";
-        }
+        segmentStyles.borderRadius = "4px";
+        segmentStyles.padding = "2px 4px";
       }
 
       const hasComments = segment.comments && segment.comments.length > 0;
+      const chordName = uiChords.find((c) => c.id === segment.chordId)?.name;
+      const patternName = uiPatterns.find(
+        (p) => p.id === segment.patternId,
+      )?.name;
+
+      const tooltipText = [
+        hasChord && chordName ? `Chord: ${chordName}` : null,
+        hasPattern && patternName ? `Pattern: ${patternName}` : null,
+      ]
+        .filter(Boolean)
+        .join(" | ");
 
       result.push(
         <span
           key={segment.id}
           style={segmentStyles}
-          className="relative inline-block group whitespace-pre-wrap cursor-default"
-          title={`${segmentText}\n${
-            segment.chordId
-              ? "Chord: " + uiChords.find((c) => c.id === segment.chordId)?.name
-              : ""
-          }\n${
-            segment.patternId
-              ? "Pattern: " +
-                uiPatterns.find((p) => p.id === segment.patternId)?.name
-              : ""
-          }`}
+          className={`relative inline-block group cursor-default ${isEmptyPlayback ? "min-w-[2rem]" : ""}`}
+          title={tooltipText || undefined}
+          onMouseEnter={(e) => handleSegmentMouseEnter(segment.id, e)}
+          onMouseLeave={handleSegmentMouseLeave}
         >
-          {segmentText}
+          {isEmptyPlayback ? (
+            <span className="opacity-50 italic text-sm">⏺</span>
+          ) : (
+            segmentText
+          )}
+
           {hasComments && (
-            <span className="absolute -top-1 -right-1">
-              <MessageSquare className="h-3 w-3 text-blue-500" />
+            <span className="absolute -top-2 -right-2">
+              <MessageSquare className="h-3 w-3 text-blue-500 fill-blue-100" />
             </span>
           )}
-        </span>
+        </span>,
       );
 
       lastIndex = segmentEnd;
@@ -793,11 +822,71 @@ export default function SongDetailPage() {
       result.push(
         <span key={`text-end-${lastIndex}`} className="whitespace-pre-wrap">
           {songText.substring(lastIndex)}
-        </span>
+        </span>,
       );
     }
 
     return result;
+  };
+
+  const uniqueChords = Array.from(
+    new Map(song?.chords?.map((chord) => [chord.id, chord]) || []).values(),
+  );
+
+  const uniquePatterns = Array.from(
+    new Map(
+      song?.patterns?.map((pattern) => [pattern.id, pattern]) || [],
+    ).values(),
+  );
+
+  const chordColorMap = new Map<string, string>();
+  uiSegments.forEach((segment) => {
+    if (segment.chordId && segment.color) {
+      chordColorMap.set(segment.chordId, segment.color);
+    }
+  });
+
+  const patternColorMap = new Map<string, string>();
+  uiSegments.forEach((segment) => {
+    if (segment.patternId && segment.backgroundColor) {
+      patternColorMap.set(segment.patternId, segment.backgroundColor);
+    }
+  });
+
+  const getTooltipContent = () => {
+    if (!hoveredSegmentId) return null;
+    const segment = uiSegments.find((s) => s.id === hoveredSegmentId);
+    if (!segment) return null;
+
+    const chordName = segment.chordId
+      ? uiChords.find((c) => c.id === segment.chordId)?.name
+      : null;
+    const patternName = segment.patternId
+      ? uiPatterns.find((p) => p.id === segment.patternId)?.name
+      : null;
+    const commentText = segment.comments?.[0]?.text;
+
+    if (!chordName && !patternName && !commentText) return null;
+
+    return (
+      <div className="space-y-1">
+        {chordName && (
+          <div className="text-sm">
+            <span className="font-medium">Chord:</span> {chordName}
+          </div>
+        )}
+        {patternName && (
+          <div className="text-sm">
+            <span className="font-medium">Pattern:</span> {patternName}
+          </div>
+        )}
+        {commentText && (
+          <div className="text-sm border-t pt-1 mt-1">
+            <span className="font-medium">Comment:</span> {commentText}
+          </div>
+        )}
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -835,621 +924,709 @@ export default function SongDetailPage() {
     );
   }
 
-  const uniqueChords = Array.from(
-    new Map(song.chords?.map((chord) => [chord.id, chord]) || []).values()
-  );
-
-  const uniquePatterns = Array.from(
-    new Map(
-      song.patterns?.map((pattern) => [pattern.id, pattern]) || []
-    ).values()
-  );
-
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
-      <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push("/home/songs")}
-              className="mb-2"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Songs
-            </Button>
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight">
-                {song.title}
-              </h1>
-              <Badge variant={song.isPublic ? "default" : "secondary"}>
-                {song.isPublic ? (
-                  <>
-                    <Globe className="h-3 w-3 mr-1" />
-                    Public
-                  </>
-                ) : (
-                  <>
-                    <Lock className="h-3 w-3 mr-1" />
-                    Private
-                  </>
-                )}
-              </Badge>
-              {song.parentSongId && (
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <GitBranch className="h-3 w-3" />
-                  Forked
-                </Badge>
-              )}
-            </div>
-            <p className="text-muted-foreground mt-2">
-              {song.artist || "No artist specified"}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleToggleFavorite}
-              disabled={isCheckingFavorite || !user}
-              className={isFavorite ? "bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100 hover:text-yellow-800" : ""}
-            >
-              {isCheckingFavorite ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
-              ) : (
-                <Heart className={`h-4 w-4 mr-2 ${isFavorite ? "fill-current text-yellow-600" : ""}`} />
-              )}
-              {isFavorite ? "In Favorites" : "Add to Favorites"}
-            </Button>
-
-            {canEdit && (
-              <Button variant="outline" size="sm" onClick={handleEdit}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
-            )}
-
-            {canDelete && (
+    <TooltipProvider>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
+        <div className="space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
               <Button
-                variant="destructive"
+                variant="ghost"
                 size="sm"
-                onClick={() => setDeleteDialogOpen(true)}
+                onClick={() => router.push("/home/songs")}
+                className="mb-2"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Songs
               </Button>
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Song Text
-                </CardTitle>
-                <CardDescription>
-                  Lyrics with chords and patterns visualization
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="min-h-[400px] p-4 border rounded-lg bg-background whitespace-pre-wrap font-mono overflow-y-auto leading-relaxed text-base">
-                  {renderTextWithSegments() || (
-                    <div className="text-muted-foreground italic h-full flex items-center justify-center">
-                      No text available
-                    </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-3xl font-bold tracking-tight">
+                  {song.title}
+                </h1>
+                <Badge variant={song.isPublic ? "default" : "secondary"}>
+                  {song.isPublic ? (
+                    <>
+                      <Globe className="h-3 w-3 mr-1" />
+                      Public
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="h-3 w-3 mr-1" />
+                      Private
+                    </>
                   )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="mt-8">
-              <div className="flex items-center gap-2 mb-4">
-                <h3 className="text-lg font-semibold">Segments List</h3>
-                <span className="text-sm text-muted-foreground ml-2">
-                  ({uiSegments.length} segments)
-                </span>
+                </Badge>
+                {song.parentSongId && (
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <GitBranch className="h-3 w-3" />
+                    Forked
+                  </Badge>
+                )}
               </div>
-              <SegmentsList
-                segments={uiSegments}
-                chords={uiChords.map((chord) => ({
-                  id: chord.id,
-                  name: chord.name,
-                  fingering: chord.fingering,
-                  color: chord.color,
-                }))}
-                patterns={uiPatterns.map((pattern) => ({
-                  id: pattern.id,
-                  name: pattern.name,
-                  pattern: pattern.pattern,
-                  isFingerStyle: pattern.isFingerStyle,
-                  color: pattern.color,
-                }))}
-                comments={allComments}
-                onSegmentClick={(segmentId) => {
-                  const segment = uiSegments.find((s) => s.id === segmentId);
-                  if (segment) {
-                    const previewElement =
-                      document.querySelector(".preview-text");
-                    if (previewElement) {
-                      previewElement.scrollIntoView({
-                        behavior: "smooth",
-                        block: "center",
-                      });
-                    }
-                  }
-                }}
-              />
+              <p className="text-muted-foreground mt-2">
+                {song.artist || "No artist specified"}
+              </p>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Star className="h-5 w-5" />
-                  Reviews & Ratings
-                </CardTitle>
-                <CardDescription>
-                  {song.reviewCount === 0
-                    ? "No reviews yet"
-                    : `${song.reviewCount} review${
-                        song.reviewCount !== 1 ? "s" : ""
-                      }`}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {(song.averageBeautifulRating ||
-                  song.averageDifficultyRating) && (
-                  <div className="space-y-4">
-                    <h4 className="font-medium">Average Ratings</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {song.averageBeautifulRating && (
-                        <RatingDisplay
-                          rating={song.averageBeautifulRating}
-                          label="Beauty"
-                          icon={<Sparkles className="h-4 w-4" />}
-                        />
-                      )}
-                      {song.averageDifficultyRating && (
-                        <RatingDisplay
-                          rating={song.averageDifficultyRating}
-                          label="Difficulty"
-                          icon={<Target className="h-4 w-4" />}
-                        />
-                      )}
-                    </div>
-                  </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleToggleFavorite}
+                disabled={isCheckingFavorite || !user}
+                className={
+                  isFavorite
+                    ? "bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100 hover:text-yellow-800"
+                    : ""
+                }
+              >
+                {isCheckingFavorite ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+                ) : (
+                  <Heart
+                    className={`h-4 w-4 mr-2 ${isFavorite ? "fill-current text-yellow-600" : ""}`}
+                  />
                 )}
+                {isFavorite ? "In Favorites" : "Add to Favorites"}
+              </Button>
 
-                {canReview && (
-                  <div className="space-y-4 pt-4 border-t">
-                    <h4 className="font-medium">Add Your Review</h4>
-                    <div className="space-y-4">
-                      <Textarea
-                        placeholder="Write your review here..."
-                        value={reviewText}
-                        onChange={(e) => setReviewText(e.target.value)}
-                        className="min-h-[100px]"
-                      />
+              {canEdit && (
+                <Button variant="outline" size="sm" onClick={handleEdit}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              )}
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <RatingSelector
-                          value={beautifulLevel}
-                          onChange={setBeautifulLevel}
-                          label="How beautiful is this song?"
-                          disabled={isSubmittingReview}
-                        />
-                        <RatingSelector
-                          value={difficultyLevel}
-                          onChange={setDifficultyLevel}
-                          label="How difficult is this song?"
-                          disabled={isSubmittingReview}
-                        />
-                      </div>
-
-                      <Button
-                        onClick={handleSubmitReview}
-                        disabled={isSubmittingReview || !reviewText.trim()}
-                        className="w-full"
-                      >
-                        {isSubmittingReview ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Submitting...
-                          </>
-                        ) : (
-                          <>
-                            <Send className="h-4 w-4 mr-2" />
-                            Submit Review
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-4 pt-4 border-t">
-                  <h4 className="font-medium">Reviews</h4>
-                  {isLoadingReviews ? (
-                    <div className="space-y-4">
-                      <Skeleton className="h-24 w-full" />
-                      <Skeleton className="h-24 w-full" />
-                    </div>
-                  ) : reviews.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Star className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p>No reviews yet. Be the first to review!</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {reviews.map((review) => (
-                        <Card key={review.id}>
-                          <CardContent className="pt-6">
-                            <div className="flex justify-between items-start mb-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                                  <User className="h-5 w-5" />
-                                </div>
-                                <div>
-                                  <div className="font-medium">
-                                    {review.userName}
-                                  </div>
-                                  <div className="text-sm text-muted-foreground">
-                                    {formatDate(review.createdAt)}
-                                  </div>
-                                </div>
-                              </div>
-
-                              {(review.userId === user?.id ||
-                                user?.role === "Admin") && (
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm">
-                                      <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem
-                                      className="text-destructive"
-                                      onClick={() =>
-                                        handleDeleteReview(review.id)
-                                      }
-                                    >
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              )}
-                            </div>
-
-                            <p className="mb-4 whitespace-pre-wrap">
-                              {review.reviewText}
-                            </p>
-
-                            <div className="flex gap-6">
-                              {review.beautifulLevel && (
-                                <div className="flex items-center gap-2">
-                                  <Sparkles className="h-4 w-4 text-blue-500" />
-                                  <span className="text-sm font-medium">
-                                    Beauty:
-                                  </span>
-                                  <span className="text-sm">
-                                    {review.beautifulLevel}/5
-                                  </span>
-                                </div>
-                              )}
-                              {review.difficultyLevel && (
-                                <div className="flex items-center gap-2">
-                                  <Target className="h-4 w-4 text-purple-500" />
-                                  <span className="text-sm font-medium">
-                                    Difficulty:
-                                  </span>
-                                  <span className="text-sm">
-                                    {review.difficultyLevel}/5
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+              {canDelete && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              )}
+            </div>
           </div>
 
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Music className="h-5 w-5" />
-                  Song Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">
-                    Title
-                  </div>
-                  <div className="font-medium text-lg">{song.title}</div>
-                </div>
-
-                {song.artist && (
-                  <div>
-                    <div className="text-sm text-muted-foreground mb-1">
-                      Artist
-                    </div>
-                    <div className="font-medium">{song.artist}</div>
-                  </div>
-                )}
-
-                {song.genre && (
-                  <div>
-                    <div className="text-sm text-muted-foreground mb-1">
-                      Genre
-                    </div>
-                    <Badge variant="outline">{song.genre}</Badge>
-                  </div>
-                )}
-
-                {song.theme && (
-                  <div>
-                    <div className="text-sm text-muted-foreground mb-1">
-                      Theme
-                    </div>
-                    <Badge variant="outline">{song.theme}</Badge>
-                  </div>
-                )}
-
-                {song.description && (
-                  <div>
-                    <div className="text-sm text-muted-foreground mb-1">
-                      Description
-                    </div>
-                    <p className="text-muted-foreground whitespace-pre-wrap p-3 bg-muted/30 rounded">
-                      {song.description}
-                    </p>
-                  </div>
-                )}
-
-                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                        {uniqueChords.length}
-                      </div>
-                      <div className="text-xs text-blue-700 dark:text-blue-300">
-                        Chords
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                        {uniquePatterns.length}
-                      </div>
-                      <div className="text-xs text-purple-700 dark:text-purple-300">
-                        Patterns
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                        {song.comments.length}
-                      </div>
-                      <div className="text-xs text-green-700 dark:text-green-300">
-                        Comments
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <AudioPlayerPanel
-              audioData={{
-                customAudioUrl: song.customAudioUrl,
-                customAudioType: song.customAudioType,
-                url: song.customAudioUrl,
-                type:
-                  song.customAudioType === "Url"
-                    ? AudioInputType.URL
-                    : song.customAudioType === "File"
-                    ? AudioInputType.FILE
-                    : AudioInputType.NONE,
-              }}
-              title="Song Audio"
-            />
-
-            {uniqueChords.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Music className="h-5 w-5" />
-                    Chords in this Song
+                    Song Information
                   </CardTitle>
-                  <CardDescription>
-                    {uniqueChords.length} unique chord
-                    {uniqueChords.length !== 1 ? "s" : ""}
-                  </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {uniqueChords.map((chord) => {
-                      const segmentWithChord = song.segments?.find(
-                        (seg: SegmentDataWithPositionDto) =>
-                          seg.segmentData.chordId === chord.id
-                      );
+                <CardContent className="space-y-4">
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">
+                      Title
+                    </div>
+                    <div className="font-medium text-lg">{song.title}</div>
+                  </div>
 
-                      const chordColor = segmentWithChord?.segmentData.color;
+                  {song.artist && (
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">
+                        Artist
+                      </div>
+                      <div className="font-medium">{song.artist}</div>
+                    </div>
+                  )}
 
-                      return (
-                        <div
-                          key={chord.id}
-                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className="w-4 h-4 rounded-full border"
-                              style={{ backgroundColor: chordColor || "#000" }}
-                            />
-                            <div>
-                              <div className="font-medium">{chord.name}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {chord.fingering}
-                              </div>
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedChordName(chord.name)}
-                            className="text-primary hover:underline flex items-center gap-1 text-sm"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                            View
-                          </Button>
-                        </div>
-                      );
-                    })}
+                  {song.genre && (
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">
+                        Genre
+                      </div>
+                      <Badge variant="outline">{song.genre}</Badge>
+                    </div>
+                  )}
+
+                  {song.theme && (
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">
+                        Theme
+                      </div>
+                      <Badge variant="outline">{song.theme}</Badge>
+                    </div>
+                  )}
+
+                  {song.description && (
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">
+                        Description
+                      </div>
+                      <p className="text-muted-foreground whitespace-pre-wrap p-3 bg-muted/30 rounded">
+                        {song.description}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-4 gap-2 pt-4 border-t">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {uniqueChords.length}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Chords
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-purple-600">
+                        {uniquePatterns.length}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Patterns
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">
+                        {allComments.length}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Comments
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-amber-600">
+                        {song.reviewCount}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Reviews
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-            )}
 
-            {uniquePatterns.length > 0 && (
+              <AudioPlayerPanel
+                audioData={{
+                  customAudioUrl: song.customAudioUrl,
+                  customAudioType: song.customAudioType,
+                  url: song.customAudioUrl,
+                  type:
+                    song.customAudioType === "Url"
+                      ? AudioInputType.URL
+                      : song.customAudioType === "File"
+                        ? AudioInputType.FILE
+                        : AudioInputType.NONE,
+                }}
+                title="Song Audio"
+              />
+
+              {uniqueChords.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Music className="h-5 w-5" />
+                      Chords in this Song
+                    </CardTitle>
+                    <CardDescription>
+                      {uniqueChords.length} unique chord
+                      {uniqueChords.length !== 1 ? "s" : ""}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {uniqueChords.map((chord) => {
+                        const chordColor = chordColorMap.get(chord.id);
+                        const usageCount = uiSegments.filter(
+                          (s) => s.chordId === chord.id,
+                        ).length;
+
+                        return (
+                          <div
+                            key={chord.id}
+                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div
+                                className="w-4 h-4 rounded-full"
+                                style={{
+                                  backgroundColor: chordColor || "#000",
+                                }}
+                              />
+                              <div>
+                                <div className="font-medium">{chord.name}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {chord.fingering} • used {usageCount} time
+                                  {usageCount !== 1 ? "s" : ""}
+                                </div>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedChordName(chord.name)}
+                              className="text-primary hover:underline flex items-center gap-1 text-sm"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              View
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {uniquePatterns.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <ListMusic className="h-5 w-5" />
+                      Patterns in this Song
+                    </CardTitle>
+                    <CardDescription>
+                      {uniquePatterns.length} unique pattern
+                      {uniquePatterns.length !== 1 ? "s" : ""}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {uniquePatterns.map((pattern) => {
+                        const patternColor = patternColorMap.get(pattern.id);
+                        const usageCount = uiSegments.filter(
+                          (s) => s.patternId === pattern.id,
+                        ).length;
+
+                        return (
+                          <div
+                            key={pattern.id}
+                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div
+                                className="w-4 h-4 rounded border"
+                                style={{
+                                  backgroundColor: patternColor || "#000",
+                                }}
+                              />
+                              <div>
+                                <div className="font-medium">
+                                  {pattern.name}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {pattern.isFingerStyle
+                                    ? "Fingerstyle"
+                                    : "Strumming"}{" "}
+                                  • used {usageCount} time
+                                  {usageCount !== 1 ? "s" : ""}
+                                </div>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                setSelectedPatternName(pattern.name)
+                              }
+                              className="text-primary hover:underline flex items-center gap-1 text-sm"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              View
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <ListMusic className="h-5 w-5" />
-                    Patterns in this Song
+                    <User className="h-5 w-5" />
+                    Created By
                   </CardTitle>
-                  <CardDescription>
-                    {uniquePatterns.length} unique pattern
-                    {uniquePatterns.length !== 1 ? "s" : ""}
-                  </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {uniquePatterns.map((pattern) => {
-                      const patternColor = song.segments?.find(
-                        (seg: SegmentDataWithPositionDto) =>
-                          seg.segmentData.patternId === pattern.id
-                      )?.segmentData.backgroundColor;
+                <CardContent className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="font-medium">
+                      {song.ownerName || "Unknown"}
+                    </div>
+                    {user?.id === song.ownerId && (
+                      <Badge variant="outline">You</Badge>
+                    )}
+                  </div>
 
-                      return (
-                        <div
-                          key={pattern.id}
-                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className="w-4 h-4 rounded border"
-                              style={{
-                                backgroundColor: patternColor || "#000",
-                              }}
-                            />
-                            <div>
-                              <div className="font-medium">{pattern.name}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {pattern.isFingerStyle
-                                  ? "Fingerstyle"
-                                  : "Strumming"}{" "}
-                                • {pattern.pattern}
-                              </div>
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedPatternName(pattern.name)}
-                            className="text-primary hover:underline flex items-center gap-1 text-sm"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                            View
-                          </Button>
-                        </div>
-                      );
-                    })}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Calendar className="h-4 w-4" />
+                      <span>Created {formatDate(song.createdAt)}</span>
+                    </div>
+
+                    {song.updatedAt && song.updatedAt !== song.createdAt && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Clock className="h-4 w-4" />
+                        <span>Updated {formatDate(song.updatedAt)}</span>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
-            )}
+            </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Created By
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="font-medium">
-                    {song.ownerName || "Unknown"}
+            <div className="lg:col-span-2 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    Song Text
+                  </CardTitle>
+                  <CardDescription>
+                    Lyrics with chords and patterns visualization
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div
+                    className="min-h-[400px] p-4 border rounded-lg bg-background whitespace-pre-wrap font-mono overflow-y-auto leading-relaxed text-base relative"
+                    onMouseMove={handleMouseMove}
+                  >
+                    {renderTextWithSegments() || (
+                      <div className="text-muted-foreground italic h-full flex items-center justify-center">
+                        No text available
+                      </div>
+                    )}
                   </div>
-                  {user?.id === song.ownerId && (
-                    <Badge variant="outline">You</Badge>
-                  )}
+                </CardContent>
+              </Card>
+
+              {hoveredSegmentId && (
+                <div
+                  className="fixed z-50 bg-popover text-popover-foreground rounded-lg shadow-lg border p-2 max-w-xs pointer-events-none"
+                  style={{
+                    top: mousePos.y + 15,
+                    left: mousePos.x + 15,
+                  }}
+                >
+                  {getTooltipContent()}
                 </div>
+              )}
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span>Created {formatDate(song.createdAt)}</span>
-                  </div>
+              <div className="mt-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <h3 className="text-lg font-semibold">Segments List</h3>
+                  <span className="text-sm text-muted-foreground ml-2">
+                    ({uiSegments.length} segments)
+                  </span>
+                </div>
+                <SegmentsList
+                  segments={uiSegments}
+                  chords={uiChords.map((chord) => ({
+                    id: chord.id,
+                    name: chord.name,
+                    fingering: chord.fingering,
+                    color: chord.color,
+                  }))}
+                  patterns={uiPatterns.map((pattern) => ({
+                    id: pattern.id,
+                    name: pattern.name,
+                    pattern: pattern.pattern,
+                    isFingerStyle: pattern.isFingerStyle,
+                    color: pattern.color,
+                  }))}
+                  comments={allComments}
+                  onSegmentClick={(segmentId) => {
+                    const segment = uiSegments.find((s) => s.id === segmentId);
+                    if (segment) {
+                      const previewElement =
+                        document.querySelector(".preview-text");
+                      if (previewElement) {
+                        previewElement.scrollIntoView({
+                          behavior: "smooth",
+                          block: "center",
+                        });
+                      }
+                    }
+                  }}
+                />
+              </div>
 
-                  {song.updatedAt && song.updatedAt !== song.createdAt && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock className="h-4 w-4" />
-                      <span>Updated {formatDate(song.updatedAt)}</span>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Star className="h-5 w-5" />
+                    Reviews & Ratings
+                  </CardTitle>
+                  <CardDescription>
+                    {song.reviewCount === 0
+                      ? "No reviews yet"
+                      : `${song.reviewCount} review${
+                          song.reviewCount !== 1 ? "s" : ""
+                        }`}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {(song.averageBeautifulRating ||
+                    song.averageDifficultyRating) && (
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Average Ratings</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {song.averageBeautifulRating && (
+                          <RatingDisplay
+                            rating={song.averageBeautifulRating}
+                            label="Beauty"
+                            icon={<Sparkles className="h-4 w-4" />}
+                          />
+                        )}
+                        {song.averageDifficultyRating && (
+                          <RatingDisplay
+                            rating={song.averageDifficultyRating}
+                            label="Difficulty"
+                            icon={<Target className="h-4 w-4" />}
+                          />
+                        )}
+                      </div>
                     </div>
                   )}
-                </div>
-              </CardContent>
-            </Card>
+
+                  {canReview && (
+                    <div className="space-y-4 pt-4 border-t">
+                      <h4 className="font-medium">Add Your Review</h4>
+                      <div className="space-y-4">
+                        <Textarea
+                          placeholder="Write your review here..."
+                          value={reviewText}
+                          onChange={(e) => setReviewText(e.target.value)}
+                          className="min-h-[100px]"
+                        />
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <RatingSelector
+                            value={beautifulLevel}
+                            onChange={setBeautifulLevel}
+                            label="How beautiful is this song?"
+                            disabled={isSubmittingReview}
+                          />
+                          <RatingSelector
+                            value={difficultyLevel}
+                            onChange={setDifficultyLevel}
+                            label="How difficult is this song?"
+                            disabled={isSubmittingReview}
+                          />
+                        </div>
+
+                        <Button
+                          onClick={handleSubmitReview}
+                          disabled={isSubmittingReview || !reviewText.trim()}
+                          className="w-full"
+                        >
+                          {isSubmittingReview ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Submitting...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="h-4 w-4 mr-2" />
+                              Submit Review
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-4 pt-4 border-t">
+                    <h4 className="font-medium">Reviews</h4>
+                    {isLoadingReviews ? (
+                      <div className="space-y-4">
+                        <Skeleton className="h-24 w-full" />
+                        <Skeleton className="h-24 w-full" />
+                      </div>
+                    ) : reviews.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Star className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        <p>No reviews yet. Be the first to review!</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {reviews.map((review) => (
+                          <Card key={review.id}>
+                            <CardContent className="pt-6">
+                              <div className="flex justify-between items-start mb-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                                    <User className="h-5 w-5" />
+                                  </div>
+                                  <div>
+                                    <div className="font-medium">
+                                      {review.userName}
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">
+                                      {formatDate(review.createdAt)}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {(review.userId === user?.id ||
+                                  user?.role === "Admin") && (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm">
+                                        <MoreVertical className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem
+                                        className="text-destructive"
+                                        onClick={() =>
+                                          handleDeleteReview(review.id)
+                                        }
+                                      >
+                                        Delete
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                )}
+                              </div>
+
+                              <p className="mb-4 whitespace-pre-wrap">
+                                {review.reviewText}
+                              </p>
+
+                              <div className="flex gap-6">
+                                {review.beautifulLevel && (
+                                  <div className="flex items-center gap-2">
+                                    <Sparkles className="h-4 w-4 text-blue-500" />
+                                    <span className="text-sm font-medium">
+                                      Beauty:
+                                    </span>
+                                    <span className="text-sm">
+                                      {review.beautifulLevel}/5
+                                    </span>
+                                  </div>
+                                )}
+                                {review.difficultyLevel && (
+                                  <div className="flex items-center gap-2">
+                                    <Target className="h-4 w-4 text-purple-500" />
+                                    <span className="text-sm font-medium">
+                                      Difficulty:
+                                    </span>
+                                    <span className="text-sm">
+                                      {review.difficultyLevel}/5
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {allComments.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5" />
+                      Comments
+                    </CardTitle>
+                    <CardDescription>
+                      Author's notes on specific segments
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {allComments.map((comment, index) => {
+                        const segment = uiSegments.find(
+                          (s) => s.id === comment.segmentId,
+                        );
+                        const segmentText = segment?.text || "";
+                        return (
+                          <div
+                            key={comment.id}
+                            className="border rounded-lg p-4"
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="text-sm font-medium text-muted-foreground">
+                                Comment #{index + 1}
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  if (segment) {
+                                    const textElement =
+                                      document.querySelector(".preview-text");
+                                    if (textElement) {
+                                      textElement.scrollIntoView({
+                                        behavior: "smooth",
+                                        block: "center",
+                                      });
+                                    }
+                                  }
+                                }}
+                              >
+                                Jump to segment
+                                <ExternalLink className="h-3 w-3 ml-1" />
+                              </Button>
+                            </div>
+                            <p className="text-muted-foreground whitespace-pre-wrap">
+                              {comment.text}
+                            </p>
+                            {segmentText && (
+                              <div className="mt-2 text-xs text-muted-foreground">
+                                Segment: "{segmentText.substring(0, 100)}..."
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
         </div>
+
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Song</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete "{song?.title}"? This action
+                cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setDeleteDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleDelete}>
+                Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {selectedChordName && (
+          <ChordModal
+            chordName={selectedChordName}
+            onClose={() => setSelectedChordName(null)}
+          />
+        )}
+
+        {selectedPatternName && (
+          <PatternModal
+            patternName={selectedPatternName}
+            onClose={() => setSelectedPatternName(null)}
+          />
+        )}
       </div>
-
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Song</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete "{song?.title}"? This action
-              cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {selectedChordName && (
-        <ChordModal
-          chordName={selectedChordName}
-          onClose={() => setSelectedChordName(null)}
-        />
-      )}
-
-      {selectedPatternName && (
-        <PatternModal
-          patternName={selectedPatternName}
-          onClose={() => setSelectedPatternName(null)}
-        />
-      )}
-    </div>
+    </TooltipProvider>
   );
 }

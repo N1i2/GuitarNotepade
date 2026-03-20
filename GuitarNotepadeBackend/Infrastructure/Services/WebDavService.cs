@@ -25,9 +25,9 @@ public class WebDavService : IWebDavService
     };
 
     private readonly HashSet<string> _supportedAudioExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac", ".opus"
-    };
+{
+    ".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac", ".opus", ".webm"
+};
 
     private readonly HashSet<string> _supportedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -333,22 +333,26 @@ public class WebDavService : IWebDavService
 
     #region Audio Methods (остаются как есть с исправлениями)
 
+    // Infrastructure/Services/WebDavService.cs - улучшенный метод UploadAudioAsync
+
     public async Task<string> UploadAudioAsync(Stream fileStream, string fileName, Guid songId)
     {
         try
         {
-            _logger.LogInformation("Uploading audio for song {SongId}", songId);
+            _logger.LogInformation("Uploading audio for song {SongId} (size: {Size} bytes)", songId, fileStream.Length);
 
             var fileExtension = Path.GetExtension(fileName).ToLowerInvariant();
             if (!_supportedAudioExtensions.Contains(fileExtension))
             {
-                throw new ArgumentException($"Unsupported audio format: {fileExtension}. Supported formats: {string.Join(", ", _supportedAudioExtensions)}");
+                throw new ArgumentException($"Unsupported audio format: {fileExtension}");
             }
 
             var safeFileName = Path.GetFileNameWithoutExtension(fileName)
                 .Replace(" ", "_")
                 .Replace("[", "")
-                .Replace("]", "");
+                .Replace("]", "")
+                .Replace("(", "")
+                .Replace(")", "");
 
             var uniqueFileName = $"{songId}_{safeFileName}_{DateTime.UtcNow.Ticks}{fileExtension}";
             var remotePath = $"{_audioFolder}/{uniqueFileName}";
@@ -360,13 +364,22 @@ public class WebDavService : IWebDavService
                 fileStream.Position = 0;
             }
 
-            using var content = new StreamContent(fileStream);
+            // Увеличиваем буфер для ускорения загрузки
+            using var bufferedStream = new BufferedStream(fileStream, 81920); // 80KB буфер
+            using var content = new StreamContent(bufferedStream);
+
             content.Headers.ContentType = new MediaTypeHeaderValue(GetAudioMimeType(fileExtension));
+            content.Headers.ContentLength = fileStream.Length;
 
             using var request = CreateAuthenticatedRequest(HttpMethod.Put, remotePath);
             request.Content = content;
 
-            var response = await _httpClient.SendAsync(request);
+            // Увеличиваем таймаут
+            var cts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
+
+            var response = await _httpClient.SendAsync(request, cts.Token);
+
+            _logger.LogInformation("Upload response: {StatusCode}", response.StatusCode);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -600,6 +613,7 @@ public class WebDavService : IWebDavService
             ".aac" => "audio/aac",
             ".flac" => "audio/flac",
             ".opus" => "audio/opus",
+            ".webm" => "audio/webm",
             _ => "application/octet-stream"
         };
     }

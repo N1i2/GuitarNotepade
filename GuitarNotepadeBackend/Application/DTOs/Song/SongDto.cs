@@ -20,6 +20,7 @@ public class SongDto
     public decimal? AverageDifficultyRating { get; set; }
     public int CommentsCount { get; set; }
     public int SegmentsCount { get; set; }
+    public string CustomAudioType { get; set; }
     public List<SongChordDto> Chords { get; set; } = new();
     public List<SongPatternDto> Patterns { get; set; } = new();
 }

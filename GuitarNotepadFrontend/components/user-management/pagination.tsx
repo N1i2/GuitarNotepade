@@ -77,7 +77,7 @@ export function Pagination({
             >
               {page}
             </Button>
-          )
+          ),
         )}
       </div>
 

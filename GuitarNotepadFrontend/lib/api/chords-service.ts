@@ -86,4 +86,8 @@ export class ChordsService {
   static async deleteChord(id: string): Promise<void> {
     await apiClient.delete<void>(`${this.BASE_PATH}/${id}`);
   }
+
+  static async countOfCreate(): Promise<number> {
+    return await apiClient.get<number>("count-of-create");
+  }
 }

@@ -8,9 +8,11 @@ using Microsoft.EntityFrameworkCore;
 using Presentation.Filters;
 using System.Text;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Http.Features;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Загрузка .env файла
 if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true")
 {
     Console.WriteLine("Running in Docker container, loading .env.docker...");
@@ -26,6 +28,21 @@ var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET")
                 ?? throw new ArgumentNullException("JWT_SECRET is not set in .env");
 var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "GuitarNotepad";
 var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "GuitarNotepadUsers";
+
+// Настройка лимитов для загрузки файлов
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.ValueLengthLimit = int.MaxValue;
+    options.MultipartBodyLengthLimit = 100_000_000; // 100 MB
+    options.MemoryBufferThreshold = int.MaxValue;
+});
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 100_000_000; // 100 MB
+    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(5);
+    options.Limits.RequestHeadersTimeout = TimeSpan.FromMinutes(5);
+});
 
 builder.Services.AddControllers(options =>
 {
@@ -107,6 +124,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Миграции
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;

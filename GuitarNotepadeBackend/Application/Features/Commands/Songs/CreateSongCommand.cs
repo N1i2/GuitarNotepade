@@ -9,12 +9,14 @@ public class CreateSongCommand : IRequest<SongDto>
     public string Title { get; }
     public string? Genre { get; }
     public string? Theme { get; }
+    public string? AudioBase64 { get; }
+    public string? AudioType { get; }
     public string? Artist { get; }
     public string? Description { get; }
     public bool IsPublic { get; }
-    public string? AudioBase64 { get; }
-    public string? AudioType { get; }
     public Guid? ParentSongId { get; }
+    public string? CustomAudioUrl { get; }
+    public string? CustomAudioType { get; }
 
     public CreateSongCommand(
         Guid userId,
@@ -26,7 +28,9 @@ public class CreateSongCommand : IRequest<SongDto>
         string? artist,
         string? description,
         bool isPublic,
-        Guid? parentSongId)
+        Guid? parentSongId,
+        string? customAudioUrl = null,
+        string? customAudioType = null)
     {
         UserId = userId;
         Title = title;
@@ -38,6 +42,7 @@ public class CreateSongCommand : IRequest<SongDto>
         Description = description;
         IsPublic = isPublic;
         ParentSongId = parentSongId;
+        CustomAudioUrl = customAudioUrl;
+        CustomAudioType = customAudioType;
     }
 }
-

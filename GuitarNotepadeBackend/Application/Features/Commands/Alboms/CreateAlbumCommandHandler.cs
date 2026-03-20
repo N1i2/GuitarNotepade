@@ -27,7 +27,7 @@ namespace Application.Features.Commands.Alboms
 
         public async Task<AlbumDto> Handle(CreateAlbumCommand request, CancellationToken cancellationToken)
         {
-            if (!await _userService.CanCreateAlbumAsync(request.UserId, cancellationToken))
+            if (request.Title != "Favorite" && !await _userService.CanCreateAlbumAsync(request.UserId, cancellationToken))
             {
                 throw new InvalidOperationException(
                     "Only Premium users can create albums. Upgrade to Premium to create your own albums.");

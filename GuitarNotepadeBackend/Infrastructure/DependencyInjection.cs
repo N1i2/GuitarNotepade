@@ -2,6 +2,7 @@ using Domain.Interfaces;
 using Domain.Interfaces.Repositories;
 using Domain.Interfaces.Services;
 using Infrastructure.Data;
+using Infrastructure.Handlers;
 using Infrastructure.Repositories;
 using Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -49,13 +50,24 @@ public static class DependencyInjection
         services.AddScoped<IExecutionStrategy, ExecutionStrategy>();
 
         services.AddScoped<IAuthService, AuthService>();
+
+        // WebDavService с увеличенным таймаутом и ретраями
         services.AddHttpClient<IWebDavService, WebDavService>((serviceProvider, client) =>
         {
             var baseUrl = Environment.GetEnvironmentVariable("YANDEX_DISK_BASE_URL") ?? "https://webdav.yandex.ru";
             client.BaseAddress = new Uri(baseUrl);
-            client.Timeout = TimeSpan.FromSeconds(30);
+            client.Timeout = TimeSpan.FromMinutes(5); // 5 минут на загрузку
             client.DefaultRequestHeaders.Add("User-Agent", "GuitarNotepad");
+        })
+        .AddHttpMessageHandler<RetryHandler>()
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true,
+            AllowAutoRedirect = true,
+            MaxConnectionsPerServer = 10
         });
+
+        services.AddTransient<RetryHandler>();
         services.AddMemoryCache();
 
         services.AddScoped<IUserService, UserService>();
@@ -66,7 +78,7 @@ public static class DependencyInjection
         services.AddScoped<ISongStatisticsService, SongStatisticsService>();
         services.AddScoped<ISongDeletionService, SongDeletionService>();
 
-         services.AddScoped<IChordService, ChordService>();
+        services.AddScoped<IChordService, ChordService>();
         services.AddScoped<IPatternService, PatternService>();
         services.AddScoped<IAlbumService, AlbumService>();
         services.AddScoped<INotificationService, NotificationService>();

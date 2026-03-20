@@ -157,12 +157,12 @@ export default function SongsPage() {
     }
 
     if (hasAudioFilter === "yes") {
-      songsArray = songsArray.filter((song) => 
-        !!(song.customAudioUrl || song.customAudioType)
+      songsArray = songsArray.filter(
+        (song) => !!(song.customAudioUrl || song.customAudioType),
       );
     } else if (hasAudioFilter === "no") {
-      songsArray = songsArray.filter((song) => 
-        !song.customAudioUrl && !song.customAudioType
+      songsArray = songsArray.filter(
+        (song) => !song.customAudioUrl && !song.customAudioType,
       );
     }
 
@@ -192,7 +192,8 @@ export default function SongsPage() {
         if (
           song.title.toLowerCase().includes(searchLower) ||
           (song.artist && song.artist.toLowerCase().includes(searchLower)) ||
-          (song.ownerName && song.ownerName.toLowerCase().includes(searchLower)) ||
+          (song.ownerName &&
+            song.ownerName.toLowerCase().includes(searchLower)) ||
           (song.genre && song.genre.toLowerCase().includes(searchLower)) ||
           (song.theme && song.theme.toLowerCase().includes(searchLower))
         ) {
@@ -283,7 +284,7 @@ export default function SongsPage() {
 
   const loadAllSongs = async () => {
     setIsLoading(true);
-    try {      
+    try {
       let allSongsData: SongDto[] = [];
       let currentPageNum = 1;
       let hasMore = true;
@@ -314,20 +315,21 @@ export default function SongsPage() {
       }
 
       setAllSongs(allSongsData);
-    } catch (error: any) {      
+    } catch (error: any) {
       if (error.status === 400) {
         toast.error("Invalid request. Please try again.");
       } else if (error.status === 401 || error.status === 403) {
         try {
-          const publicData: SongSearchResultDto = await SongsService.searchSongs({
-            userId: `${user?.id}`,
-            isPublic: true,
-            page: 1,
-            pageSize: 50,
-            sortBy: "createdAt",
-            sortOrder: "desc",
-          });
-          
+          const publicData: SongSearchResultDto =
+            await SongsService.searchSongs({
+              userId: `${user?.id}`,
+              isPublic: true,
+              page: 1,
+              pageSize: 50,
+              sortBy: "createdAt",
+              sortOrder: "desc",
+            });
+
           setAllSongs(publicData.songs);
           setTotalSongsCount(publicData.totalCount);
         } catch (publicError: any) {
@@ -391,9 +393,8 @@ export default function SongsPage() {
         ? user.id === song.ownerId || user.role === "Admin"
         : false;
 
-      const chordCount = Array.isArray(song.chords) ? song.chords.length : 0;
-      
-      const patternCount = Array.isArray(song.patterns) ? song.patterns.length : 0;
+      const chordCount = song.chords?.length || 0;
+      const patternCount = song.patterns?.length || 0;
 
       return {
         id: song.id,
@@ -945,7 +946,7 @@ export default function SongsPage() {
                     <Card
                       key={song.id}
                       className={`cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg border-2 ${getSongColor(
-                        song.title
+                        song.title,
                       )} relative group overflow-hidden`}
                       onClick={() => handleSongClick(song.id)}
                     >
@@ -1074,13 +1075,44 @@ export default function SongsPage() {
                           <div className="text-center p-2 bg-white/50 dark:bg-gray-800/50 rounded-md">
                             <div className="text-lg font-bold">
                               {song.hasAudio ? (
-                                <span className="text-green-600">Yes</span>
+                                song.customAudioType === "url" ? (
+                                  <span
+                                    className="text-blue-600"
+                                    title="External audio link"
+                                  >
+                                    🔗
+                                  </span>
+                                ) : song.customAudioType === "audio/webm" ? (
+                                  <span
+                                    className="text-purple-600"
+                                    title="Recording"
+                                  >
+                                    🎙️
+                                  </span>
+                                ) : (
+                                  <span
+                                    className="text-green-600"
+                                    title="Audio file"
+                                  >
+                                    🎵
+                                  </span>
+                                )
                               ) : (
                                 <span className="text-gray-400">No</span>
                               )}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              <Music2 className="h-3 w-3 inline mr-1" />
+                              {song.hasAudio ? (
+                                song.customAudioType === "url" ? (
+                                  "URL"
+                                ) : song.customAudioType === "audio/webm" ? (
+                                  "Record"
+                                ) : (
+                                  "File"
+                                )
+                              ) : (
+                                <Music2 className="h-3 w-3 inline mr-1" />
+                              )}
                               Audio
                             </div>
                           </div>
@@ -1168,8 +1200,8 @@ export default function SongsPage() {
                   {searchTerm
                     ? `No songs matching "${searchTerm}"`
                     : showOnlyMySongs
-                    ? "You haven't created any songs yet. Create your first one!"
-                    : "No songs available yet. Create the first one!"}
+                      ? "You haven't created any songs yet. Create your first one!"
+                      : "No songs available yet. Create the first one!"}
                 </p>
                 {(searchTerm ||
                   showOnlyMySongs ||

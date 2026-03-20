@@ -18,6 +18,8 @@ export interface CreateSongDto {
   parentSongId?: string;
   key?: string;
   difficulty?: string;
+  customAudioUrl?: string;
+  customAudioType?: string;
 }
 
 export interface SongSegmentDataDto {

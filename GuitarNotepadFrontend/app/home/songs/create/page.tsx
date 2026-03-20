@@ -1,7 +1,6 @@
 "use client";
 
 import { SongResourcesPanel } from "@/components/song/table-editor/song-resources-panel";
-import { AudioInputSection } from "@/components/song/audio-input-section";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -24,6 +23,7 @@ import {
 import { convertTableToDTO } from "@/lib/table-converter";
 import { useSongEditorState } from "@/hooks/use-song-editor-state";
 import { AudioInputData, AudioInputType } from "@/types/audio";
+import { useAudioUpload } from "@/hooks/use-audio-upload";
 
 function CreateSongContent() {
   const router = useRouter();
@@ -39,7 +39,10 @@ function CreateSongContent() {
     validateResources,
     refreshResources,
   } = useSongEditorState();
+  const { activeUpload, uploadAudio, cancelUpload, isUploading } =
+    useAudioUpload();
   const [isInitialized, setIsInitialized] = useState(false);
+  const [showUploadStatus, setShowUploadStatus] = useState(false);
 
   const [title, setTitle] = useState("");
   const [artist, setArtist] = useState("");
@@ -184,32 +187,47 @@ function CreateSongContent() {
 
     setIsLoading(true);
     try {
-      let audioBase64;
-      let audioType;
+      let customAudioUrl: string | undefined;
+      let customAudioType: string | undefined;
+      let audioFile: File | undefined;
 
       if (audioData.type === AudioInputType.FILE && audioData.file) {
-        audioBase64 = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(audioData.file!);
+        audioFile = audioData.file;
+        console.log("📁 File audio prepared:", {
+          name: audioFile.name,
+          type: audioFile.type,
+          size: audioFile.size,
         });
-        audioType = audioData.file.type;
       } else if (
         audioData.type === AudioInputType.RECORD &&
         audioData.audioBlob
       ) {
-        audioBase64 = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(audioData.audioBlob!);
+        audioFile = new File(
+          [audioData.audioBlob],
+          `recording-${Date.now()}.webm`,
+          {
+            type: "audio/webm",
+          },
+        );
+        console.log("🎙️ Recording audio prepared:", {
+          size: audioFile.size,
+          type: audioFile.type,
         });
-        audioType = "audio/webm";
       } else if (audioData.type === AudioInputType.URL && audioData.url) {
-        audioBase64 = audioData.url;
-        audioType = "url";
+        customAudioUrl = audioData.url;
+        customAudioType = "url";
+        console.log("🔗 URL audio prepared:", { url: audioData.url });
       }
 
       const segmentsDTO = convertTableToDTO(state.segments);
+      const structureSegments = segmentsDTO.map((segment) => ({
+        type: segment.segmentData.type,
+        lyric: segment.segmentData.lyric,
+        chordId: segment.segmentData.chordId,
+        patternId: segment.segmentData.patternId,
+        color: segment.segmentData.color,
+        backgroundColor: segment.segmentData.backgroundColor,
+      }));
 
       const songData = {
         title,
@@ -218,7 +236,10 @@ function CreateSongContent() {
         theme: theme || undefined,
         description: description || undefined,
         isPublic,
-        segments: segmentsDTO,
+        customAudioUrl,
+        customAudioType,
+        audioFile: undefined,
+        segments: structureSegments,
         chordIds: Array.from(
           new Set(
             state.segments.filter((s) => s.chordId).map((s) => s.chordId!),
@@ -229,15 +250,41 @@ function CreateSongContent() {
             state.segments.filter((s) => s.patternId).map((s) => s.patternId!),
           ),
         ),
-        audioBase64,
-        audioType,
       };
 
+      console.log("📤 Creating song...");
       const createdSong = await SongsService.createSong(songData);
+      console.log("✅ Song created:", createdSong.id);
+
+      if (audioFile) {
+        console.log("🎵 Uploading audio...");
+        setShowUploadStatus(true);
+
+        uploadAudio({
+          songId: createdSong.id,
+          file: audioFile,
+          onProgress: (percent) => {
+            console.log(`Upload progress: ${percent}%`);
+          },
+          onSuccess: () => {
+            toast.success("Audio uploaded successfully!");
+            setShowUploadStatus(false);
+          },
+          onError: (error) => {
+            toast.error(`Audio upload failed: ${error.message}`);
+            setShowUploadStatus(false);
+          },
+        }).catch((error) => {
+          console.error("Upload error:", error);
+        });
+
+        toast.info("Song created! Audio uploading in background.");
+      }
+
       clearState();
-      toast.success(`Song "${createdSong.title}" created!`);
       router.push(`/home/songs/${createdSong.id}`);
     } catch (error: any) {
+      console.error("❌ Create song error:", error);
       toast.error(error.message || "Failed to create song");
     } finally {
       setIsLoading(false);
@@ -338,6 +385,68 @@ function CreateSongContent() {
   const spacesCount = state.segments.filter(
     (s) => !s.text && !s.patternId,
   ).length;
+
+  const UploadStatusIndicator = () => {
+    if (!showUploadStatus || !activeUpload) return null;
+
+    return (
+      <div className="fixed bottom-4 right-4 z-50">
+        <Card className="w-80 shadow-lg border-2 border-primary/20">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              {activeUpload.status === "uploading" && (
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
+              )}
+              {activeUpload.status === "completed" && (
+                <div className="rounded-full h-4 w-4 bg-green-500" />
+              )}
+              {activeUpload.status === "failed" && (
+                <div className="rounded-full h-4 w-4 bg-red-500" />
+              )}
+              <div className="flex-1">
+                <p className="text-sm font-medium">
+                  {activeUpload.status === "uploading" && "Uploading audio..."}
+                  {activeUpload.status === "completed" && "Audio uploaded!"}
+                  {activeUpload.status === "failed" && "Upload failed"}
+                </p>
+                {activeUpload.status === "uploading" && (
+                  <>
+                    <div className="h-1.5 bg-muted rounded-full mt-1 overflow-hidden">
+                      <div
+                        className="h-full bg-primary transition-all duration-300"
+                        style={{ width: `${activeUpload.progress}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {activeUpload.progress}% - {activeUpload.fileName}
+                    </p>
+                  </>
+                )}
+                {activeUpload.error && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {activeUpload.error}
+                  </p>
+                )}
+              </div>
+              {activeUpload.status === "failed" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (activeUpload) {
+                      setShowUploadStatus(false);
+                    }
+                  }}
+                >
+                  Dismiss
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -612,6 +721,8 @@ function CreateSongContent() {
           </Button>
         </div>
       </div>
+
+      <UploadStatusIndicator />
     </div>
   );
 }

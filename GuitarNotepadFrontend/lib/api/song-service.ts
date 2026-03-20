@@ -14,6 +14,7 @@ import {
   SongChordDto,
   SongPatternDto,
 } from "@/types/songs";
+import { AuthService } from "./auth-service";
 
 export class SongsService {
   private static readonly BASE_PATH = "/Songs";
@@ -48,7 +49,16 @@ export class SongsService {
     const url = `${this.BASE_PATH}?${params.toString()}`;
     console.log("🔍 Searching songs with URL:", url);
 
-    return await apiClient.get<SongSearchResultDto>(url);
+    const response = await apiClient.get<any>(url);
+
+    return {
+      songs: response.songs || response.Songs || [],
+      totalCount: response.totalCount || response.TotalCount || 0,
+      page: response.page || response.Page || filters.page || 1,
+      pageSize:
+        response.pageSize || response.PageSize || filters.pageSize || 20,
+      totalPages: response.totalPages || response.TotalPages || 0,
+    };
   }
 
   static async getSongById(
@@ -103,8 +113,133 @@ export class SongsService {
     );
   }
 
-  static async createSong(data: CreateSongDto): Promise<SongDto> {
-    return await apiClient.post<CreateSongDto, SongDto>(this.BASE_PATH, data);
+  static async uploadAudio(
+    songId: string,
+    audioFile: File,
+  ): Promise<{ fileName: string; audioType: string; size: number }> {
+    const formData = new FormData();
+    formData.append("audioFile", audioFile);
+
+    const token = AuthService.getToken();
+    const url = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api"}${this.BASE_PATH}/${songId}/audio`;
+
+    console.log("📤 Uploading audio to:", url);
+    console.log(
+      "📁 File size:",
+      (audioFile.size / 1024 / 1024).toFixed(2),
+      "MB",
+    );
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 300000);
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to upload audio");
+      }
+
+      return await response.json();
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw new Error("Upload timeout (5 minutes). File may be too large.");
+      }
+      throw error;
+    }
+  }
+
+  static async createSong(
+    data: CreateSongDto & {
+      segments?: any[];
+      chordIds?: string[];
+      patternIds?: string[];
+      customAudioUrl?: string;
+      customAudioType?: string;
+      audioFile?: File;
+    },
+  ): Promise<SongDto> {
+    const songData: CreateSongDto = {
+      title: data.title,
+      genre: data.genre,
+      theme: data.theme,
+      artist: data.artist,
+      description: data.description,
+      isPublic: data.isPublic,
+      parentSongId: data.parentSongId,
+      key: data.key,
+      difficulty: data.difficulty,
+      customAudioUrl: data.customAudioUrl,
+      customAudioType: data.customAudioType,
+    };
+
+    console.log("📤 Creating song...");
+    const createdSong = await apiClient.post<CreateSongDto, SongDto>(
+      this.BASE_PATH,
+      songData,
+    );
+    console.log("✅ Song created:", createdSong.id);
+
+    if (data.audioFile) {
+      console.log("📁 Uploading audio file...");
+      try {
+        const uploadResult = await this.uploadAudio(
+          createdSong.id,
+          data.audioFile,
+        );
+        console.log("✅ Audio uploaded:", uploadResult);
+
+        createdSong.customAudioUrl = uploadResult.fileName;
+        createdSong.customAudioType = uploadResult.audioType;
+      } catch (error) {
+        console.error("Failed to upload audio:", error);
+        throw new Error(
+          "Song created but audio upload failed: " + (error as Error).message,
+        );
+      }
+    }
+
+    if (data.segments && data.segments.length > 0) {
+      try {
+        await this.buildSongStructure(createdSong.id, data.segments);
+        console.log("✅ Song structure built successfully");
+      } catch (error) {
+        console.error("Failed to build song structure:", error);
+      }
+    }
+
+    if (data.chordIds && data.chordIds.length > 0) {
+      for (const chordId of data.chordIds) {
+        try {
+          await this.addChordToSong(createdSong.id, chordId);
+        } catch (error) {
+          console.error(`Failed to add chord ${chordId}:`, error);
+        }
+      }
+    }
+
+    if (data.patternIds && data.patternIds.length > 0) {
+      for (const patternId of data.patternIds) {
+        try {
+          await this.addPatternToSong(createdSong.id, patternId);
+        } catch (error) {
+          console.error(`Failed to add pattern ${patternId}:`, error);
+        }
+      }
+    }
+
+    return createdSong;
   }
 
   static async updateSong(id: string, data: UpdateSongDto): Promise<SongDto> {
@@ -124,9 +259,9 @@ export class SongsService {
       genre: data.genre ?? undefined,
       theme: data.theme ?? undefined,
       isPublic: data.isPublic ?? undefined,
-      audioBase64:
+      customAudioUrl:
         data.customAudioUrl ?? (data.isDeleteAudio ? null : undefined),
-      audioType:
+      customAudioType:
         data.customAudioType ?? (data.isDeleteAudio ? null : undefined),
     };
 
@@ -241,5 +376,9 @@ export class SongsService {
     return await apiClient.get<PaginatedDto<SongCommentDto>>(
       `${this.BASE_PATH}/${songId}/comments?${params.toString()}`,
     );
+  }
+
+  static async countOfCreate(): Promise<number> {
+    return await apiClient.get<number>("count-of-create");
   }
 }
