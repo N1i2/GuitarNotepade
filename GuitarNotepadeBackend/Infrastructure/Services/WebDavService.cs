@@ -333,8 +333,6 @@ public class WebDavService : IWebDavService
 
     #region Audio Methods (остаются как есть с исправлениями)
 
-    // Infrastructure/Services/WebDavService.cs - улучшенный метод UploadAudioAsync
-
     public async Task<string> UploadAudioAsync(Stream fileStream, string fileName, Guid songId)
     {
         try
@@ -364,8 +362,7 @@ public class WebDavService : IWebDavService
                 fileStream.Position = 0;
             }
 
-            // Увеличиваем буфер для ускорения загрузки
-            using var bufferedStream = new BufferedStream(fileStream, 81920); // 80KB буфер
+            using var bufferedStream = new BufferedStream(fileStream, 81920);
             using var content = new StreamContent(bufferedStream);
 
             content.Headers.ContentType = new MediaTypeHeaderValue(GetAudioMimeType(fileExtension));
@@ -374,7 +371,6 @@ public class WebDavService : IWebDavService
             using var request = CreateAuthenticatedRequest(HttpMethod.Put, remotePath);
             request.Content = content;
 
-            // Увеличиваем таймаут
             var cts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
 
             var response = await _httpClient.SendAsync(request, cts.Token);
@@ -419,7 +415,8 @@ public class WebDavService : IWebDavService
             return cachedUrl;
         }
 
-        var publicUrl = await GetDownloadUrlAsync($"{_audioFolder}/{fileName}");
+        var remotePath = $"{_audioFolder}/{fileName}";
+        var publicUrl = await GetDownloadUrlAsync(remotePath);
 
         if (!string.IsNullOrEmpty(publicUrl))
         {

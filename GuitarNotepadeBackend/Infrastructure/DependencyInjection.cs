@@ -51,12 +51,11 @@ public static class DependencyInjection
 
         services.AddScoped<IAuthService, AuthService>();
 
-        // WebDavService с увеличенным таймаутом и ретраями
         services.AddHttpClient<IWebDavService, WebDavService>((serviceProvider, client) =>
         {
             var baseUrl = Environment.GetEnvironmentVariable("YANDEX_DISK_BASE_URL") ?? "https://webdav.yandex.ru";
             client.BaseAddress = new Uri(baseUrl);
-            client.Timeout = TimeSpan.FromMinutes(5); // 5 минут на загрузку
+            client.Timeout = TimeSpan.FromMinutes(5);
             client.DefaultRequestHeaders.Add("User-Agent", "GuitarNotepad");
         })
         .AddHttpMessageHandler<RetryHandler>()

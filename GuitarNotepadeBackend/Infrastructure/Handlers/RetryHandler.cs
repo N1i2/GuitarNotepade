@@ -29,7 +29,6 @@ public class RetryHandler : DelegatingHandler
                     return response;
                 }
 
-                // Повторяем при таймаутах и некоторых серверных ошибках
                 if (response.StatusCode == HttpStatusCode.RequestTimeout ||
                     response.StatusCode == (HttpStatusCode)408 ||
                     response.StatusCode == HttpStatusCode.GatewayTimeout ||

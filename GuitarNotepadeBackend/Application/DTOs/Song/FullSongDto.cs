@@ -11,9 +11,13 @@ public class FullSongDto
     public string OwnerName { get; set; } = string.Empty;
     public Guid? ParentSongId { get; set; }
     public string? ParentSongTitle { get; set; }
+    public string? Genre { get; set; }
+    public string? Theme { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public int ReviewCount { get; set; }
+    public string? CustomAudioUrl { get; set; }
+    public string? CustomAudioType { get; set; }
     public double? AverageBeautifulRating { get; set; }
     public double? AverageDifficultyRating { get; set; }
     public List<SongChordDto> Chords { get; set; } = new();

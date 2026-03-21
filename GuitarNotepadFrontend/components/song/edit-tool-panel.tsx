@@ -180,15 +180,15 @@ function ChordModal({
                             fretValue === "0"
                               ? "text-green-600"
                               : fretValue === "X" || fretValue === "x"
-                              ? "text-red-600"
-                              : "text-blue-600"
+                                ? "text-red-600"
+                                : "text-blue-600"
                           }`}
                         >
                           {fretValue === "0"
                             ? "Open"
                             : fretValue === "X" || fretValue === "x"
-                            ? "Mute"
-                            : `Fret ${fretValue}`}
+                              ? "Mute"
+                              : `Fret ${fretValue}`}
                         </div>
                       </div>
                     );
@@ -453,14 +453,14 @@ function PatternModal({
 export function EditToolPanel() {
   const { state, dispatch } = useSongCreation();
   const [selectedChordName, setSelectedChordName] = useState<string | null>(
-    null
+    null,
   );
   const [selectedPatternName, setSelectedPatternName] = useState<string | null>(
-    null
+    null,
   );
   const [showReplaceChord, setShowReplaceChord] = useState<string | null>(null);
   const [showReplacePattern, setShowReplacePattern] = useState<string | null>(
-    null
+    null,
   );
   const [editingChordId, setEditingChordId] = useState<string | null>(null);
   const [editingPatternId, setEditingPatternId] = useState<string | null>(null);

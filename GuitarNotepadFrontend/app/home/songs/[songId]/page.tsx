@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
 import { SongsService } from "@/lib/api/song-service";
@@ -19,6 +19,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Tooltip,
   TooltipContent,
@@ -68,10 +73,7 @@ import {
 import { SegmentsList } from "@/components/song/segments-list";
 import { convertSegmentsToUI } from "@/lib/song-converter";
 import { CreateSongReviewDto, SongReviewDto } from "@/types/reviews";
-import {
-  RatingDisplay,
-  RatingSelector,
-} from "@/components/song/review/rating-display";
+import { RatingDisplay } from "@/components/song/review/rating-display";
 import { SegmentDataWithPositionDto, UIComment } from "@/types/songs";
 import { Chord, PaginatedChords } from "@/types/chords";
 import { Pattern } from "@/types/patterns";
@@ -82,6 +84,8 @@ import { SongDetailDto } from "@/types/song-detail";
 import { AudioInputType } from "@/types/audio";
 import { AudioPlayerPanel } from "@/components/song/audio-player-panel";
 import { AlbumService } from "@/lib/api/albom-service";
+import { RatingSelector } from "@/components/song/review/rating-selector";
+import { Label } from "@/components/ui/label";
 
 function ChordModal({
   chordName,
@@ -500,10 +504,12 @@ function PatternModal({
 export default function SongDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isLoading: authLoading } = useAuth();
   const toast = useToast();
 
   const songId = params.songId as string;
+  const returnTo = searchParams.get("returnTo");
 
   const [song, setSong] = useState<SongDetailDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -534,6 +540,8 @@ export default function SongDetailPage() {
   const [hoveredSegmentId, setHoveredSegmentId] = useState<string | null>(null);
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [showAllHints, setShowAllHints] = useState(false);
+  const [popoverSegment, setPopoverSegment] = useState<string | null>(null);
 
   const loadSong = async () => {
     setIsLoading(true);
@@ -608,6 +616,14 @@ export default function SongDetailPage() {
   useEffect(() => {
     checkFavoriteStatus();
   }, [songId, user]);
+
+  const handleBack = () => {
+    if (returnTo === "song-create") {
+      router.push("/home/songs/create");
+    } else {
+      router.push("/home/songs");
+    }
+  };
 
   const handleEdit = () => {
     router.push(`/home/songs/edit/${songId}`);
@@ -693,6 +709,7 @@ export default function SongDetailPage() {
     segmentId: string,
     event: React.MouseEvent,
   ) => {
+    if (showAllHints) return;
     if (hoverTimeout) clearTimeout(hoverTimeout);
     setMousePos({ x: event.clientX, y: event.clientY });
     const timeout = setTimeout(() => {
@@ -763,8 +780,11 @@ export default function SongDetailPage() {
       const hasPattern = !!segment.patternId;
       const isEmptyPlayback = !hasContent && (hasChord || hasPattern);
 
+      const chordName = uiChords.find((c) => c.id === segment.chordId)?.name;
+      const pattern = uiPatterns.find((p) => p.id === segment.patternId);
+      const hasComments = segment.comments && segment.comments.length > 0;
+
       const segmentStyles: React.CSSProperties = {
-        position: "relative" as const,
         display: "inline-block",
         padding: "2px 0",
       };
@@ -773,34 +793,39 @@ export default function SongDetailPage() {
         segmentStyles.borderBottom = `3px solid ${segment.color}`;
       }
 
-      if (hasPattern && segment.backgroundColor) {
+      if (hasPattern && pattern?.color) {
+        segmentStyles.backgroundColor = pattern.color;
+        segmentStyles.borderRadius = "4px";
+        segmentStyles.padding = "2px 4px";
+      } else if (hasPattern && segment.backgroundColor) {
         segmentStyles.backgroundColor = segment.backgroundColor;
         segmentStyles.borderRadius = "4px";
         segmentStyles.padding = "2px 4px";
       }
 
-      const hasComments = segment.comments && segment.comments.length > 0;
-      const chordName = uiChords.find((c) => c.id === segment.chordId)?.name;
-      const patternName = uiPatterns.find(
-        (p) => p.id === segment.patternId,
-      )?.name;
-
-      const tooltipText = [
-        hasChord && chordName ? `Chord: ${chordName}` : null,
-        hasPattern && patternName ? `Pattern: ${patternName}` : null,
-      ]
-        .filter(Boolean)
-        .join(" | ");
-
-      result.push(
+      const segmentElement = (
         <span
           key={segment.id}
           style={segmentStyles}
           className={`relative inline-block group cursor-default ${isEmptyPlayback ? "min-w-[2rem]" : ""}`}
-          title={tooltipText || undefined}
-          onMouseEnter={(e) => handleSegmentMouseEnter(segment.id, e)}
-          onMouseLeave={handleSegmentMouseLeave}
+          title={!showAllHints ? chordName || undefined : undefined}
+          onMouseEnter={(e) => {
+            if (!showAllHints) {
+              handleSegmentMouseEnter(segment.id, e);
+            }
+          }}
+          onMouseLeave={() => {
+            if (!showAllHints) {
+              handleSegmentMouseLeave();
+            }
+          }}
         >
+          {showAllHints && chordName && (
+            <span className="inline-block text-[10px] bg-popover text-popover-foreground px-1 py-0.5 rounded shadow-sm mr-1 align-middle">
+              {chordName}
+            </span>
+          )}
+
           {isEmptyPlayback ? (
             <span className="opacity-50 italic text-sm">⏺</span>
           ) : (
@@ -808,13 +833,39 @@ export default function SongDetailPage() {
           )}
 
           {hasComments && (
-            <span className="absolute -top-2 -right-2">
-              <MessageSquare className="h-3 w-3 text-blue-500 fill-blue-100" />
-            </span>
+            <Popover
+              open={popoverSegment === segment.id}
+              onOpenChange={(open) =>
+                setPopoverSegment(open ? segment.id : null)
+              }
+            >
+              <PopoverTrigger asChild>
+                <span className="absolute -top-2 -right-2 cursor-help">
+                  <MessageSquare className="h-3 w-3 text-blue-500 fill-blue-100" />
+                </span>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-3">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <MessageSquare className="h-4 w-4 text-blue-500" />
+                    <span>Comment</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {segment.comments?.[0]?.text || "No comment"}
+                  </div>
+                  {segment.comments?.[0]?.authorName && (
+                    <div className="text-xs text-muted-foreground pt-1 border-t">
+                      — {segment.comments[0].authorName}
+                    </div>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
           )}
-        </span>,
+        </span>
       );
 
+      result.push(segmentElement);
       lastIndex = segmentEnd;
     });
 
@@ -910,11 +961,7 @@ export default function SongDetailPage() {
             <p className="text-muted-foreground mt-2">
               Song was not found or has been removed.
             </p>
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={() => router.push("/home/songs")}
-            >
+            <Button variant="outline" className="mt-4" onClick={handleBack}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Songs
             </Button>
@@ -933,11 +980,11 @@ export default function SongDetailPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => router.push("/home/songs")}
+                onClick={handleBack}
                 className="mb-2"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Songs
+                Back
               </Button>
               <div className="flex flex-wrap items-center gap-3">
                 <h1 className="text-3xl font-bold tracking-tight">
@@ -1036,23 +1083,24 @@ export default function SongDetailPage() {
                     </div>
                   )}
 
-                  {song.genre && (
-                    <div>
-                      <div className="text-sm text-muted-foreground mb-1">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-2">
+                      <Label className="text-sm text-muted-foreground">
                         Genre
+                      </Label>
+                      <div className="font-medium">
+                        {song.genre && song.genre !== "" ? song.genre : "—"}
                       </div>
-                      <Badge variant="outline">{song.genre}</Badge>
                     </div>
-                  )}
-
-                  {song.theme && (
-                    <div>
-                      <div className="text-sm text-muted-foreground mb-1">
+                    <div className="space-y-2">
+                      <Label className="text-sm text-muted-foreground">
                         Theme
+                      </Label>
+                      <div className="font-medium">
+                        {song.theme && song.theme !== "" ? song.theme : "—"}
                       </div>
-                      <Badge variant="outline">{song.theme}</Badge>
                     </div>
-                  )}
+                  </div>
 
                   {song.description && (
                     <div>
@@ -1107,10 +1155,14 @@ export default function SongDetailPage() {
                   customAudioUrl: song.customAudioUrl,
                   customAudioType: song.customAudioType,
                   url: song.customAudioUrl,
+                  songId: song.id,
                   type:
-                    song.customAudioType === "Url"
+                    song.customAudioType === "Url" ||
+                    song.customAudioType === "url"
                       ? AudioInputType.URL
-                      : song.customAudioType === "File"
+                      : song.customAudioType === "File" ||
+                          song.customAudioType === "audio/mpeg" ||
+                          song.customAudioType === "audio/webm"
                         ? AudioInputType.FILE
                         : AudioInputType.NONE,
                 }}
@@ -1275,17 +1327,34 @@ export default function SongDetailPage() {
             <div className="lg:col-span-2 space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Song Text
-                  </CardTitle>
-                  <CardDescription>
-                    Lyrics with chords and patterns visualization
-                  </CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        Song Text
+                      </CardTitle>
+                      <CardDescription>
+                        Lyrics with chords and patterns visualization
+                      </CardDescription>
+                    </div>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={showAllHints}
+                        onChange={(e) => setShowAllHints(e.target.checked)}
+                        className="rounded border-gray-300"
+                      />
+                      <span className="text-muted-foreground hover:text-foreground">
+                        Show all hints
+                      </span>
+                    </label>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div
-                    className="min-h-[400px] p-4 border rounded-lg bg-background whitespace-pre-wrap font-mono overflow-y-auto leading-relaxed text-base relative"
+                    className={`min-h-[400px] p-4 border rounded-lg bg-background whitespace-pre-wrap font-mono overflow-y-auto leading-relaxed text-base relative ${
+                      showAllHints ? "pt-8" : ""
+                    }`}
                     onMouseMove={handleMouseMove}
                   >
                     {renderTextWithSegments() || (
@@ -1297,7 +1366,7 @@ export default function SongDetailPage() {
                 </CardContent>
               </Card>
 
-              {hoveredSegmentId && (
+              {hoveredSegmentId && !showAllHints && (
                 <div
                   className="fixed z-50 bg-popover text-popover-foreground rounded-lg shadow-lg border p-2 max-w-xs pointer-events-none"
                   style={{

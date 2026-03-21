@@ -1,5 +1,3 @@
-// Application.DTOs.Song.CreateSongDto
-
 namespace Application.DTOs.Song;
 
 public class CreateSongDto

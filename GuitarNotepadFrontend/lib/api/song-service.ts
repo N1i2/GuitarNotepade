@@ -168,6 +168,7 @@ export class SongsService {
       customAudioUrl?: string;
       customAudioType?: string;
       audioFile?: File;
+      segmentComments?: Record<number, any[]>;
     },
   ): Promise<SongDto> {
     const songData: CreateSongDto = {
@@ -191,6 +192,31 @@ export class SongsService {
     );
     console.log("✅ Song created:", createdSong.id);
 
+    if (data.segments && data.segments.length > 0) {
+      try {
+        const structurePayload: any = {
+          segments: data.segments,
+        };
+
+        if (
+          data.segmentComments &&
+          Object.keys(data.segmentComments).length > 0
+        ) {
+          structurePayload.segmentComments = data.segmentComments;
+          console.log(
+            "📝 Including comments in structure payload:",
+            data.segmentComments,
+          );
+        }
+
+        await this.buildSongStructure(createdSong.id, structurePayload);
+        console.log("✅ Song structure built successfully");
+      } catch (error) {
+        console.error("Failed to build song structure:", error);
+        throw new Error("Failed to save song segments");
+      }
+    }
+
     if (data.audioFile) {
       console.log("📁 Uploading audio file...");
       try {
@@ -199,7 +225,6 @@ export class SongsService {
           data.audioFile,
         );
         console.log("✅ Audio uploaded:", uploadResult);
-
         createdSong.customAudioUrl = uploadResult.fileName;
         createdSong.customAudioType = uploadResult.audioType;
       } catch (error) {
@@ -207,15 +232,6 @@ export class SongsService {
         throw new Error(
           "Song created but audio upload failed: " + (error as Error).message,
         );
-      }
-    }
-
-    if (data.segments && data.segments.length > 0) {
-      try {
-        await this.buildSongStructure(createdSong.id, data.segments);
-        console.log("✅ Song structure built successfully");
-      } catch (error) {
-        console.error("Failed to build song structure:", error);
       }
     }
 
@@ -252,6 +268,36 @@ export class SongsService {
   static async updateSongWithSegments(
     data: UpdateSongWithSegmentsDto,
   ): Promise<SongDto> {
+    let uploadedAudioUrl: string | undefined;
+    let uploadedAudioType: string | undefined;
+
+    if (data.audioBase64 && data.audioType) {
+      console.log("🎵 Uploading new audio file...");
+      try {
+        const base64Data = data.audioBase64.split(",")[1] || data.audioBase64;
+        const byteCharacters = atob(base64Data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: data.audioType });
+        const file = new File(
+          [blob],
+          `audio-${data.id}.${data.audioType === "audio/webm" ? "webm" : "mp3"}`,
+          { type: data.audioType },
+        );
+
+        const uploadResult = await this.uploadAudio(data.id, file);
+        uploadedAudioUrl = uploadResult.fileName;
+        uploadedAudioType = uploadResult.audioType;
+        console.log("🎵 Audio uploaded:", uploadResult);
+      } catch (error) {
+        console.error("Failed to upload audio:", error);
+        throw new Error("Failed to upload new audio");
+      }
+    }
+
     const songUpdatePayload: any = {
       title: data.title ?? undefined,
       artist: data.artist ?? undefined,
@@ -259,16 +305,35 @@ export class SongsService {
       genre: data.genre ?? undefined,
       theme: data.theme ?? undefined,
       isPublic: data.isPublic ?? undefined,
-      customAudioUrl:
-        data.customAudioUrl ?? (data.isDeleteAudio ? null : undefined),
-      customAudioType:
-        data.customAudioType ?? (data.isDeleteAudio ? null : undefined),
     };
+
+    if (uploadedAudioUrl) {
+      songUpdatePayload.customAudioUrl = uploadedAudioUrl;
+      songUpdatePayload.customAudioType = uploadedAudioType;
+    } else if (data.customAudioUrl) {
+      songUpdatePayload.customAudioUrl = data.customAudioUrl;
+      songUpdatePayload.customAudioType = data.customAudioType;
+    } else if (data.isDeleteAudio) {
+      songUpdatePayload.customAudioUrl = null;
+      songUpdatePayload.customAudioType = null;
+    }
+
+    console.log("📤 Updating song with payload:", {
+      hasNewAudio: !!uploadedAudioUrl,
+      customAudioUrl: songUpdatePayload.customAudioUrl,
+      isDeleteAudio: data.isDeleteAudio,
+    });
 
     const updatedSong = await this.updateSong(data.id, songUpdatePayload);
 
     if (data.segments || data.segmentComments) {
-      await this.buildSongStructure(data.id, data.segments ?? []);
+      const structurePayload: any = {};
+      if (data.segments) structurePayload.segments = data.segments;
+      if (data.segmentComments !== undefined) {
+        structurePayload.segmentComments = data.segmentComments;
+      }
+
+      await this.buildSongStructure(data.id, structurePayload);
     }
 
     return updatedSong;
@@ -280,12 +345,11 @@ export class SongsService {
 
   static async buildSongStructure(
     songId: string,
-    segments: any[],
-    repeatGroups?: any,
+    payload: any,
   ): Promise<SongStructureDto> {
     return await apiClient.post<any, SongStructureDto>(
       `${this.BASE_PATH}/${songId}/structure`,
-      { segments, repeatGroups },
+      payload,
     );
   }
 
@@ -380,5 +444,34 @@ export class SongsService {
 
   static async countOfCreate(): Promise<number> {
     return await apiClient.get<number>("count-of-create");
+  }
+
+  static async getAudioUrl(songId: string, fileName: string): Promise<string> {
+    if (
+      fileName.startsWith("http://") ||
+      fileName.startsWith("https://") ||
+      fileName.startsWith("data:")
+    ) {
+      return fileName;
+    }
+
+    const token = AuthService.getToken();
+    const baseUrl =
+      process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+    const url = `${baseUrl}/Songs/${songId}/audio-url?fileName=${encodeURIComponent(fileName)}`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to get audio URL");
+    }
+
+    const data = await response.json();
+    return data.url;
   }
 }

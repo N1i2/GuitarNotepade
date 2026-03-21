@@ -1,8 +1,5 @@
-﻿using Application.DTOs;
-using Application.DTOs.Chords;
+﻿using Application.DTOs.Chords;
 using Application.DTOs.Generic;
-using Domain.Common;
-using Domain.Entities;
 using Domain.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;

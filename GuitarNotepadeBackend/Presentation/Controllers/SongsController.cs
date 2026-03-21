@@ -174,6 +174,109 @@ public class SongsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("{id}/audio-file")]
+    [AllowAnonymous]
+    public async Task<ActionResult> GetAudioFile(
+    Guid id,
+    CancellationToken cancellationToken)
+    {
+        try
+        {
+            var song = await _unitOfWork.Songs.GetByIdAsync(id, cancellationToken);
+            if (song == null)
+            {
+                return NotFound(new { error = "Song not found" });
+            }
+
+            var currentUserId = TryGetCurrentUserId();
+            if (!song.IsPublic && (!currentUserId.HasValue || song.OwnerId != currentUserId.Value))
+            {
+                return Forbid();
+            }
+
+            if (song.CustomAudioUrl?.StartsWith("http://") == true ||
+                song.CustomAudioUrl?.StartsWith("https://") == true)
+            {
+                return BadRequest(new { error = "This is an external URL, not a file" });
+            }
+
+            if (string.IsNullOrEmpty(song.CustomAudioUrl))
+            {
+                return NotFound(new { error = "Audio file not found" });
+            }
+
+            var fileStream = await _webDavService.GetAudioStreamAsync(song.CustomAudioUrl);
+            if (fileStream == null)
+            {
+                return NotFound(new { error = "Audio file not found" });
+            }
+
+            var mimeType = song.CustomAudioType switch
+            {
+                "audio/mpeg" => "audio/mpeg",
+                "audio/webm" => "audio/webm",
+                "audio/wav" => "audio/wav",
+                "audio/ogg" => "audio/ogg",
+                "audio/mp4" => "audio/mp4",
+                _ => "audio/mpeg"
+            };
+
+            var fileName = Path.GetFileName(song.CustomAudioUrl);
+
+            Response.Headers.Add("Content-Disposition", $"inline; filename=\"{fileName}\"");
+            Response.Headers.Add("Accept-Ranges", "bytes");
+
+            return File(fileStream, mimeType, fileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting audio file for song {SongId}", id);
+            return StatusCode(500, new { error = "Failed to get audio file" });
+        }
+    }
+
+    [HttpGet("{id}/audio-url")]
+    [AllowAnonymous]
+    public async Task<ActionResult> GetAudioUrl(
+    Guid id,
+    [FromQuery] string fileName,
+    CancellationToken cancellationToken)
+    {
+        try
+        {
+            var song = await _unitOfWork.Songs.GetByIdAsync(id, cancellationToken);
+            if (song == null)
+            {
+                return NotFound(new { error = "Song not found" });
+            }
+
+            var currentUserId = TryGetCurrentUserId();
+            if (!song.IsPublic && (!currentUserId.HasValue || song.OwnerId != currentUserId.Value))
+            {
+                return Forbid();
+            }
+
+            if (fileName.StartsWith("http://") || fileName.StartsWith("https://") || fileName.StartsWith("data:"))
+            {
+                return Ok(new { url = fileName });
+            }
+
+            var audioUrl = await _webDavService.GetAudioUrlAsync(fileName);
+
+            if (string.IsNullOrEmpty(audioUrl))
+            {
+                return NotFound(new { error = "Audio file not found" });
+            }
+
+            return Ok(new { url = audioUrl });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting audio URL for song {SongId}", id);
+            return StatusCode(500, new { error = "Failed to get audio URL" });
+        }
+    }
+
     [HttpPost]
     [Authorize]
     public async Task<ActionResult<SongDto>> CreateSong([FromBody] CreateSongDto dto)
@@ -269,7 +372,8 @@ public class SongsController : ControllerBase
                 userId,
                 id,
                 request.Segments,
-                request.RepeatGroups);
+                request.RepeatGroups,
+                request.SegmentComments);
 
             var result = await _mediator.Send(command);
             return Ok(result);
@@ -507,8 +611,6 @@ public class SongsController : ControllerBase
         }
     }
 
-    // Presentation/Controllers/SongsController.cs - метод UploadAudio
-
     [HttpPost("{id}/audio")]
     [Authorize]
     [RequestSizeLimit(100_000_000)]
@@ -540,22 +642,21 @@ public class SongsController : ControllerBase
                 return BadRequest(new { error = "No audio file provided" });
             }
 
-            if (audioFile.Length > 100_000_000) // 100 MB
+            if (audioFile.Length > 100_000_000)
             {
                 return BadRequest(new { error = "File too large. Maximum size is 100MB" });
             }
 
-            // Поддерживаемые типы аудио
             var allowedTypes = new[]
             {
-            "audio/mpeg",      // mp3
-            "audio/wav",       // wav
-            "audio/ogg",       // ogg
-            "audio/mp4",       // m4a, mp4
-            "audio/aac",       // aac
-            "audio/flac",      // flac
-            "audio/opus",      // opus
-            "audio/webm"       // webm (запись с микрофона)
+            "audio/mpeg",
+            "audio/wav",
+            "audio/ogg",
+            "audio/mp4",
+            "audio/aac",
+            "audio/flac",
+            "audio/opus",
+            "audio/webm"
         };
 
             if (!allowedTypes.Contains(audioFile.ContentType))
@@ -564,7 +665,6 @@ public class SongsController : ControllerBase
                 return BadRequest(new { error = $"Unsupported audio type: {audioFile.ContentType}. Supported: mp3, wav, ogg, m4a, aac, flac, opus, webm" });
             }
 
-            // Определяем расширение файла
             string fileExtension;
             if (!string.IsNullOrEmpty(Path.GetExtension(audioFile.FileName)))
             {
@@ -572,7 +672,6 @@ public class SongsController : ControllerBase
             }
             else
             {
-                // Если нет расширения, определяем по ContentType
                 fileExtension = audioFile.ContentType switch
                 {
                     "audio/mpeg" => ".mp3",

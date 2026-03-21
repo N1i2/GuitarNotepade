@@ -26,6 +26,7 @@ export interface SongMetadata {
   description: string;
   isPublic: boolean;
   audioData?: any;
+  songId?: string;
 }
 
 export function useSongEditorState() {
@@ -236,6 +237,27 @@ export function useSongEditorState() {
     sessionStorage.removeItem(SONG_METADATA_KEY);
   }, []);
 
+  const isNewSong = useCallback((): boolean => {
+    const savedState = sessionStorage.getItem(SONG_STATE_KEY);
+    if (!savedState) return true;
+
+    const savedMetadata = sessionStorage.getItem(SONG_METADATA_KEY);
+    if (savedMetadata) {
+      const parsed = JSON.parse(savedMetadata);
+      if (parsed.songId) {
+        return true;
+      }
+    }
+
+    return false;
+  }, []);
+
+  const clearStateIfNewSong = useCallback(() => {
+    if (isNewSong()) {
+      clearState();
+    }
+  }, [isNewSong, clearState]);
+
   return {
     saveState,
     saveMetadata,
@@ -244,5 +266,7 @@ export function useSongEditorState() {
     clearState,
     validateResources,
     refreshResources,
+    clearStateIfNewSong,
+    isNewSong,
   };
 }

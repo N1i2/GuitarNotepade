@@ -72,11 +72,13 @@ export interface UpdateSongWithSegmentsDto {
   isDeleteAudio?: boolean;
   isPublic?: boolean | null;
   parentSongId?: string | null;
+  audioBase64?: string | null;
+  audioType?: string | null;
 
   oldSegments?: string[] | null;
   oldComments?: Record<number, string[]> | null;
-  segments?: SongSegmentPositionDto[] | null;
-  segmentComments?: Record<number, SegmentCommentDto[]> | null;
+  segments?: any[] | null;
+  segmentComments?: Record<number, any[]> | null;
 }
 
 export interface MinimalUpdateSongDto {

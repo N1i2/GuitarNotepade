@@ -1,10 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { SongResourcesPanel } from "@/components/song/table-editor/song-resources-panel";
+import { AudioInputSection } from "@/components/song/audio-input-section";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
 import { SongsService } from "@/lib/api/song-service";
+import { ChordsService } from "@/lib/api/chords-service";
+import { PatternsService } from "@/lib/api/patterns-service";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -12,22 +17,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { ArrowLeft, Save } from "lucide-react";
+import { SegmentTable } from "@/components/song/table-editor/segment-table";
+import { convertTableToDTO, convertCommentsToDTO } from "@/lib/table-converter";
 import {
-  ArrowLeft,
-  Save,
-  Music,
-  User,
-  Hash,
-  Tag,
-  FileText,
-} from "lucide-react";
-import { SongTextViewer } from "@/components/song/song-text-viewer";
-import { EditToolPanel } from "@/components/song/edit-tool-panel";
+  TableEditorProvider,
+  useTableEditor,
+} from "@/app/contexts/table-editor-context";
+import { useSongEditorState } from "@/hooks/use-song-editor-state";
+import { AudioInputData, AudioInputType } from "@/types/audio";
 import {
   Select,
   SelectContent,
@@ -35,44 +37,46 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useSongCreation } from "@/app/contexts/song-creation-context";
-import {
-  convertSegmentsToUI,
-  convertStateToBackendFormat,
-  convertStateToUpdateBackendFormat,
-} from "@/lib/song-converter";
-import { AudioInputData, AudioInputType } from "@/types/audio";
-import AudioInputPanel from "@/components/song/audio-input-panel";
-import { EditSongProvider } from "@/app/contexts/edit-song-context";
+import { convertSegmentsToUI } from "@/lib/song-converter";
+import { TableSegment, SegmentType } from "@/types/songs";
 
-function SongDetails() {
-  const { state, dispatch } = useSongCreation();
+function EditSongContent() {
+  const router = useRouter();
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const songId = params.songId as string;
+  const returnTo = searchParams.get("returnTo");
+  const { user } = useAuth();
+  const toast = useToast();
+  const { state, dispatch } = useTableEditor();
+  const {
+    saveState,
+    saveMetadata,
+    loadState,
+    loadMetadata,
+    clearState,
+    validateResources,
+    refreshResources,
+  } = useSongEditorState();
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [originalAudioData, setOriginalAudioData] = useState<{
+    url?: string;
+    type?: string;
+  } | null>(null);
 
-  const handleChange = (field: string, value: string | boolean) => {
-    switch (field) {
-      case "title":
-        dispatch({ type: "SET_TITLE", payload: value as string });
-        break;
-      case "artist":
-        dispatch({ type: "SET_ARTIST", payload: value as string });
-        break;
-      case "genre":
-        dispatch({ type: "SET_GENRE", payload: value as string });
-        break;
-      case "theme":
-        dispatch({ type: "SET_THEME", payload: value as string });
-        break;
-      case "description":
-        dispatch({ type: "SET_DESCRIPTION", payload: value as string });
-        break;
-      case "isPublic":
-        dispatch({ type: "SET_PUBLIC", payload: value as boolean });
-        break;
-    }
-  };
+  const [title, setTitle] = useState("");
+  const [artist, setArtist] = useState("");
+  const [genre, setGenre] = useState("");
+  const [theme, setTheme] = useState("");
+  const [description, setDescription] = useState("");
+  const [isPublic, setIsPublic] = useState(false);
+  const [audioData, setAudioData] = useState<AudioInputData>({
+    type: AudioInputType.NONE,
+  });
 
   const genres = [
-    "Empty",
     "Rock",
     "Pop",
     "Jazz",
@@ -92,7 +96,6 @@ function SongDetails() {
   ];
 
   const themes = [
-    "Empty",
     "Love",
     "Life",
     "Nature",
@@ -111,182 +114,9 @@ function SongDetails() {
     "Philosophical",
   ];
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Song details</CardTitle>
-        <CardDescription>Edit song information</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="title">
-            <div className="flex items-center gap-2">
-              <Music className="h-4 w-4" />
-              Song title *
-            </div>
-          </Label>
-          <Input
-            id="title"
-            placeholder="Enter song title"
-            value={state.title}
-            onChange={(e) => handleChange("title", e.target.value)}
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="artist">
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Actor
-            </div>
-          </Label>
-          <Input
-            id="artist"
-            placeholder="Enter actor"
-            value={state.artist || ""}
-            onChange={(e) => handleChange("artist", e.target.value)}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="genre">
-              <div className="flex items-center gap-2">
-                <Tag className="h-4 w-4" />
-                Genre
-              </div>
-            </Label>
-            <Select
-              value={state.genre || (genres.length > 0 ? genres[0] : "")}
-              onValueChange={(value) => handleChange("genre", value)}
-            >
-              <SelectTrigger id="genre">
-                <SelectValue placeholder="Chose genre" />
-              </SelectTrigger>
-              <SelectContent>
-                {genres.map((genre) => (
-                  <SelectItem key={genre} value={genre}>
-                    {genre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="theme">
-              <div className="flex items-center gap-2">
-                <Hash className="h-4 w-4" />
-                Theme
-              </div>
-            </Label>
-            <Select
-              value={state.theme || (themes.length > 0 ? themes[0] : "")}
-              onValueChange={(value) => handleChange("theme", value)}
-            >
-              <SelectTrigger id="theme">
-                <SelectValue placeholder="Chose theme" />
-              </SelectTrigger>
-              <SelectContent>
-                {themes.map((theme) => (
-                  <SelectItem key={theme} value={theme}>
-                    {theme}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="description">
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Description
-            </div>
-          </Label>
-          <Textarea
-            id="description"
-            placeholder="Tell us about your song..."
-            value={state.description || ""}
-            onChange={(e) => handleChange("description", e.target.value)}
-            className="min-h-[100px]"
-          />
-        </div>
-
-        <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-          <div>
-            <Label className="font-medium cursor-pointer">Visibility</Label>
-            <p className="text-sm text-muted-foreground">
-              {state.isPublic ? "All users" : "Only for you"}
-            </p>
-          </div>
-          <Switch
-            checked={state.isPublic}
-            onCheckedChange={(checked) => handleChange("isPublic", checked)}
-          />
-        </div>
-
-        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-          <div className="grid grid-cols-4 gap-4 text-center">
-            <div>
-              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                {state.selectedChords.length}
-              </div>
-              <div className="text-xs text-blue-700 dark:text-blue-300">
-                Chords
-              </div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                {state.selectedPatterns.length}
-              </div>
-              <div className="text-xs text-purple-700 dark:text-purple-300">
-                Patterns
-              </div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {state.segments.length}
-              </div>
-              <div className="text-xs text-green-700 dark:text-green-300">
-                Segments
-              </div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                {state.text.length}
-              </div>
-              <div className="text-xs text-amber-700 dark:text-amber-300">
-                Characters
-              </div>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function EditSongContent() {
-  const router = useRouter();
-  const params = useParams();
-  const songId = params.songId as string;
-  const { user } = useAuth();
-  const toast = useToast();
-  const { state, dispatch } = useSongCreation();
-
-  const [isLoading, setIsLoading] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [originalAudioData, setOriginalAudioData] = useState<{
-    url?: string;
-    type?: string;
-  } | null>(null);
-
   useEffect(() => {
     const loadSongData = async () => {
-      if (!user || !songId || isInitialized) return;
+      if (!user || !songId) return;
 
       setIsLoading(true);
       try {
@@ -296,12 +126,41 @@ function EditSongContent() {
           true,
           true,
           false,
-          true
+          true,
         );
 
         const uiData = convertSegmentsToUI(songData);
 
-        let audioInputData: AudioInputData | null = null;
+        const tableSegments: TableSegment[] = uiData.segments.map(
+          (segment, index) => ({
+            id: segment.id,
+            order: index,
+            type: segment.text ? SegmentType.Text : SegmentType.Space,
+            text: segment.text,
+            chordId: segment.chordId,
+            patternId: segment.patternId,
+            color: segment.color,
+            backgroundColor: segment.backgroundColor,
+            repeatGroup: undefined,
+            comment: segment.comments?.[0]?.text || "",
+          }),
+        );
+
+        const [chordsData, patternsData] = await Promise.all([
+          ChordsService.getAllChords({ pageSize: 100 }),
+          PatternsService.getAllPatterns({ pageSize: 100 }),
+        ]);
+
+        dispatch({ type: "SET_CHORDS", payload: chordsData.items });
+        dispatch({ type: "SET_PATTERNS", payload: patternsData.items });
+        dispatch({ type: "SET_SEGMENTS", payload: tableSegments });
+
+        setTitle(songData.title || "");
+        setArtist(songData.artist || "");
+        setGenre(songData.genre || "");
+        setTheme(songData.theme || "");
+        setDescription(songData.description || "");
+        setIsPublic(songData.isPublic);
 
         if (songData.customAudioUrl && songData.customAudioType) {
           setOriginalAudioData({
@@ -309,46 +168,35 @@ function EditSongContent() {
             type: songData.customAudioType,
           });
 
-          if (songData.customAudioType === "File") {
-            audioInputData = {
+          if (
+            songData.customAudioType === "File" ||
+            songData.customAudioType === "audio/mpeg"
+          ) {
+            setAudioData({
               type: AudioInputType.FILE,
               customAudioUrl: songData.customAudioUrl,
-              customAudioType: "File",
+              customAudioType: songData.customAudioType,
               fileName:
                 songData.customAudioUrl.split("/").pop() || "audio-file.mp3",
-            };
-
-            if (songData.customAudioUrl.startsWith("data:audio/")) {
-              audioInputData.fileName = "audio-file.mp3";
-            }
-          } else if (songData.customAudioType === "Url") {
-            audioInputData = {
+            });
+          } else if (
+            songData.customAudioType === "Url" ||
+            songData.customAudioType === "url"
+          ) {
+            setAudioData({
               type: AudioInputType.URL,
               url: songData.customAudioUrl,
               customAudioUrl: songData.customAudioUrl,
-              customAudioType: "Url",
-            };
+              customAudioType: "url",
+            });
+          } else if (songData.customAudioType === "audio/webm") {
+            setAudioData({
+              type: AudioInputType.RECORD,
+              customAudioUrl: songData.customAudioUrl,
+              customAudioType: songData.customAudioType,
+            });
           }
         }
-
-        dispatch({
-          type: "SET_STATE",
-          payload: {
-            title: songData.title || "",
-            artist: songData.artist || "",
-            genre: songData.genre || "",
-            theme: songData.theme || "",
-            description: songData.description || "",
-            isPublic: songData.isPublic,
-            text: uiData.text,
-            selectedChords: uiData.chords,
-            selectedPatterns: uiData.patterns,
-            segments: uiData.segments,
-            comments: uiData.comments,
-            currentTool: "select",
-            audioInput: audioInputData,
-          },
-        });
 
         setIsInitialized(true);
       } catch (error: any) {
@@ -360,7 +208,58 @@ function EditSongContent() {
     };
 
     loadSongData();
-  }, [songId, user, dispatch, router, toast, isInitialized]);
+  }, [songId, user, dispatch, router, toast]);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      if (isInitialized) {
+        validateResources();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [isInitialized, validateResources]);
+
+  useEffect(() => {
+    if (isInitialized && state.segments.length > 0) {
+      saveState();
+    }
+  }, [state.segments, isInitialized, saveState]);
+
+  useEffect(() => {
+    if (isInitialized) {
+      saveMetadata({
+        title,
+        artist,
+        genre,
+        theme,
+        description,
+        isPublic,
+        audioData,
+        songId,
+      });
+    }
+  }, [
+    title,
+    artist,
+    genre,
+    theme,
+    description,
+    isPublic,
+    audioData,
+    isInitialized,
+    saveMetadata,
+    songId,
+  ]);
+
+  const handleBack = () => {
+    if (returnTo === "song-create") {
+      router.push("/home/songs/create");
+    } else {
+      router.push(`/home/songs/${songId}`);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!user) {
@@ -368,65 +267,222 @@ function EditSongContent() {
       return;
     }
 
-    if (!state.title.trim()) {
-      toast.error("Enter song title");
+    if (!title.trim()) {
+      toast.error("Title is required");
       return;
     }
 
-    if (!state.text.trim()) {
-      toast.error("Enter song lyrics");
+    if (state.segments.length === 0) {
+      toast.error("Add at least one segment");
       return;
     }
 
-    if (state.selectedChords.length > 20) {
-      toast.error("Maximum 20 chords per song");
-      return;
-    }
-
-    if (state.selectedPatterns.length > 10) {
-      toast.error("Maximum 10 patterns per song");
-      return;
-    }
-
-    const chordColors = state.selectedChords.map((c) => c.color);
-    const patternColors = state.selectedPatterns.map((p) => p.color);
-    const allColors = [...chordColors, ...patternColors];
-    const uniqueColors = new Set(allColors);
-
-    if (allColors.length !== uniqueColors.size) {
-      toast.error(
-        "The colors of the chords and patterns should not be repeated."
-      );
-      return;
-    }
-
-    setIsLoading(true);
+    setIsSaving(true);
     try {
-      const updateData = convertStateToUpdateBackendFormat(
-        state,
-        songId,
-        originalAudioData || undefined
-      );
+      let audioBase64: string | undefined;
+      let audioType: string | undefined;
+      let customAudioUrl: string | undefined;
+      let customAudioType: string | undefined;
+
+      if (audioData.type === AudioInputType.FILE && audioData.file) {
+        audioBase64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(audioData.file!);
+        });
+        audioType = audioData.file.type;
+        customAudioUrl = undefined;
+        customAudioType = undefined;
+      } else if (
+        audioData.type === AudioInputType.RECORD &&
+        audioData.audioBlob
+      ) {
+        audioBase64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(audioData.audioBlob!);
+        });
+        audioType = "audio/webm";
+        customAudioUrl = undefined;
+        customAudioType = undefined;
+      } else if (audioData.type === AudioInputType.URL && audioData.url) {
+        customAudioUrl = audioData.url;
+        customAudioType = "url";
+        audioBase64 = undefined;
+        audioType = undefined;
+      }
+
+      const segmentsDTO = convertTableToDTO(state.segments);
+      const structureSegments = segmentsDTO.map((segment) => ({
+        type: segment.segmentData.type,
+        lyric: segment.segmentData.lyric,
+        chordId: segment.segmentData.chordId,
+        patternId: segment.segmentData.patternId,
+        color: segment.segmentData.color,
+        backgroundColor: segment.segmentData.backgroundColor,
+      }));
+
+      const segmentComments = convertCommentsToDTO(state.segments);
+
+      const isDeleteAudio =
+        originalAudioData?.url &&
+        !audioData.customAudioUrl &&
+        !audioData.url &&
+        !audioData.file;
+
+      const updateData: any = {
+        id: songId,
+        title: title || null,
+        artist: artist || null,
+        description: description || null,
+        genre: genre || null,
+        theme: theme || null,
+        isPublic: isPublic,
+        segments: structureSegments,
+        segmentComments:
+          Object.keys(segmentComments).length > 0 ? segmentComments : null,
+        isDeleteAudio: isDeleteAudio,
+      };
+
+      if (customAudioUrl) {
+        updateData.customAudioUrl = customAudioUrl;
+        updateData.customAudioType = customAudioType;
+      } else if (audioBase64) {
+        updateData.audioBase64 = audioBase64;
+        updateData.audioType = audioType;
+      }
+
+      console.log("📤 Updating song with audio:", {
+        hasAudioBase64: !!audioBase64,
+        audioType,
+        customAudioUrl,
+        isDeleteAudio,
+      });
 
       const updatedSong = await SongsService.updateSongWithSegments(updateData);
 
-      toast.success(`Song "${updatedSong.title}" successfully updated!`);
-
+      clearState();
+      toast.success(`Song "${updatedSong.title}" updated!`);
       router.push(`/home/songs/${updatedSong.id}`);
     } catch (error: any) {
+      console.error("Update song error:", error);
       toast.error(error.message || "Failed to update song");
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
 
-  if (isLoading && !isInitialized) {
+  const handleDeleteChord = (chordId: string) => {
+    dispatch({ type: "DELETE_CHORD_FROM_SONG", payload: chordId });
+  };
+
+  const handleDeletePattern = (patternId: string) => {
+    dispatch({ type: "DELETE_PATTERN_FROM_SONG", payload: patternId });
+  };
+
+  const handleReplaceChord = (oldChordId: string, newChordId: string) => {
+    dispatch({ type: "REPLACE_CHORD", payload: { oldChordId, newChordId } });
+  };
+
+  const handleReplacePattern = (oldPatternId: string, newPatternId: string) => {
+    dispatch({
+      type: "REPLACE_PATTERN",
+      payload: { oldPatternId, newPatternId },
+    });
+  };
+
+  const handleNavigateToChord = (chordId: string) => {
+    sessionStorage.setItem("returning_from_edit", "true");
+    saveState();
+    saveMetadata({
+      title,
+      artist,
+      genre,
+      theme,
+      description,
+      isPublic,
+      audioData,
+      songId,
+    });
+    router.push(`/home/chords/${chordId}?returnTo=song-edit&songId=${songId}`);
+  };
+
+  const handleNavigateToPattern = (patternId: string) => {
+    sessionStorage.setItem("returning_from_edit", "true");
+    saveState();
+    saveMetadata({
+      title,
+      artist,
+      genre,
+      theme,
+      description,
+      isPublic,
+      audioData,
+      songId,
+    });
+    router.push(
+      `/home/patterns/${patternId}?returnTo=song-edit&songId=${songId}`,
+    );
+  };
+
+  const handleCreateChord = () => {
+    sessionStorage.setItem("returning_from_edit", "true");
+    saveState();
+    saveMetadata({
+      title,
+      artist,
+      genre,
+      theme,
+      description,
+      isPublic,
+      audioData,
+      songId,
+    });
+    router.push(`/home/chords/create?returnTo=song-edit&songId=${songId}`);
+  };
+
+  const handleCreatePattern = () => {
+    sessionStorage.setItem("returning_from_edit", "true");
+    saveState();
+    saveMetadata({
+      title,
+      artist,
+      genre,
+      theme,
+      description,
+      isPublic,
+      audioData,
+      songId,
+    });
+    router.push(`/home/patterns/create?returnTo=song-edit&songId=${songId}`);
+  };
+
+  const completedSegments = state.segments.filter(
+    (s) => s.chordId && s.patternId,
+  ).length;
+  const completionPercentage = Math.round(
+    (completedSegments / Math.max(1, state.segments.length)) * 100,
+  );
+  const textOnlyCount = state.segments.filter(
+    (s) => s.text && !s.patternId,
+  ).length;
+  const playbackOnlyCount = state.segments.filter(
+    (s) => !s.text && s.patternId,
+  ).length;
+  const fullSectionsCount = state.segments.filter(
+    (s) => s.text && s.patternId,
+  ).length;
+  const spacesCount = state.segments.filter(
+    (s) => !s.text && !s.patternId,
+  ).length;
+
+  if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading Song Data...</p>
+            <p className="text-muted-foreground">Loading song data...</p>
           </div>
         </div>
       </div>
@@ -434,63 +490,272 @@ function EditSongContent() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
       <div className="space-y-6">
         <div>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push(`/home/songs/${songId}`)}
+            onClick={handleBack}
             className="mb-4"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to the song
+            Back to Song
           </Button>
-          <h1 className="text-3xl font-bold">Editing a Song</h1>
+          <h1 className="text-3xl font-bold">Edit Song</h1>
           <p className="text-muted-foreground mt-2">
-            Edit the information, but not the lyrics.
+            Edit song details, segments, chords, and patterns
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="space-y-6">
-            <SongDetails />
-            <EditToolPanel />
-            <AudioInputPanel />
-          </div>
-
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-1 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Lyrics</CardTitle>
+                <CardTitle>Song Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Title *</Label>
+                  <Input
+                    id="title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Song title"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="artist">Artist</Label>
+                  <Input
+                    id="artist"
+                    value={artist}
+                    onChange={(e) => setArtist(e.target.value)}
+                    placeholder="Artist name"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="genre">Genre</Label>
+                    <Select
+                      value={genre || "none"}
+                      onValueChange={(value) =>
+                        setGenre(value === "none" ? "" : value)
+                      }
+                    >
+                      <SelectTrigger id="genre" className="w-full">
+                        <SelectValue placeholder="Select genre" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {genres.map((g) => (
+                          <SelectItem key={g} value={g}>
+                            {g}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="theme">Theme</Label>
+                    <Select
+                      value={theme || "none"}
+                      onValueChange={(value) =>
+                        setTheme(value === "none" ? "" : value)
+                      }
+                    >
+                      <SelectTrigger id="theme" className="w-full">
+                        <SelectValue placeholder="Select theme" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {themes.map((t) => (
+                          <SelectItem key={t} value={t}>
+                            {t}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="About this song..."
+                    className="min-h-[100px]"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="isPublic">Public</Label>
+                  <Switch
+                    id="isPublic"
+                    checked={isPublic}
+                    onCheckedChange={setIsPublic}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <SongResourcesPanel
+              segments={state.segments}
+              chords={state.chords}
+              patterns={state.patterns}
+              onChordClick={handleNavigateToChord}
+              onPatternClick={handleNavigateToPattern}
+              onDeleteChord={handleDeleteChord}
+              onDeletePattern={handleDeletePattern}
+              onReplaceChord={handleReplaceChord}
+              onReplacePattern={handleReplacePattern}
+              onCreateChord={handleCreateChord}
+              onCreatePattern={handleCreatePattern}
+              audioData={audioData}
+              onAudioChange={setAudioData}
+            />
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Statistics</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Segments:</span>
+                    <span className="font-bold text-lg">
+                      {state.segments.length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">
+                      Unique Chords:
+                    </span>
+                    <span className="font-bold text-lg">
+                      {
+                        new Set(
+                          state.segments
+                            .filter((s) => s.chordId)
+                            .map((s) => s.chordId),
+                        ).size
+                      }
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">
+                      Unique Patterns:
+                    </span>
+                    <span className="font-bold text-lg">
+                      {
+                        new Set(
+                          state.segments
+                            .filter((s) => s.patternId)
+                            .map((s) => s.patternId),
+                        ).size
+                      }
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-1 pt-2 border-t">
+                  <div className="flex justify-between text-xs">
+                    <span>Completion</span>
+                    <span>{completionPercentage}%</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all"
+                      style={{ width: `${completionPercentage}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-2 border-t">
+                  <h4 className="text-xs font-medium">Segment Types</h4>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Text only:</span>
+                      <span className="font-medium">{textOnlyCount}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Playback only:
+                      </span>
+                      <span className="font-medium">{playbackOnlyCount}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Full sections:
+                      </span>
+                      <span className="font-medium">{fullSectionsCount}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Spaces:</span>
+                      <span className="font-medium">{spacesCount}</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="lg:col-span-3">
+            <Card>
+              <CardHeader>
+                <CardTitle>Song Segments</CardTitle>
                 <CardDescription>
-                  View only. Editing lyrics, chords, and patterns is not
-                  available in edit mode.
+                  Edit segments, chords, and patterns
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <SongTextViewer />
+                <SegmentTable
+                  segments={state.segments}
+                  chords={state.chords}
+                  patterns={state.patterns}
+                  onUpdateSegment={(index, segment) =>
+                    dispatch({
+                      type: "UPDATE_SEGMENT",
+                      payload: { index, segment },
+                    })
+                  }
+                  onDeleteSegment={(index) =>
+                    dispatch({ type: "DELETE_SEGMENT", payload: index })
+                  }
+                  onAddSegment={(copyFromSegment) => {
+                    if (copyFromSegment) {
+                      dispatch({
+                        type: "ADD_SEGMENT",
+                        payload: copyFromSegment,
+                      });
+                    } else {
+                      dispatch({ type: "ADD_SEGMENT" });
+                    }
+                  }}
+                  onReorderSegments={(from, to) =>
+                    dispatch({
+                      type: "REORDER_SEGMENTS",
+                      payload: { from, to },
+                    })
+                  }
+                />
               </CardContent>
             </Card>
           </div>
         </div>
 
-        <div className="flex gap-4 justify-end pt-6 border-t">
-          <Button
-            variant="outline"
-            onClick={() => router.push(`/home/songs/${songId}`)}
-            disabled={isLoading}
-            size="lg"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+        <div className="flex justify-end gap-4 pt-6">
+          <Button variant="outline" onClick={handleBack} disabled={isSaving}>
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={isLoading || !state.title.trim() || !state.text.trim()}
+            disabled={isSaving || !title.trim() || state.segments.length === 0}
             size="lg"
           >
-            {isLoading ? (
+            {isSaving ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 Saving...
@@ -498,7 +763,7 @@ function EditSongContent() {
             ) : (
               <>
                 <Save className="h-4 w-4 mr-2" />
-                Save changes
+                Save Changes
               </>
             )}
           </Button>
@@ -509,12 +774,9 @@ function EditSongContent() {
 }
 
 export default function EditSongPage() {
-  const params = useParams();
-  const songId = params.songId as string;
-
   return (
-    <EditSongProvider songId={songId}>
+    <TableEditorProvider>
       <EditSongContent />
-    </EditSongProvider>
+    </TableEditorProvider>
   );
 }

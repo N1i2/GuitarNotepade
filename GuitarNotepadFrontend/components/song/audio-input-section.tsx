@@ -75,6 +75,8 @@ export function AudioInputSection({ value, onChange }: AudioInputSectionProps) {
         type: AudioInputType.FILE,
         file,
         fileName: file.name,
+        customAudioUrl: URL.createObjectURL(file),
+        customAudioType: file.type,
       });
     }
   };
@@ -84,6 +86,8 @@ export function AudioInputSection({ value, onChange }: AudioInputSectionProps) {
     onChange({
       type: AudioInputType.URL,
       url: value,
+      customAudioUrl: value,
+      customAudioType: "url",
     });
   };
 
@@ -103,6 +107,8 @@ export function AudioInputSection({ value, onChange }: AudioInputSectionProps) {
         onChange({
           type: AudioInputType.RECORD,
           audioBlob: blob,
+          customAudioUrl: URL.createObjectURL(blob),
+          customAudioType: "audio/webm",
         });
       };
 

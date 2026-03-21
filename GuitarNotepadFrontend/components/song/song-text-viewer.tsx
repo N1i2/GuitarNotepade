@@ -35,7 +35,7 @@ export function SongTextViewer() {
     if (!state.text) return segments;
 
     const sortedSegments = [...state.segments].sort(
-      (a, b) => a.startIndex - b.startIndex
+      (a, b) => a.startIndex - b.startIndex,
     );
     let lastIndex = 0;
     let segmentCounter = 0;
@@ -56,7 +56,7 @@ export function SongTextViewer() {
         segment.text ||
         state.text.substring(
           segment.startIndex,
-          segment.startIndex + segment.length
+          segment.startIndex + segment.length,
         );
 
       if (segmentText) {

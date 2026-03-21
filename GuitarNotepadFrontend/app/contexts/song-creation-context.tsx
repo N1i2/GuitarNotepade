@@ -74,7 +74,7 @@ export const initialState: SongCreationState = {
 
 export function songCreationReducer(
   state: SongCreationState,
-  action: SongCreationAction
+  action: SongCreationAction,
 ): SongCreationState {
   switch (action.type) {
     case "SET_TITLE":
@@ -144,7 +144,7 @@ export function songCreationReducer(
       return {
         ...state,
         selectedChords: state.selectedChords.filter(
-          (c) => c.id !== action.payload
+          (c) => c.id !== action.payload,
         ),
         segments: mergeAdjacentSegments(segmentsAfterChordRemoval),
         selectedChordId:
@@ -167,7 +167,7 @@ export function songCreationReducer(
       return {
         ...state,
         selectedPatterns: state.selectedPatterns.filter(
-          (p) => p.id !== action.payload
+          (p) => p.id !== action.payload,
         ),
         segments: mergeAdjacentSegments(segmentsAfterPatternRemoval),
         selectedPatternId:
@@ -200,7 +200,7 @@ export function songCreationReducer(
       return {
         ...state,
         selectedChords: state.selectedChords.map((c) =>
-          c.id === action.payload.oldId ? action.payload.chord : c
+          c.id === action.payload.oldId ? action.payload.chord : c,
         ),
         segments: state.segments.map((segment) =>
           segment.chordId === action.payload.oldId
@@ -209,7 +209,7 @@ export function songCreationReducer(
                 chordId: action.payload.newId,
                 color: action.payload.chord.color,
               }
-            : segment
+            : segment,
         ),
         selectedChordId:
           state.selectedChordId === action.payload.oldId
@@ -221,7 +221,7 @@ export function songCreationReducer(
       return {
         ...state,
         selectedPatterns: state.selectedPatterns.map((p) =>
-          p.id === action.payload.oldId ? action.payload.pattern : p
+          p.id === action.payload.oldId ? action.payload.pattern : p,
         ),
         segments: state.segments.map((segment) =>
           segment.patternId === action.payload.oldId
@@ -230,7 +230,7 @@ export function songCreationReducer(
                 patternId: action.payload.newId,
                 backgroundColor: action.payload.pattern.color,
               }
-            : segment
+            : segment,
         ),
         selectedPatternId:
           state.selectedPatternId === action.payload.oldId
@@ -244,12 +244,12 @@ export function songCreationReducer(
         selectedChords: state.selectedChords.map((c) =>
           c.id === action.payload.chordId
             ? { ...c, color: action.payload.color }
-            : c
+            : c,
         ),
         segments: state.segments.map((segment) =>
           segment.chordId === action.payload.chordId
             ? { ...segment, color: action.payload.color }
-            : segment
+            : segment,
         ),
       };
 
@@ -259,12 +259,12 @@ export function songCreationReducer(
         selectedPatterns: state.selectedPatterns.map((p) =>
           p.id === action.payload.patternId
             ? { ...p, color: action.payload.color }
-            : p
+            : p,
         ),
         segments: state.segments.map((segment) =>
           segment.patternId === action.payload.patternId
             ? { ...segment, backgroundColor: action.payload.color }
-            : segment
+            : segment,
         ),
       };
 
@@ -278,7 +278,7 @@ export function songCreationReducer(
       return {
         ...state,
         segments: state.segments.map((s) =>
-          s.id === action.payload.id ? action.payload : s
+          s.id === action.payload.id ? action.payload : s,
         ),
       };
 
@@ -286,7 +286,7 @@ export function songCreationReducer(
       const commentId = action.payload;
 
       const updatedComments = state.comments.filter(
-        (comment) => comment.id !== commentId
+        (comment) => comment.id !== commentId,
       );
 
       const updatedSegments = state.segments.map((segment) => {
@@ -314,7 +314,7 @@ export function songCreationReducer(
         segments: state.segments.map((segment) =>
           segment.chordId === action.payload
             ? { ...segment, chordId: undefined, color: undefined }
-            : segment
+            : segment,
         ),
       };
 
@@ -324,7 +324,7 @@ export function songCreationReducer(
         segments: state.segments.map((segment) =>
           segment.patternId === action.payload
             ? { ...segment, patternId: undefined, backgroundColor: undefined }
-            : segment
+            : segment,
         ),
       };
 
@@ -335,7 +335,7 @@ export function songCreationReducer(
       return {
         ...state,
         comments: state.comments.map((c) =>
-          c.id === action.payload.id ? action.payload : c
+          c.id === action.payload.id ? action.payload : c,
         ),
       };
 
@@ -375,7 +375,7 @@ export function useSongCreation() {
   const context = useContext(SongCreationContext);
   if (context === undefined) {
     throw new Error(
-      "useSongCreation must be used within a SongCreationProvider"
+      "useSongCreation must be used within a SongCreationProvider",
     );
   }
   return context;

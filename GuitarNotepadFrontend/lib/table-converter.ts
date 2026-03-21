@@ -3,6 +3,7 @@ import {
   SegmentDataWithPositionDto,
   TableSegment,
   SegmentType,
+  SegmentCommentDto,
 } from "@/types/songs";
 
 export function convertUIToTable(
@@ -38,6 +39,22 @@ export function convertTableToDTO(
     positionIndex: index,
     repeatGroup: segment.repeatGroup,
   }));
+}
+
+export function convertCommentsToDTO(
+  segments: TableSegment[],
+): Record<number, SegmentCommentDto[]> {
+  const comments: Record<number, SegmentCommentDto[]> = {};
+
+  segments.forEach((segment, index) => {
+    if (segment.comment && segment.comment.trim()) {
+      comments[index] = [{ text: segment.comment.trim() }];
+    } else {
+      comments[index] = [];
+    }
+  });
+
+  return comments;
 }
 
 export function convertTableToUI(segments: TableSegment[]): UISegment[] {

@@ -33,6 +33,7 @@ interface AudioPlayerPanelProps {
     customAudioType?: string;
     type?: AudioInputType;
     url?: string;
+    songId?: string;
   };
   title?: string;
 }
@@ -46,22 +47,109 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
   const [duration, setDuration] = useState(0);
   const [audioLoaded, setAudioLoaded] = useState(false);
   const [audioError, setAudioError] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [audioBlobUrl, setAudioBlobUrl] = useState<string | null>(null);
   const [volume, setVolume] = useState(80);
   const [isMuted, setIsMuted] = useState(false);
   const audioPlayerRef = useRef<HTMLAudioElement>(null);
 
-  const audioType =
-    audioData?.type ||
-    (audioData?.customAudioType === "Url"
-      ? AudioInputType.URL
-      : audioData?.customAudioType === "File"
-      ? AudioInputType.FILE
-      : AudioInputType.NONE);
+  const getAudioType = (): AudioInputType => {
+    if (audioData?.type) return audioData.type;
 
-  const audioUrl = audioData?.customAudioUrl || audioData?.url;
+    const customType = audioData?.customAudioType;
 
-  const isBase64Audio = audioUrl && audioUrl.startsWith("data:audio");
+    if (customType === "Url" || customType === "url") {
+      return AudioInputType.URL;
+    }
+
+    if (
+      customType === "File" ||
+      customType === "audio/mpeg" ||
+      customType === "audio/webm" ||
+      customType === "audio/wav" ||
+      customType === "audio/ogg" ||
+      customType === "audio/mp4"
+    ) {
+      return AudioInputType.FILE;
+    }
+
+    return AudioInputType.NONE;
+  };
+
+  const audioType = getAudioType();
+  const audioFileName = audioData?.customAudioUrl || audioData?.url;
+  const songId = audioData?.songId;
+
+  useEffect(() => {
+    const fetchAudioFile = async () => {
+      if (audioType === AudioInputType.URL) {
+        setIsLoading(false);
+        return;
+      }
+
+      if (!audioFileName || !songId) {
+        setIsLoading(false);
+        return;
+      }
+
+      if (audioBlobUrl) {
+        setIsLoading(false);
+        return;
+      }
+
+      if (audioFileName.startsWith("data:")) {
+        setAudioBlobUrl(audioFileName);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const token = localStorage.getItem("auth_token");
+        const baseUrl =
+          process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+        const url = `${baseUrl}/Songs/${songId}/audio-file`;
+
+        console.log("🎵 Fetching audio file from:", url);
+
+        const response = await fetch(url, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          console.error("🎵 Failed to fetch audio:", error);
+          throw new Error(error.error || "Failed to fetch audio");
+        }
+
+        const blob = await response.blob();
+        console.log("🎵 Audio blob received:", blob.size, blob.type);
+
+        const blobUrl = URL.createObjectURL(blob);
+        setAudioBlobUrl(blobUrl);
+        console.log("🎵 Audio loaded, size:", blob.size);
+      } catch (error) {
+        console.error("🎵 Error fetching audio:", error);
+        setAudioError(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAudioFile();
+
+    return () => {
+      if (audioBlobUrl && audioBlobUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(audioBlobUrl);
+      }
+    };
+  }, [audioFileName, songId, audioType]);
+
+  const audioUrl =
+    audioType === AudioInputType.URL ? audioFileName : audioBlobUrl;
 
   useEffect(() => {
     const audio = audioPlayerRef.current;
@@ -80,7 +168,6 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
     const handleLoadedData = () => {
       setAudioLoaded(true);
       setAudioError(false);
-      setIsLoading(false);
       if (audio.duration && audio.duration !== Infinity && audio.duration > 0) {
         setDuration(audio.duration);
       }
@@ -88,17 +175,12 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
     const handleError = () => {
       setAudioError(true);
       setAudioLoaded(false);
-      setIsLoading(false);
     };
     const handleCanPlay = () => {
       if (audio.duration && audio.duration !== Infinity && audio.duration > 0) {
         setDuration(audio.duration);
         setAudioLoaded(true);
-        setIsLoading(false);
       }
-    };
-    const handleLoadStart = () => {
-      setIsLoading(true);
     };
 
     audio.addEventListener("timeupdate", updateTime);
@@ -107,7 +189,6 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
     audio.addEventListener("loadeddata", handleLoadedData);
     audio.addEventListener("error", handleError);
     audio.addEventListener("canplay", handleCanPlay);
-    audio.addEventListener("loadstart", handleLoadStart);
 
     return () => {
       audio.removeEventListener("timeupdate", updateTime);
@@ -116,21 +197,19 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
       audio.removeEventListener("loadeddata", handleLoadedData);
       audio.removeEventListener("error", handleError);
       audio.removeEventListener("canplay", handleCanPlay);
-      audio.removeEventListener("loadstart", handleLoadStart);
     };
   }, []);
 
   useEffect(() => {
     if (
       audioPlayerRef.current &&
-      audioType === AudioInputType.FILE &&
-      audioUrl
+      audioUrl &&
+      audioType === AudioInputType.FILE
     ) {
-      setIsLoading(true);
       audioPlayerRef.current.src = audioUrl;
       audioPlayerRef.current.load();
     }
-  }, [audioType, audioUrl]);
+  }, [audioUrl, audioType]);
 
   const togglePlayPause = () => {
     if (!audioPlayerRef.current || audioError || !audioLoaded) return;
@@ -138,7 +217,7 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
     if (isPlaying) {
       audioPlayerRef.current.pause();
     } else {
-      audioPlayerRef.current.play().catch((error) => {
+      audioPlayerRef.current.play().catch(() => {
         setAudioError(true);
       });
     }
@@ -149,7 +228,7 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
     if (audioPlayerRef.current && duration > 0 && audioLoaded) {
       audioPlayerRef.current.currentTime = Math.min(
         audioPlayerRef.current.currentTime + 5,
-        duration
+        duration,
       );
     }
   };
@@ -158,7 +237,7 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
     if (audioPlayerRef.current && audioLoaded) {
       audioPlayerRef.current.currentTime = Math.max(
         audioPlayerRef.current.currentTime - 5,
-        0
+        0,
       );
     }
   };
@@ -199,13 +278,24 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
   const formattedCurrentTime = formatTime(currentTime * 1000);
   const formattedDuration = formatTime(duration * 1000);
 
-  const isPlaybackAvailable =
-    audioType === AudioInputType.FILE && audioUrl && audioUrl.trim() !== "";
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Music className="h-5 w-5" />
+            Audio
+          </CardTitle>
+          <CardDescription>Loading audio...</CardDescription>
+        </CardHeader>
+        <CardContent className="flex justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
 
-  const isUrlAvailable =
-    audioType === AudioInputType.URL && audioUrl && audioUrl.trim() !== "";
-
-  if (!audioUrl || audioType === AudioInputType.NONE) {
+  if ((!audioFileName && !audioUrl) || audioType === AudioInputType.NONE) {
     return (
       <Card>
         <CardHeader>
@@ -254,7 +344,7 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
             <div className="mt-3 p-2 bg-white dark:bg-gray-800 rounded border">
               <div className="text-xs text-muted-foreground mb-1">URL:</div>
               <div className="text-sm font-mono break-all p-2 bg-gray-100 dark:bg-gray-900 rounded">
-                {audioUrl}
+                {audioFileName}
               </div>
             </div>
           </div>
@@ -262,7 +352,7 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
           <div className="space-y-2">
             <Button
               variant="default"
-              onClick={() => window.open(audioUrl, "_blank")}
+              onClick={() => window.open(audioFileName, "_blank")}
               className="w-full"
               size="lg"
             >
@@ -303,27 +393,20 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
             <div>
               <div className="font-medium">Audio File</div>
               <div className="text-sm text-muted-foreground">
-                Attached to this song
+                {audioFileName?.split("/").pop() || "Audio file"}
               </div>
             </div>
           </div>
 
           {audioLoaded && duration > 0 && (
             <div className="text-sm text-muted-foreground">
-              {formatTime(duration * 1000)}
+              {formattedDuration}
             </div>
           )}
         </div>
 
         <div className="space-y-4">
           <audio ref={audioPlayerRef} className="hidden" />
-
-          {isLoading && (
-            <div className="text-center py-4">
-              <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">Loading audio...</p>
-            </div>
-          )}
 
           {audioError && (
             <Alert variant="destructive">
@@ -334,12 +417,12 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
             </Alert>
           )}
 
-          {audioLoaded && !audioError && (
+          {!audioError && audioUrl && (
             <>
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <span>{formattedCurrentTime}</span>
-                  <span>{formattedDuration}</span>
+                  <span>{formattedDuration || "--:--"}</span>
                 </div>
                 <Slider
                   value={[duration > 0 ? (currentTime / duration) * 100 : 0]}
@@ -347,6 +430,7 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
                   step={0.1}
                   className="w-full"
                   onValueChange={handleSliderChange}
+                  disabled={!audioLoaded}
                 />
               </div>
 
@@ -356,6 +440,7 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
                     variant="outline"
                     size="sm"
                     onClick={seekBackward}
+                    disabled={!audioLoaded}
                     title="Rewind 5 seconds"
                   >
                     <SkipBack className="h-4 w-4" />
@@ -365,6 +450,7 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
                     variant="default"
                     size="lg"
                     onClick={togglePlayPause}
+                    disabled={!audioLoaded}
                     className="w-12 h-12 rounded-full"
                     title={isPlaying ? "Pause" : "Play"}
                   >
@@ -379,6 +465,7 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
                     variant="outline"
                     size="sm"
                     onClick={seekForward}
+                    disabled={!audioLoaded}
                     title="Forward 5 seconds"
                   >
                     <SkipForward className="h-4 w-4" />
@@ -411,41 +498,7 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
               </div>
             </>
           )}
-
-          {!isLoading && !audioLoaded && !audioError && audioUrl && (
-            <div className="text-center py-4">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  if (audioPlayerRef.current) {
-                    audioPlayerRef.current.src = audioUrl;
-                    audioPlayerRef.current.load();
-                  }
-                }}
-              >
-                Load Audio
-              </Button>
-              <p className="text-sm text-muted-foreground mt-2">
-                Click to load and play the audio
-              </p>
-            </div>
-          )}
         </div>
-
-        {audioLoaded && (
-          <div className="pt-4 border-t">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="space-y-1">
-                <div className="text-muted-foreground">Type</div>
-                <div className="font-medium">Audio File</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-muted-foreground">Duration</div>
-                <div className="font-medium">{formattedDuration}</div>
-              </div>
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

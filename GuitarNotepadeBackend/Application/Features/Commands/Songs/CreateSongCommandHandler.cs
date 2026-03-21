@@ -55,7 +55,6 @@ public class CreateSongCommandHandler : IRequestHandler<CreateSongCommand, SongD
 
         return await _unitOfWork.ExecuteInTransactionAsync(async () =>
         {
-            // Создаем песню
             var song = await _songService.CreateSongAsync(
                 ownerId: request.UserId,
                 title: request.Title,
@@ -67,7 +66,6 @@ public class CreateSongCommandHandler : IRequestHandler<CreateSongCommand, SongD
                 parentSongId: request.ParentSongId,
                 cancellationToken: cancellationToken);
 
-            // Обработка URL аудио (только URL, без загрузки файла)
             if (!string.IsNullOrEmpty(request.CustomAudioUrl) && !string.IsNullOrEmpty(request.CustomAudioType))
             {
                 song.Update(

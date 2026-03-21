@@ -16,14 +16,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Save } from "lucide-react";
 import { SegmentTable } from "@/components/song/table-editor/segment-table";
+import { convertTableToDTO, convertCommentsToDTO } from "@/lib/table-converter";
 import {
   TableEditorProvider,
   useTableEditor,
 } from "@/app/contexts/table-editor-context";
-import { convertTableToDTO } from "@/lib/table-converter";
 import { useSongEditorState } from "@/hooks/use-song-editor-state";
 import { AudioInputData, AudioInputType } from "@/types/audio";
 import { useAudioUpload } from "@/hooks/use-audio-upload";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 function CreateSongContent() {
   const router = useRouter();
@@ -38,6 +45,7 @@ function CreateSongContent() {
     clearState,
     validateResources,
     refreshResources,
+    clearStateIfNewSong,
   } = useSongEditorState();
   const { activeUpload, uploadAudio, cancelUpload, isUploading } =
     useAudioUpload();
@@ -54,6 +62,48 @@ function CreateSongContent() {
   const [audioData, setAudioData] = useState<AudioInputData>({
     type: AudioInputType.NONE,
   });
+
+  const genres = [
+    "Rock",
+    "Pop",
+    "Jazz",
+    "Blues",
+    "Folk",
+    "Country",
+    "Classical",
+    "Metal",
+    "Punk",
+    "Reggae",
+    "Hip-Hop",
+    "Electronic",
+    "R&B",
+    "Soul",
+    "Funk",
+    "Disco",
+  ];
+
+  const themes = [
+    "Love",
+    "Life",
+    "Nature",
+    "Travel",
+    "Friendship",
+    "Family",
+    "Work",
+    "Party",
+    "Sadness",
+    "Joy",
+    "Hope",
+    "Dream",
+    "Social",
+    "Political",
+    "Religious",
+    "Philosophical",
+  ];
+
+  useEffect(() => {
+    clearStateIfNewSong();
+  }, [clearStateIfNewSong]);
 
   const loadInitialData = useCallback(async () => {
     try {
@@ -229,6 +279,8 @@ function CreateSongContent() {
         backgroundColor: segment.segmentData.backgroundColor,
       }));
 
+      const segmentComments = convertCommentsToDTO(state.segments);
+
       const songData = {
         title,
         artist: artist || undefined,
@@ -240,6 +292,7 @@ function CreateSongContent() {
         customAudioType,
         audioFile: undefined,
         segments: structureSegments,
+        segmentComments,
         chordIds: Array.from(
           new Set(
             state.segments.filter((s) => s.chordId).map((s) => s.chordId!),
@@ -311,6 +364,7 @@ function CreateSongContent() {
   };
 
   const handleNavigateToChord = (chordId: string) => {
+    sessionStorage.setItem("returning_from_edit", "true");
     saveState();
     saveMetadata({
       title,
@@ -325,6 +379,7 @@ function CreateSongContent() {
   };
 
   const handleNavigateToPattern = (patternId: string) => {
+    sessionStorage.setItem("returning_from_edit", "true");
     saveState();
     saveMetadata({
       title,
@@ -339,6 +394,7 @@ function CreateSongContent() {
   };
 
   const handleCreateChord = () => {
+    sessionStorage.setItem("returning_from_edit", "true");
     saveState();
     saveMetadata({
       title,
@@ -353,6 +409,7 @@ function CreateSongContent() {
   };
 
   const handleCreatePattern = () => {
+    sessionStorage.setItem("returning_from_edit", "true");
     saveState();
     saveMetadata({
       title,
@@ -449,7 +506,7 @@ function CreateSongContent() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
       <div className="space-y-6">
         <div>
           <Button
@@ -497,21 +554,45 @@ function CreateSongContent() {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
                     <Label htmlFor="genre">Genre</Label>
-                    <Input
-                      id="genre"
-                      value={genre}
-                      onChange={(e) => setGenre(e.target.value)}
-                      placeholder="Rock, Pop..."
-                    />
+                    <Select
+                      value={genre || "none"}
+                      onValueChange={(value) =>
+                        setGenre(value === "none" ? "" : value)
+                      }
+                    >
+                      <SelectTrigger id="genre" className="w-full">
+                        <SelectValue placeholder="Select genre" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {genres.map((g) => (
+                          <SelectItem key={g} value={g}>
+                            {g}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="theme">Theme</Label>
-                    <Input
-                      id="theme"
-                      value={theme}
-                      onChange={(e) => setTheme(e.target.value)}
-                      placeholder="Love, Life..."
-                    />
+                    <Select
+                      value={theme || "none"}
+                      onValueChange={(value) =>
+                        setTheme(value === "none" ? "" : value)
+                      }
+                    >
+                      <SelectTrigger id="theme" className="w-full">
+                        <SelectValue placeholder="Select theme" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {themes.map((t) => (
+                          <SelectItem key={t} value={t}>
+                            {t}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 

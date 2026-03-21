@@ -23,7 +23,7 @@ export function convertSegmentsToUI(data: FullSongDto): {
   let position = 0;
 
   const sortedSegments = [...(data.segments || [])].sort(
-    (a, b) => a.positionIndex - b.positionIndex
+    (a, b) => a.positionIndex - b.positionIndex,
   );
 
   const positionToDbSegmentId = new Map<number, string>();
@@ -45,12 +45,12 @@ export function convertSegmentsToUI(data: FullSongDto): {
     if ((segmentData as any).id) {
       positionToDbSegmentId.set(
         segmentData.positionIndex,
-        (segmentData as any).id
+        (segmentData as any).id,
       );
     } else if (segmentData.segmentData && (segmentData.segmentData as any).id) {
       positionToDbSegmentId.set(
         segmentData.positionIndex,
-        (segmentData.segmentData as any).id
+        (segmentData.segmentData as any).id,
       );
     }
   });
@@ -115,8 +115,8 @@ export function convertSegmentsToUI(data: FullSongDto): {
               getDefaultChordColor(chord.id),
           },
         ];
-      }) || []
-    ).values()
+      }) || [],
+    ).values(),
   );
 
   const patterns: SongPatternDto[] = Array.from(
@@ -133,8 +133,8 @@ export function convertSegmentsToUI(data: FullSongDto): {
               getDefaultPatternColor(pattern.id),
           },
         ];
-      }) || []
-    ).values()
+      }) || [],
+    ).values(),
   );
 
   const allComments = (data.comments || []).map(convertSongCommentToUI);
@@ -208,24 +208,24 @@ export function convertStateToBackendFormat(state: SongCreationState): any {
   const segments = prepareSegmentsForBackend(state.segments, state.text);
   const segmentComments = prepareCommentsForBackend(
     state.comments,
-    state.segments
+    state.segments,
   );
 
   const chordIds = Array.from(
     new Set(
       state.segments
         .filter((s) => s.chordId && s.chordId !== "empty")
-        .map((s) => s.chordId!)
-    )
-  ).map((id) => id); 
+        .map((s) => s.chordId!),
+    ),
+  ).map((id) => id);
 
   const patternIds = Array.from(
     new Set(
       state.segments
         .filter((s) => s.patternId && s.patternId !== "empty")
-        .map((s) => s.patternId!)
-    )
-  ).map((id) => id); 
+        .map((s) => s.patternId!),
+    ),
+  ).map((id) => id);
 
   let customAudioUrl: string | undefined;
   let customAudioType: string | undefined;
@@ -253,7 +253,7 @@ export function convertStateToBackendFormat(state: SongCreationState): any {
   };
 
   const cleanedResult = Object.fromEntries(
-    Object.entries(result).filter(([_, v]) => v !== undefined)
+    Object.entries(result).filter(([_, v]) => v !== undefined),
   );
 
   return cleanedResult;
@@ -262,12 +262,12 @@ export function convertStateToBackendFormat(state: SongCreationState): any {
 export function convertStateToUpdateBackendFormat(
   state: SongCreationState,
   songId: string,
-  originalAudioData?: { url?: string; type?: string }
+  originalAudioData?: { url?: string; type?: string },
 ): UpdateSongWithSegmentsDto {
   const segments = prepareSegmentsForBackend(state.segments, state.text);
   const segmentComments = prepareCommentsForBackend(
     state.comments,
-    state.segments
+    state.segments,
   );
 
   let isDeleteAudio = false;
@@ -301,7 +301,7 @@ export function convertStateToUpdateBackendFormat(
   }
 
   const cleanedResult = Object.fromEntries(
-    Object.entries(result).filter(([_, v]) => v !== undefined)
+    Object.entries(result).filter(([_, v]) => v !== undefined),
   ) as UpdateSongWithSegmentsDto;
 
   return cleanedResult;
@@ -309,10 +309,10 @@ export function convertStateToUpdateBackendFormat(
 
 export function prepareSegmentsForBackend(
   segments: UISegment[],
-  text: string
+  text: string,
 ): any[] {
   const sortedSegments = [...segments].sort(
-    (a, b) => a.startIndex - b.startIndex
+    (a, b) => a.startIndex - b.startIndex,
   );
   const result: any[] = [];
 
@@ -320,7 +320,7 @@ export function prepareSegmentsForBackend(
   for (const segment of sortedSegments) {
     const segmentText = text.substring(
       segment.startIndex,
-      segment.startIndex + segment.length
+      segment.startIndex + segment.length,
     );
 
     let segmentType = "0";
@@ -340,7 +340,7 @@ export function prepareSegmentsForBackend(
     };
 
     const cleanedSegmentData = Object.fromEntries(
-      Object.entries(segmentData).filter(([_, v]) => v !== undefined)
+      Object.entries(segmentData).filter(([_, v]) => v !== undefined),
     );
 
     result.push({
@@ -354,17 +354,17 @@ export function prepareSegmentsForBackend(
 
 export function prepareCommentsForBackend(
   comments: UIComment[],
-  segments: UISegment[]
+  segments: UISegment[],
 ): Record<number, any[]> {
   const result: Record<number, any[]> = {};
 
   const sortedSegments = [...segments].sort(
-    (a, b) => a.startIndex - b.startIndex
+    (a, b) => a.startIndex - b.startIndex,
   );
 
   comments.forEach((comment) => {
     const segmentIndex = sortedSegments.findIndex(
-      (s) => s.id === comment.segmentId
+      (s) => s.id === comment.segmentId,
     );
     if (segmentIndex !== -1) {
       if (!result[segmentIndex]) {
@@ -405,7 +405,7 @@ function getRandomColor(): string {
 function getStartIndex(
   fullText: string,
   segments: UISegment[],
-  currentIndex: number
+  currentIndex: number,
 ): number {
   if (currentIndex === 0) return 0;
 

@@ -55,17 +55,17 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
 
   const initialAudioInput = state.audioInput || value;
   const [activeTab, setActiveTab] = useState<AudioInputType>(
-    initialAudioInput?.type || AudioInputType.NONE
+    initialAudioInput?.type || AudioInputType.NONE,
   );
   const [audioFile, setAudioFile] = useState<File | null>(
     initialAudioInput?.type === AudioInputType.FILE
       ? initialAudioInput.file || null
-      : null
+      : null,
   );
   const [audioUrl, setAudioUrl] = useState<string>(
     initialAudioInput?.type === AudioInputType.URL
       ? initialAudioInput.url || ""
-      : ""
+      : "",
   );
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -252,7 +252,7 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
   };
 
   const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -322,7 +322,7 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
       toast.success("Recording started");
     } catch (error) {
       toast.error(
-        "Failed to start recording. Please check microphone permissions."
+        "Failed to start recording. Please check microphone permissions.",
       );
     }
   };
@@ -403,7 +403,7 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
     if (audioPlayerRef.current && duration > 0) {
       audioPlayerRef.current.currentTime = Math.min(
         audioPlayerRef.current.currentTime + 5,
-        duration
+        duration,
       );
     }
   };
@@ -412,7 +412,7 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
     if (audioPlayerRef.current) {
       audioPlayerRef.current.currentTime = Math.max(
         audioPlayerRef.current.currentTime - 5,
-        0
+        0,
       );
     }
   };
@@ -681,7 +681,7 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
                         onClick={() =>
                           window.open(
                             state.audioInput?.url || audioUrl,
-                            "_blank"
+                            "_blank",
                           )
                         }
                         disabled={!state.audioInput?.url && !audioUrl}
@@ -919,8 +919,8 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
                     state.audioInput.type === AudioInputType.FILE
                       ? "bg-green-500"
                       : state.audioInput.type === AudioInputType.URL
-                      ? "bg-blue-500"
-                      : "bg-purple-500"
+                        ? "bg-blue-500"
+                        : "bg-purple-500"
                   }`}
                 />
                 <div>
