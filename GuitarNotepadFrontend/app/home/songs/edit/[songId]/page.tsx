@@ -1,8 +1,7 @@
 "use client";
 
 import { SongResourcesPanel } from "@/components/song/table-editor/song-resources-panel";
-import { AudioInputSection } from "@/components/song/audio-input-section";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
@@ -114,6 +113,44 @@ function EditSongContent() {
     "Philosophical",
   ];
 
+  const fetchAudioBlob = async (songId: string): Promise<string | null> => {
+    try {
+      const token = localStorage.getItem("auth_token");
+      const baseUrl =
+        process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+      const url = `${baseUrl}/Songs/${songId}/audio-file`;
+
+      console.log("🎵 Fetching audio file for edit from:", url);
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        console.error("Failed to fetch audio, status:", response.status);
+        return null;
+      }
+
+      const blob = await response.blob();
+      console.log("🎵 Audio blob received for edit:", blob.size, blob.type);
+
+      if (blob.size === 0) {
+        console.error("Audio blob is empty");
+        return null;
+      }
+
+      const blobUrl = URL.createObjectURL(blob);
+      console.log("🎵 Audio blob URL created for edit:", blobUrl);
+      return blobUrl;
+    } catch (error) {
+      console.error("Failed to fetch audio for edit:", error);
+      return null;
+    }
+  };
+
   useEffect(() => {
     const loadSongData = async () => {
       if (!user || !songId) return;
@@ -168,38 +205,32 @@ function EditSongContent() {
             type: songData.customAudioType,
           });
 
-          if (
-            songData.customAudioType === "File" ||
-            songData.customAudioType === "audio/mpeg"
-          ) {
-            setAudioData({
-              type: AudioInputType.FILE,
-              customAudioUrl: songData.customAudioUrl,
-              customAudioType: songData.customAudioType,
-              fileName:
-                songData.customAudioUrl.split("/").pop() || "audio-file.mp3",
-            });
-          } else if (
-            songData.customAudioType === "Url" ||
-            songData.customAudioType === "url"
-          ) {
+          const audioTypeLower = songData.customAudioType.toLowerCase();
+
+          if (audioTypeLower === "url" || audioTypeLower === "Url") {
             setAudioData({
               type: AudioInputType.URL,
               url: songData.customAudioUrl,
               customAudioUrl: songData.customAudioUrl,
               customAudioType: "url",
             });
-          } else if (songData.customAudioType === "audio/webm") {
+          } else {
+            const isRecording = songData.customAudioType === "audio/webm";
+            const fileName =
+              songData.customAudioUrl.split("/").pop() || "audio-file";
+
             setAudioData({
-              type: AudioInputType.RECORD,
+              type: isRecording ? AudioInputType.RECORD : AudioInputType.FILE,
               customAudioUrl: songData.customAudioUrl,
               customAudioType: songData.customAudioType,
+              fileName: fileName,
             });
           }
         }
 
         setIsInitialized(true);
       } catch (error: any) {
+        console.error("Load song error:", error);
         toast.error(error.message || "Failed to load song");
         router.push("/home/songs");
       } finally {
@@ -283,33 +314,56 @@ function EditSongContent() {
       let audioType: string | undefined;
       let customAudioUrl: string | undefined;
       let customAudioType: string | undefined;
+      let isDeleteAudio = false;
 
-      if (audioData.type === AudioInputType.FILE && audioData.file) {
-        audioBase64 = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(audioData.file!);
-        });
-        audioType = audioData.file.type;
-        customAudioUrl = undefined;
-        customAudioType = undefined;
-      } else if (
-        audioData.type === AudioInputType.RECORD &&
-        audioData.audioBlob
+      const currentAudioType = audioData.type;
+      const hadOriginalAudio =
+        originalAudioData?.url && originalAudioData?.type;
+
+      if (
+        (currentAudioType === AudioInputType.FILE && audioData.file) ||
+        (currentAudioType === AudioInputType.RECORD && audioData.audioBlob)
       ) {
+        const sourceBlob =
+          currentAudioType === AudioInputType.FILE
+            ? audioData.file!
+            : audioData.audioBlob!;
+
         audioBase64 = await new Promise((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(audioData.audioBlob!);
+          reader.readAsDataURL(sourceBlob);
         });
-        audioType = "audio/webm";
-        customAudioUrl = undefined;
-        customAudioType = undefined;
-      } else if (audioData.type === AudioInputType.URL && audioData.url) {
+
+        audioType =
+          currentAudioType === AudioInputType.FILE
+            ? audioData.file!.type
+            : "audio/webm";
+
+        if (audioType === "video/webm") {
+          audioType = "audio/webm";
+        }
+
+        isDeleteAudio = false;
+        console.log("📤 Uploading new audio file:", {
+          type: audioType,
+          size: sourceBlob.size,
+        });
+      } else if (currentAudioType === AudioInputType.URL && audioData.url) {
         customAudioUrl = audioData.url;
         customAudioType = "url";
-        audioBase64 = undefined;
-        audioType = undefined;
+        isDeleteAudio = false;
+        console.log("📤 Using external URL:", customAudioUrl);
+      } else if (currentAudioType === AudioInputType.NONE && hadOriginalAudio) {
+        isDeleteAudio = true;
+        console.log("📤 Deleting audio");
+      } else if (
+        hadOriginalAudio &&
+        audioData.customAudioUrl === originalAudioData?.url
+      ) {
+        console.log("📤 Keeping existing audio");
+      } else {
+        console.log("📤 No audio changes");
       }
 
       const segmentsDTO = convertTableToDTO(state.segments);
@@ -323,12 +377,6 @@ function EditSongContent() {
       }));
 
       const segmentComments = convertCommentsToDTO(state.segments);
-
-      const isDeleteAudio =
-        originalAudioData?.url &&
-        !audioData.customAudioUrl &&
-        !audioData.url &&
-        !audioData.file;
 
       const updateData: any = {
         id: songId,
@@ -344,18 +392,19 @@ function EditSongContent() {
         isDeleteAudio: isDeleteAudio,
       };
 
-      if (customAudioUrl) {
-        updateData.customAudioUrl = customAudioUrl;
-        updateData.customAudioType = customAudioType;
-      } else if (audioBase64) {
+      if (audioBase64) {
         updateData.audioBase64 = audioBase64;
         updateData.audioType = audioType;
+      } else if (customAudioUrl) {
+        updateData.customAudioUrl = customAudioUrl;
+        updateData.customAudioType = customAudioType;
+      } else if (isDeleteAudio) {
       }
 
       console.log("📤 Updating song with audio:", {
         hasAudioBase64: !!audioBase64,
         audioType,
-        customAudioUrl,
+        hasCustomAudioUrl: !!customAudioUrl,
         isDeleteAudio,
       });
 

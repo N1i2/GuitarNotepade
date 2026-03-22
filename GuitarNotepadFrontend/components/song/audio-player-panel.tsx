@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -51,7 +51,10 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
   const [audioBlobUrl, setAudioBlobUrl] = useState<string | null>(null);
   const [volume, setVolume] = useState(80);
   const [isMuted, setIsMuted] = useState(false);
-  const audioPlayerRef = useRef<HTMLAudioElement>(null);
+  const [isAudioReady, setIsAudioReady] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const audioInitializedRef = useRef(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const getAudioType = (): AudioInputType => {
     if (audioData?.type) return audioData.type;
@@ -80,10 +83,34 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
   const audioFileName = audioData?.customAudioUrl || audioData?.url;
   const songId = audioData?.songId;
 
+  const startTimeUpdateInterval = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    intervalRef.current = setInterval(() => {
+      const audio = audioRef.current;
+      if (audio && !audio.paused && !audio.ended) {
+        if (audio.currentTime && isFinite(audio.currentTime)) {
+          setCurrentTime(audio.currentTime);
+        }
+      }
+    }, 100);
+  }, []);
+
+  const stopTimeUpdateInterval = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
     const fetchAudioFile = async () => {
       if (audioType === AudioInputType.URL) {
         setIsLoading(false);
+        setAudioLoaded(true);
         return;
       }
 
@@ -94,17 +121,21 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
 
       if (audioBlobUrl) {
         setIsLoading(false);
+        setAudioLoaded(true);
         return;
       }
 
       if (audioFileName.startsWith("data:")) {
         setAudioBlobUrl(audioFileName);
         setIsLoading(false);
+        setAudioLoaded(true);
         return;
       }
 
       try {
         setIsLoading(true);
+        setAudioError(false);
+
         const token = localStorage.getItem("auth_token");
         const baseUrl =
           process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
@@ -120,17 +151,19 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
         });
 
         if (!response.ok) {
-          const error = await response.json();
-          console.error("🎵 Failed to fetch audio:", error);
-          throw new Error(error.error || "Failed to fetch audio");
+          throw new Error("Failed to fetch audio");
         }
 
         const blob = await response.blob();
         console.log("🎵 Audio blob received:", blob.size, blob.type);
 
+        if (blob.size === 0) {
+          throw new Error("Audio file is empty");
+        }
+
         const blobUrl = URL.createObjectURL(blob);
         setAudioBlobUrl(blobUrl);
-        console.log("🎵 Audio loaded, size:", blob.size);
+        console.log("🎵 Audio blob URL created");
       } catch (error) {
         console.error("🎵 Error fetching audio:", error);
         setAudioError(true);
@@ -145,135 +178,186 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
       if (audioBlobUrl && audioBlobUrl.startsWith("blob:")) {
         URL.revokeObjectURL(audioBlobUrl);
       }
+      stopTimeUpdateInterval();
     };
-  }, [audioFileName, songId, audioType]);
+  }, [audioFileName, songId, audioType, stopTimeUpdateInterval]);
 
   const audioUrl =
     audioType === AudioInputType.URL ? audioFileName : audioBlobUrl;
 
   useEffect(() => {
-    const audio = audioPlayerRef.current;
+    const audio = audioRef.current;
     if (!audio) return;
 
-    const updateTime = () => setCurrentTime(audio.currentTime);
-    const updateDuration = () => {
-      if (audio.duration && audio.duration !== Infinity && audio.duration > 0) {
-        setDuration(audio.duration);
-      }
-    };
-    const handleEnded = () => {
-      setIsPlaying(false);
-      setCurrentTime(0);
-    };
-    const handleLoadedData = () => {
-      setAudioLoaded(true);
-      setAudioError(false);
-      if (audio.duration && audio.duration !== Infinity && audio.duration > 0) {
-        setDuration(audio.duration);
-      }
-    };
-    const handleError = () => {
-      setAudioError(true);
-      setAudioLoaded(false);
-    };
-    const handleCanPlay = () => {
-      if (audio.duration && audio.duration !== Infinity && audio.duration > 0) {
-        setDuration(audio.duration);
-        setAudioLoaded(true);
-      }
-    };
+    if (audioUrl && !audioInitializedRef.current && !audioError) {
+      console.log("🎵 Initializing audio with URL:", audioUrl);
+      audioInitializedRef.current = true;
 
-    audio.addEventListener("timeupdate", updateTime);
-    audio.addEventListener("durationchange", updateDuration);
-    audio.addEventListener("ended", handleEnded);
-    audio.addEventListener("loadeddata", handleLoadedData);
-    audio.addEventListener("error", handleError);
-    audio.addEventListener("canplay", handleCanPlay);
+      audio.src = audioUrl;
+      audio.load();
+      audio.volume = volume / 100;
 
-    return () => {
-      audio.removeEventListener("timeupdate", updateTime);
-      audio.removeEventListener("durationchange", updateDuration);
-      audio.removeEventListener("ended", handleEnded);
-      audio.removeEventListener("loadeddata", handleLoadedData);
-      audio.removeEventListener("error", handleError);
-      audio.removeEventListener("canplay", handleCanPlay);
-    };
-  }, []);
+      const handleLoadedMetadata = () => {
+        console.log("🎵 Loaded metadata event");
+        if (audio.duration && isFinite(audio.duration) && audio.duration > 0) {
+          console.log("🎵 Duration from metadata:", audio.duration);
+          setDuration(audio.duration);
+          setAudioLoaded(true);
+        }
+      };
+
+      audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+
+      return () => {
+        audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      };
+    }
+  }, [audioUrl, audioError, volume]);
 
   useEffect(() => {
-    if (
-      audioPlayerRef.current &&
-      audioUrl &&
-      audioType === AudioInputType.FILE
-    ) {
-      audioPlayerRef.current.src = audioUrl;
-      audioPlayerRef.current.load();
-    }
-  }, [audioUrl, audioType]);
+    const checkPlaybackState = setInterval(() => {
+      const audio = audioRef.current;
+      if (audio) {
+        const isCurrentlyPlaying = !audio.paused && !audio.ended;
+        if (isCurrentlyPlaying !== isPlaying) {
+          console.log(
+            "🎵 Playback state changed via interval:",
+            isCurrentlyPlaying,
+          );
+          setIsPlaying(isCurrentlyPlaying);
+        }
+      }
+    }, 200);
 
-  const togglePlayPause = () => {
-    if (!audioPlayerRef.current || audioError || !audioLoaded) return;
+    return () => {
+      clearInterval(checkPlaybackState);
+    };
+  }, [isPlaying]);
 
+  useEffect(() => {
     if (isPlaying) {
-      audioPlayerRef.current.pause();
+      startTimeUpdateInterval();
     } else {
-      audioPlayerRef.current.play().catch(() => {
-        setAudioError(true);
-      });
+      stopTimeUpdateInterval();
     }
-    setIsPlaying(!isPlaying);
-  };
+  }, [isPlaying, startTimeUpdateInterval, stopTimeUpdateInterval]);
 
-  const seekForward = () => {
-    if (audioPlayerRef.current && duration > 0 && audioLoaded) {
-      audioPlayerRef.current.currentTime = Math.min(
-        audioPlayerRef.current.currentTime + 5,
-        duration,
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (
+      audioUrl &&
+      audioType === AudioInputType.FILE &&
+      !isLoading &&
+      !audioError
+    ) {
+      console.log(
+        "🎵 Audio URL changed, reloading:",
+        audioUrl.substring(0, 100),
       );
-    }
-  };
 
-  const seekBackward = () => {
-    if (audioPlayerRef.current && audioLoaded) {
-      audioPlayerRef.current.currentTime = Math.max(
-        audioPlayerRef.current.currentTime - 5,
-        0,
-      );
-    }
-  };
+      const wasPlaying = isPlaying;
 
-  const handleSliderChange = (value: number[]) => {
-    if (audioPlayerRef.current && duration > 0 && audioLoaded) {
-      const newTime = (value[0] / 100) * duration;
-      audioPlayerRef.current.currentTime = newTime;
-      setCurrentTime(newTime);
-    }
-  };
+      audio.pause();
+      audio.src = audioUrl;
+      audio.load();
 
-  const handleVolumeChange = (value: number[]) => {
-    const newVolume = value[0];
-    setVolume(newVolume);
-    if (audioPlayerRef.current) {
-      audioPlayerRef.current.volume = newVolume / 100;
-    }
-    if (newVolume === 0) {
-      setIsMuted(true);
-    } else if (isMuted) {
-      setIsMuted(false);
-    }
-  };
+      const handleCanPlay = () => {
+        console.log("🎵 Audio reloaded successfully");
+        setAudioLoaded(true);
+        setIsAudioReady(true);
+        if (audio.duration && isFinite(audio.duration)) {
+          setDuration(audio.duration);
+        }
+        if (wasPlaying) {
+          audio
+            .play()
+            .catch((err) => console.error("Play after reload failed:", err));
+        }
+      };
 
-  const toggleMute = () => {
-    if (audioPlayerRef.current) {
+      audio.addEventListener("canplay", handleCanPlay, { once: true });
+      return () => audio.removeEventListener("canplay", handleCanPlay);
+    }
+  }, [audioUrl, audioType, isLoading, audioError]);
+
+  const togglePlayPause = useCallback(async () => {
+    const audio = audioRef.current;
+    if (!audio || !audioLoaded || audioError) return;
+
+    try {
+      if (!audio.paused) {
+        audio.pause();
+        console.log("🎵 Paused manually");
+      } else {
+        audio.muted = false;
+        audio.volume = volume / 100;
+        await audio.play();
+        console.log("🎵 Playing manually");
+      }
+    } catch (error) {
+      console.error("🎵 Play/pause error:", error);
+      setAudioError(true);
+    }
+  }, [audioLoaded, audioError, volume]);
+
+  const seekBackward = useCallback(() => {
+    const audio = audioRef.current;
+    if (audio && duration > 0 && audioLoaded) {
+      audio.currentTime = Math.max(audio.currentTime - 5, 0);
+      setCurrentTime(audio.currentTime);
+    }
+  }, [duration, audioLoaded]);
+
+  const seekForward = useCallback(() => {
+    const audio = audioRef.current;
+    if (audio && duration > 0 && audioLoaded) {
+      audio.currentTime = Math.min(audio.currentTime + 5, duration);
+      setCurrentTime(audio.currentTime);
+    }
+  }, [duration, audioLoaded]);
+
+  const handleSliderChange = useCallback(
+    (value: number[]) => {
+      const audio = audioRef.current;
+      if (audio && duration > 0 && audioLoaded) {
+        const newTime = (value[0] / 100) * duration;
+        audio.currentTime = newTime;
+        setCurrentTime(newTime);
+      }
+    },
+    [duration, audioLoaded],
+  );
+
+  const handleVolumeChange = useCallback(
+    (value: number[]) => {
+      const newVolume = value[0];
+      setVolume(newVolume);
+      if (audioRef.current) {
+        audioRef.current.volume = newVolume / 100;
+      }
+      if (newVolume === 0) {
+        setIsMuted(true);
+      } else if (isMuted) {
+        setIsMuted(false);
+      }
+    },
+    [isMuted],
+  );
+
+  const toggleMute = useCallback(() => {
+    const audio = audioRef.current;
+    if (audio) {
       if (isMuted) {
-        audioPlayerRef.current.volume = volume / 100;
+        audio.volume = volume / 100;
         setIsMuted(false);
       } else {
-        audioPlayerRef.current.volume = 0;
+        audio.volume = 0;
         setIsMuted(true);
       }
     }
-  };
+  }, [isMuted, volume]);
 
   const formattedCurrentTime = formatTime(currentTime * 1000);
   const formattedDuration = formatTime(duration * 1000);
@@ -378,9 +462,6 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
         <CardTitle className="flex items-center gap-2">
           <Music className="h-5 w-5" />
           Audio Player
-          <span className="text-sm font-normal text-muted-foreground ml-2">
-            Audio File
-          </span>
         </CardTitle>
         <CardDescription>Audio file attached to this song</CardDescription>
       </CardHeader>
@@ -395,24 +476,22 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
               <div className="text-sm text-muted-foreground">
                 {audioFileName?.split("/").pop() || "Audio file"}
               </div>
+              {duration > 0 && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  Duration: {formattedDuration}
+                </div>
+              )}
             </div>
           </div>
-
-          {audioLoaded && duration > 0 && (
-            <div className="text-sm text-muted-foreground">
-              {formattedDuration}
-            </div>
-          )}
         </div>
 
         <div className="space-y-4">
-          <audio ref={audioPlayerRef} className="hidden" />
+          <audio ref={audioRef} />
 
           {audioError && (
             <Alert variant="destructive">
               <AlertDescription>
-                Failed to load audio. The audio file might be corrupted or in an
-                unsupported format.
+                Failed to load or play audio. The audio file might be corrupted.
               </AlertDescription>
             </Alert>
           )}
@@ -422,7 +501,7 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <span>{formattedCurrentTime}</span>
-                  <span>{formattedDuration || "--:--"}</span>
+                  <span>{formattedDuration || "00:00"}</span>
                 </div>
                 <Slider
                   value={[duration > 0 ? (currentTime / duration) * 100 : 0]}
@@ -430,7 +509,7 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
                   step={0.1}
                   className="w-full"
                   onValueChange={handleSliderChange}
-                  disabled={!audioLoaded}
+                  disabled={!audioLoaded || duration === 0}
                 />
               </div>
 
@@ -440,7 +519,7 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
                     variant="outline"
                     size="sm"
                     onClick={seekBackward}
-                    disabled={!audioLoaded}
+                    disabled={!audioLoaded || duration === 0}
                     title="Rewind 5 seconds"
                   >
                     <SkipBack className="h-4 w-4" />
@@ -450,9 +529,8 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
                     variant="default"
                     size="lg"
                     onClick={togglePlayPause}
-                    disabled={!audioLoaded}
+                    disabled={!audioLoaded || duration === 0}
                     className="w-12 h-12 rounded-full"
-                    title={isPlaying ? "Pause" : "Play"}
                   >
                     {isPlaying ? (
                       <Pause className="h-5 w-5" />
@@ -465,7 +543,7 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
                     variant="outline"
                     size="sm"
                     onClick={seekForward}
-                    disabled={!audioLoaded}
+                    disabled={!audioLoaded || duration === 0}
                     title="Forward 5 seconds"
                   >
                     <SkipForward className="h-4 w-4" />

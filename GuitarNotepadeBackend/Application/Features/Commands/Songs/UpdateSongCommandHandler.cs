@@ -45,29 +45,74 @@ public class UpdateSongCommandHandler : IRequestHandler<UpdateSongCommand, SongD
 
         string? audioUrl = song.CustomAudioUrl;
         string? audioType = song.CustomAudioType;
+        bool audioChanged = false;
+        string? oldAudioUrl = song.CustomAudioUrl; 
 
         if (!string.IsNullOrEmpty(request.Dto.AudioBase64) && !string.IsNullOrEmpty(request.Dto.AudioType))
         {
+            _logger.LogInformation("Updating audio for song {SongId} with new file", song.Id);
+
             try
             {
-                if (!string.IsNullOrEmpty(song.CustomAudioUrl))
-                {
-                    await _webDavService.DeleteAudioAsync(song.CustomAudioUrl);
-                }
-
                 var audioStream = ConvertBase64ToStream(request.Dto.AudioBase64);
                 var fileName = GetFileNameFromAudioType(request.Dto.AudioType);
 
                 audioUrl = await _webDavService.UploadAudioAsync(audioStream, fileName, song.Id);
                 audioType = request.Dto.AudioType;
+                audioChanged = true;
 
-                _logger.LogInformation("Audio updated successfully for song {SongId}: {FileName}", song.Id, audioUrl);
+                _logger.LogInformation("Audio uploaded successfully for song {SongId}: {FileName}", song.Id, audioUrl);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to update audio for song {SongId}", song.Id);
                 throw new Exception($"Failed to update audio: {ex.Message}", ex);
             }
+        }
+        else if (request.Dto.IsDeleteAudio == true)
+        {
+            _logger.LogInformation("Deleting audio for song {SongId}", song.Id);
+
+            try
+            {
+                if (!string.IsNullOrEmpty(song.CustomAudioUrl))
+                {
+                    await _webDavService.DeleteAudioAsync(song.CustomAudioUrl);
+                    _logger.LogInformation("Deleted audio file: {OldUrl}", song.CustomAudioUrl);
+                }
+
+                audioUrl = null;
+                audioType = null;
+                audioChanged = true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to delete audio for song {SongId}", song.Id);
+                throw new Exception($"Failed to delete audio: {ex.Message}", ex);
+            }
+        }
+        else if (!string.IsNullOrEmpty(request.Dto.CustomAudioUrl))
+        {
+            _logger.LogInformation("Setting external audio URL for song {SongId}: {Url}", song.Id, request.Dto.CustomAudioUrl);
+
+            if (!string.IsNullOrEmpty(song.CustomAudioUrl) &&
+                song.CustomAudioType != "url" &&
+                !song.CustomAudioUrl.StartsWith("http"))
+            {
+                try
+                {
+                    await _webDavService.DeleteAudioAsync(song.CustomAudioUrl);
+                    _logger.LogInformation("Deleted old audio file: {OldUrl}", song.CustomAudioUrl);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to delete old audio file: {OldUrl}", song.CustomAudioUrl);
+                }
+            }
+
+            audioUrl = request.Dto.CustomAudioUrl;
+            audioType = request.Dto.CustomAudioType ?? "url";
+            audioChanged = true;
         }
 
         await _songService.UpdateSongAsync(
@@ -80,7 +125,7 @@ public class UpdateSongCommandHandler : IRequestHandler<UpdateSongCommand, SongD
             isPublic: request.Dto.IsPublic,
             cancellationToken: cancellationToken);
 
-        if (!string.IsNullOrEmpty(audioUrl) && audioUrl != song.CustomAudioUrl)
+        if (audioChanged)
         {
             song.Update(
                 customAudioUrl: audioUrl,
@@ -89,6 +134,22 @@ public class UpdateSongCommandHandler : IRequestHandler<UpdateSongCommand, SongD
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        if (!string.IsNullOrEmpty(oldAudioUrl) && audioChanged && oldAudioUrl != audioUrl)
+        {
+            try
+            {
+                if (!oldAudioUrl.StartsWith("http") && oldAudioUrl != "url")
+                {
+                    await _webDavService.DeleteAudioAsync(oldAudioUrl);
+                    _logger.LogInformation("Old audio file deleted successfully: {OldUrl}", oldAudioUrl);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete old audio file: {OldUrl}", oldAudioUrl);
+            }
+        }
 
         var updatedSong = await _unitOfWork.Songs.GetByIdAsync(request.SongId, cancellationToken);
         if (updatedSong == null)
@@ -133,6 +194,7 @@ public class UpdateSongCommandHandler : IRequestHandler<UpdateSongCommand, SongD
             "audio/aac" => "audio.aac",
             "audio/flac" => "audio.flac",
             "audio/opus" => "audio.opus",
+            "audio/webm" => "audio.webm",
             _ => "audio.mp3"
         };
     }

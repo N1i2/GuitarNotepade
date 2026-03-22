@@ -25,10 +25,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
   ArrowLeft,
@@ -74,7 +71,7 @@ import { SegmentsList } from "@/components/song/segments-list";
 import { convertSegmentsToUI } from "@/lib/song-converter";
 import { CreateSongReviewDto, SongReviewDto } from "@/types/reviews";
 import { RatingDisplay } from "@/components/song/review/rating-display";
-import { SegmentDataWithPositionDto, UIComment } from "@/types/songs";
+import { UIComment } from "@/types/songs";
 import { Chord, PaginatedChords } from "@/types/chords";
 import { Pattern } from "@/types/patterns";
 import { SVGChordDiagram } from "@/components/chords/svg-chord-diagram";

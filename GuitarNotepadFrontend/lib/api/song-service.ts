@@ -268,36 +268,6 @@ export class SongsService {
   static async updateSongWithSegments(
     data: UpdateSongWithSegmentsDto,
   ): Promise<SongDto> {
-    let uploadedAudioUrl: string | undefined;
-    let uploadedAudioType: string | undefined;
-
-    if (data.audioBase64 && data.audioType) {
-      console.log("🎵 Uploading new audio file...");
-      try {
-        const base64Data = data.audioBase64.split(",")[1] || data.audioBase64;
-        const byteCharacters = atob(base64Data);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: data.audioType });
-        const file = new File(
-          [blob],
-          `audio-${data.id}.${data.audioType === "audio/webm" ? "webm" : "mp3"}`,
-          { type: data.audioType },
-        );
-
-        const uploadResult = await this.uploadAudio(data.id, file);
-        uploadedAudioUrl = uploadResult.fileName;
-        uploadedAudioType = uploadResult.audioType;
-        console.log("🎵 Audio uploaded:", uploadResult);
-      } catch (error) {
-        console.error("Failed to upload audio:", error);
-        throw new Error("Failed to upload new audio");
-      }
-    }
-
     const songUpdatePayload: any = {
       title: data.title ?? undefined,
       artist: data.artist ?? undefined,
@@ -307,24 +277,29 @@ export class SongsService {
       isPublic: data.isPublic ?? undefined,
     };
 
-    if (uploadedAudioUrl) {
-      songUpdatePayload.customAudioUrl = uploadedAudioUrl;
-      songUpdatePayload.customAudioType = uploadedAudioType;
+    if (data.audioBase64 && data.audioType) {
+      songUpdatePayload.audioBase64 = data.audioBase64;
+      songUpdatePayload.audioType = data.audioType;
+      console.log("🎵 Sending audioBase64 to backend for processing");
     } else if (data.customAudioUrl) {
       songUpdatePayload.customAudioUrl = data.customAudioUrl;
       songUpdatePayload.customAudioType = data.customAudioType;
     } else if (data.isDeleteAudio) {
-      songUpdatePayload.customAudioUrl = null;
-      songUpdatePayload.customAudioType = null;
+      songUpdatePayload.isDeleteAudio = true;
     }
 
     console.log("📤 Updating song with payload:", {
-      hasNewAudio: !!uploadedAudioUrl,
-      customAudioUrl: songUpdatePayload.customAudioUrl,
+      hasAudioBase64: !!data.audioBase64,
+      hasCustomAudioUrl: !!data.customAudioUrl,
       isDeleteAudio: data.isDeleteAudio,
     });
 
     const updatedSong = await this.updateSong(data.id, songUpdatePayload);
+    console.log("📥 Song metadata updated:", {
+      id: updatedSong.id,
+      customAudioUrl: updatedSong.customAudioUrl,
+      customAudioType: updatedSong.customAudioType,
+    });
 
     if (data.segments || data.segmentComments) {
       const structurePayload: any = {};
@@ -336,7 +311,49 @@ export class SongsService {
       await this.buildSongStructure(data.id, structurePayload);
     }
 
-    return updatedSong;
+    const fullSong = await this.getSongById(
+      data.id,
+      false,
+      false,
+      false,
+      false,
+      false,
+    );
+
+    const finalSong: SongDto = {
+      id: fullSong.id,
+      title: fullSong.title,
+      artist: fullSong.artist,
+      genre: fullSong.genre,
+      theme: fullSong.theme,
+      description: fullSong.description,
+      ownerId: fullSong.ownerId,
+      ownerName: fullSong.ownerName,
+      isPublic: fullSong.isPublic,
+      parentSongId: fullSong.parentSongId,
+      parentSongTitle: fullSong.parentSongTitle,
+      customAudioUrl: fullSong.customAudioUrl,
+      customAudioType: fullSong.customAudioType,
+      createdAt: fullSong.createdAt,
+      updatedAt: fullSong.updatedAt,
+      reviewCount: fullSong.reviewCount,
+      averageBeautifulRating: fullSong.averageBeautifulRating,
+      averageDifficultyRating: fullSong.averageDifficultyRating,
+      chords: fullSong.chords,
+      patterns: fullSong.patterns,
+      commentsCount: fullSong.comments?.length || 0,
+      segmentsCount: fullSong.segments?.length || 0,
+    };
+
+    console.log("✅ Final song:", {
+      id: finalSong.id,
+      customAudioUrl: finalSong.customAudioUrl,
+      customAudioType: finalSong.customAudioType,
+      commentsCount: finalSong.commentsCount,
+      segmentsCount: finalSong.segmentsCount,
+    });
+
+    return finalSong;
   }
 
   static async deleteSong(id: string): Promise<void> {
