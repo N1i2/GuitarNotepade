@@ -460,7 +460,7 @@ export class SongsService {
   }
 
   static async countOfCreate(): Promise<number> {
-    return await apiClient.get<number>("count-of-create");
+    return await apiClient.get<number>(`${this.BASE_PATH}/count-of-create`);
   }
 
   static async getAudioUrl(songId: string, fileName: string): Promise<string> {

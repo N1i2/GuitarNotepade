@@ -28,7 +28,7 @@ public class Song : BaseEntityWithId
 
     public virtual User Owner { get; private set; } = null!;
     public virtual Song? ParentSong { get; private set; }
-    public virtual SongStructure? Structure { get; private set; } 
+    public virtual SongStructure? Structure { get; private set; }
     public virtual ICollection<Song> ChildSongs { get; private set; }
     public virtual ICollection<SongComment> Comments { get; private set; }
     public virtual ICollection<SongReview> Reviews { get; private set; }
@@ -136,7 +136,7 @@ public class Song : BaseEntityWithId
             Description = description.Trim();
         }
 
-        if (customAudioType != null && customAudioUrl != null)
+        if (customAudioUrl != null && customAudioType != null)
         {
             CustomAudioUrl = customAudioUrl;
             CustomAudioType = customAudioType;
@@ -149,6 +149,12 @@ public class Song : BaseEntityWithId
 
         UpdatedAt = DateTime.UtcNow;
         UpdateFullText();
+    }
+
+    public void CleanAudio()
+    {
+        CustomAudioUrl = null;
+        CustomAudioType = null;
     }
 
     public void SetFullText(string fullText)

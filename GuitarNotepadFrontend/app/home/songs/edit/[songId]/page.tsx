@@ -215,16 +215,80 @@ function EditSongContent() {
               customAudioType: "url",
             });
           } else {
-            const isRecording = songData.customAudioType === "audio/webm";
-            const fileName =
-              songData.customAudioUrl.split("/").pop() || "audio-file";
+            try {
+              const token = localStorage.getItem("auth_token");
+              const baseUrl =
+                process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+              const url = `${baseUrl}/Songs/${songId}/audio-file`;
 
-            setAudioData({
-              type: isRecording ? AudioInputType.RECORD : AudioInputType.FILE,
-              customAudioUrl: songData.customAudioUrl,
-              customAudioType: songData.customAudioType,
-              fileName: fileName,
-            });
+              console.log("🎵 Fetching audio file for edit from:", url);
+
+              const response = await fetch(url, {
+                method: "GET",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+
+              if (response.ok) {
+                const blob = await response.blob();
+                console.log(
+                  "🎵 Audio blob received for edit:",
+                  blob.size,
+                  blob.type,
+                );
+
+                if (blob.size > 0) {
+                  const blobUrl = URL.createObjectURL(blob);
+                  const fileName =
+                    songData.customAudioUrl.split("/").pop() || "audio-file";
+                  const isRecording = songData.customAudioType === "audio/webm";
+
+                  setAudioData({
+                    type: isRecording
+                      ? AudioInputType.RECORD
+                      : AudioInputType.FILE,
+                    customAudioUrl: blobUrl,
+                    customAudioType: songData.customAudioType,
+                    fileName: fileName,
+                  });
+                  console.log("🎵 Audio data set for edit:", {
+                    type: isRecording ? "RECORD" : "FILE",
+                    url: blobUrl,
+                  });
+                } else {
+                  console.warn("🎵 Audio blob is empty");
+                  setAudioData({
+                    type: AudioInputType.FILE,
+                    customAudioUrl: songData.customAudioUrl,
+                    customAudioType: songData.customAudioType,
+                    fileName:
+                      songData.customAudioUrl.split("/").pop() || "audio-file",
+                  });
+                }
+              } else {
+                console.error(
+                  "Failed to fetch audio, status:",
+                  response.status,
+                );
+                setAudioData({
+                  type: AudioInputType.FILE,
+                  customAudioUrl: songData.customAudioUrl,
+                  customAudioType: songData.customAudioType,
+                  fileName:
+                    songData.customAudioUrl.split("/").pop() || "audio-file",
+                });
+              }
+            } catch (error) {
+              console.error("Error fetching audio:", error);
+              setAudioData({
+                type: AudioInputType.FILE,
+                customAudioUrl: songData.customAudioUrl,
+                customAudioType: songData.customAudioType,
+                fileName:
+                  songData.customAudioUrl.split("/").pop() || "audio-file",
+              });
+            }
           }
         }
 
