@@ -1,5 +1,6 @@
 ﻿using Application.DTOs.Subscriptions;
 using Domain.Common;
+using Domain.Entities;
 using Domain.Interfaces;
 using Domain.Interfaces.Services;
 using MediatR;
@@ -61,10 +62,7 @@ public class SubscribeToAlbumCommandHandler : IRequestHandler<SubscribeToAlbumCo
             }
         }
 
-        var subscription = Domain.Entities.Subscription.Create(
-            request.UserId,
-            request.AlbumId,
-            false); 
+        var subscription = Subscription.CreateForAlbum(request.UserId, request.AlbumId);
 
         await _unitOfWork.Subscriptions.CreateAsync(subscription, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

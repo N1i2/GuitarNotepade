@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260324172858_init")]
+    partial class init
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -574,10 +577,7 @@ namespace Infrastructure.Data.Migrations
                     b.Property<bool>("IsUserSub")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid?>("TargetAlbumId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("TargetUserId")
+                    b.Property<Guid>("TargetId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("UserId")
@@ -587,24 +587,14 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasIndex("CreatedAt");
 
-                    b.HasIndex("TargetAlbumId");
-
-                    b.HasIndex("TargetUserId");
+                    b.HasIndex("TargetId");
 
                     b.HasIndex("UserId");
 
-                    b.HasIndex("UserId", "TargetAlbumId", "IsUserSub")
-                        .IsUnique()
-                        .HasFilter("\"TargetAlbumId\" IS NOT NULL");
+                    b.HasIndex("UserId", "TargetId", "IsUserSub")
+                        .IsUnique();
 
-                    b.HasIndex("UserId", "TargetUserId", "IsUserSub")
-                        .IsUnique()
-                        .HasFilter("\"TargetUserId\" IS NOT NULL");
-
-                    b.ToTable("Subscriptions", t =>
-                        {
-                            t.HasCheckConstraint("CK_Subscription_Target", "(\"IsUserSub\" = true AND \"TargetUserId\" IS NOT NULL AND \"TargetAlbumId\" IS NULL) OR (\"IsUserSub\" = false AND \"TargetUserId\" IS NULL AND \"TargetAlbumId\" IS NOT NULL)");
-                        });
+                    b.ToTable("Subscriptions");
                 });
 
             modelBuilder.Entity("Domain.Entities.User", b =>
@@ -909,13 +899,13 @@ namespace Infrastructure.Data.Migrations
             modelBuilder.Entity("Domain.Entities.Subscription", b =>
                 {
                     b.HasOne("Domain.Entities.Album", "TargetAlbum")
-                        .WithMany("Subscribers")
-                        .HasForeignKey("TargetAlbumId")
+                        .WithMany("Subscriptions")
+                        .HasForeignKey("TargetId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Domain.Entities.User", "TargetUser")
-                        .WithMany("Subscribers")
-                        .HasForeignKey("TargetUserId")
+                        .WithMany()
+                        .HasForeignKey("TargetId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Domain.Entities.User", "Subscriber")
@@ -937,7 +927,7 @@ namespace Infrastructure.Data.Migrations
 
                     b.Navigation("SongAlbums");
 
-                    b.Navigation("Subscribers");
+                    b.Navigation("Subscriptions");
                 });
 
             modelBuilder.Entity("Domain.Entities.Chord", b =>
@@ -998,8 +988,6 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Songs");
 
                     b.Navigation("StrummingPatterns");
-
-                    b.Navigation("Subscribers");
 
                     b.Navigation("Subscriptions");
                 });

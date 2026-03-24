@@ -24,6 +24,7 @@ public class User : BaseEntityWithId
 
     public virtual ICollection<Song> Songs { get; private set; } = new List<Song>();
     public virtual ICollection<Subscription> Subscriptions { get; private set; } = new List<Subscription>();
+    public virtual ICollection<Subscription> Subscribers { get; private set; } = new List<Subscription>();
     public virtual ICollection<Chord> Chords { get; private set; } = new List<Chord>();
     public virtual ICollection<StrummingPattern> StrummingPatterns { get; private set; } = new List<StrummingPattern>();
     public virtual ICollection<SongReview> Reviews { get; private set; } = new List<SongReview>();
@@ -66,7 +67,7 @@ public class User : BaseEntityWithId
 
     public bool CanCreateMorePatterns(int currentPatternCount)
     {
-        if (HasPremium || IsAdmin) 
+        if (HasPremium || IsAdmin)
         {
             return true;
         }
@@ -81,7 +82,7 @@ public class User : BaseEntityWithId
 
     public bool CanHaveFavoriteAlbum()
     {
-        return !IsGuest; 
+        return !IsGuest;
     }
 
     public bool CanViewAlbums()
@@ -154,7 +155,7 @@ public class User : BaseEntityWithId
             throw new ArgumentException("Block until date must be in the future", nameof(blockedUntil));
         }
 
-        if (blockedUntil > DateTime.UtcNow.AddYears(1)) 
+        if (blockedUntil > DateTime.UtcNow.AddYears(1))
         {
             throw new ArgumentException("Block duration cannot exceed 1 year", nameof(blockedUntil));
         }

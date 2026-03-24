@@ -4,8 +4,8 @@ namespace Domain.Interfaces.Services;
 
 public interface IAlbumService
 {
-    Task<Album> CreateAlbumAsync(Guid userId, string title, bool isPublic, string? genre = null, string? theme = null, string? coverUrl = null, string? description = null, CancellationToken cancellationToken = default);
-    Task<Album> UpdateAlbumAsync(Guid albumId, Guid userId, string? title = null, bool? isPublic = null, string? genre = null, string? theme = null, string? coverUrl = null, string? description = null, CancellationToken cancellationToken = default);
+    Task<Album> CreateAlbumAsync(Guid userId, string title, bool isPublic, string? genre = null, string? theme = null, string? coverBase64 = null, string? description = null, CancellationToken cancellationToken = default);
+    Task<Album> UpdateAlbumAsync(Guid albumId, Guid userId, string? title = null, bool? isPublic = null, string? genre = null, string? theme = null, string? coverBase64 = null, string? description = null, CancellationToken cancellationToken = default);
     Task DeleteAlbumAsync(Guid albumId, Guid userId, CancellationToken cancellationToken = default);
     Task<Album> GetAlbumByIdAsync(Guid albumId, CancellationToken cancellationToken = default);
     Task<Album> GetFavoriteAlbumAsync(Guid userId, CancellationToken cancellationToken = default);

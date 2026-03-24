@@ -23,8 +23,11 @@ public class UpdateUserProfileCommandHandler : IRequestHandler<UpdateUserProfile
     public async Task<UserProfileDto> Handle(UpdateUserProfileCommand request, CancellationToken cancellationToken)
     {
         var user = await _userService.GetByIdAsync(request.UserId, cancellationToken);
+
         if (user == null)
+        {
             throw new Exception("User not found");
+        }
 
         string? newAvatarFileName = null;
         bool avatarBase64WasProvided = request.GetType().GetProperty("AvatarBase64")?.GetValue(request) != null;

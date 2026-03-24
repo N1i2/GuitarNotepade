@@ -98,9 +98,9 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description));
 
         CreateMap<Album, AlbumDto>()
-            .ForMember(dest => dest.OwnerName, opt => opt.Ignore())
-            .ForMember(dest => dest.CountOfSongs, opt => opt.MapFrom(src => src.SongAlbums.Count))
-            .ForMember(dest => dest.CoverUrl, opt => opt.Ignore());
+    .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => src.Owner != null ? src.Owner.NikName : null))
+    .ForMember(dest => dest.CountOfSongs, opt => opt.MapFrom(src => src.SongAlbums.Count))
+    .ForMember(dest => dest.CoverUrl, opt => opt.Ignore());
 
         CreateMap<Album, AlbumWithSongsDto>()
             .IncludeBase<Album, AlbumDto>()
@@ -124,8 +124,8 @@ public class MappingProfile : Profile
 
         CreateMap<Subscription, SubscriptionDto>()
             .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.Subscriber != null ? src.Subscriber.NikName : string.Empty))
-            .ForMember(dest => dest.SubName, opt => opt.Ignore()) 
-            .ForMember(dest => dest.TargetId, opt => opt.Ignore()); 
+            .ForMember(dest => dest.SubName, opt => opt.Ignore())
+            .ForMember(dest => dest.TargetId, opt => opt.Ignore());
 
         CreateMap<Notification, NotificationDto>()
             .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString()));

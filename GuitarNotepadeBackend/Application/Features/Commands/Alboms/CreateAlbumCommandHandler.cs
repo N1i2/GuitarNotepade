@@ -12,17 +12,20 @@ namespace Application.Features.Commands.Alboms
         private readonly IUserService _userService;
         private readonly IMapper _mapper;
         private readonly ILogger<CreateAlbumCommandHandler> _logger;
+        private readonly IWebDavService _webDavService;
 
         public CreateAlbumCommandHandler(
             IAlbumService albumService,
             IUserService userService,
             IMapper mapper,
-            ILogger<CreateAlbumCommandHandler> logger)
+            ILogger<CreateAlbumCommandHandler> logger,
+            IWebDavService webDavService)
         {
             _albumService = albumService;
             _userService = userService;
             _mapper = mapper;
             _logger = logger;
+            _webDavService = webDavService;
         }
 
         public async Task<AlbumDto> Handle(CreateAlbumCommand request, CancellationToken cancellationToken)
@@ -39,13 +42,20 @@ namespace Application.Features.Commands.Alboms
                 isPublic: request.IsPublic,
                 genre: request.Genre,
                 theme: request.Theme,
-                coverUrl: request.CoverBase64, 
+                coverBase64: request.CoverBase64,
                 description: request.Description,
                 cancellationToken: cancellationToken);
 
             _logger.LogInformation("Album created successfully: {AlbumId}", album.Id);
 
-            return _mapper.Map<AlbumDto>(album);
+            var albumDto = _mapper.Map<AlbumDto>(album);
+
+            if (!string.IsNullOrEmpty(album.CoverUrl))
+            {
+                albumDto.CoverUrl = await _webDavService.GetAlbumCoverUrlAsync(album.CoverUrl);
+            }
+
+            return albumDto;
         }
     }
 }

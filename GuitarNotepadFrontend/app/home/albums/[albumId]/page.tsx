@@ -74,7 +74,8 @@ export default function AlbumDetailPage() {
       const data = await AlbumService.getAlbumWithSongs(albumId);
       setAlbum(data);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to load album";
+      const message =
+        error instanceof Error ? error.message : "Failed to load album";
       toast.error(message);
       router.push("/home/albums");
     } finally {
@@ -97,7 +98,7 @@ export default function AlbumDetailPage() {
 
       const albumSongIds = album?.songs.map((song) => song.id) || [];
       const filteredSongs = response.songs.filter(
-        (song) => !albumSongIds.includes(song.id)
+        (song) => !albumSongIds.includes(song.id),
       );
 
       setAvailableSongs(filteredSongs);
@@ -133,7 +134,8 @@ export default function AlbumDetailPage() {
       toast.success(`Album "${album.title}" deleted successfully`);
       router.push("/home/albums");
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to delete album";
+      const message =
+        error instanceof Error ? error.message : "Failed to delete album";
       toast.error(message);
     } finally {
       setIsDeleting(false);
@@ -179,7 +181,7 @@ export default function AlbumDetailPage() {
     setSelectedSongs((prev) =>
       prev.includes(songId)
         ? prev.filter((id) => id !== songId)
-        : [...prev, songId]
+        : [...prev, songId],
     );
   };
 
@@ -254,7 +256,7 @@ export default function AlbumDetailPage() {
   const filteredAvailableSongs = availableSongs.filter(
     (song) =>
       song.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (song.artist || "").toLowerCase().includes(searchTerm.toLowerCase())
+      (song.artist || "").toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const hasAudio = (song: SongInAlbumDto): boolean => {
@@ -305,7 +307,7 @@ export default function AlbumDetailPage() {
 
   const paginatedSongs = album.songs.slice(
     (currentPage - 1) * pageSize,
-    currentPage * pageSize
+    currentPage * pageSize,
   );
 
   return (
@@ -351,16 +353,16 @@ export default function AlbumDetailPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setAddSongsDialogOpen(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Songs
-            </Button>
             {canManage && (
               <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAddSongsDialogOpen(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Songs
+                </Button>
                 <Button variant="outline" size="sm" onClick={handleEdit}>
                   <Edit className="h-4 w-4 mr-2" />
                   Edit
@@ -402,7 +404,7 @@ export default function AlbumDetailPage() {
                   ) : (
                     <div
                       className={`h-full w-full ${getGradientClass(
-                        album.title
+                        album.title,
                       )} flex items-center justify-center`}
                     >
                       <span className="text-4xl font-bold text-white">
@@ -528,7 +530,7 @@ export default function AlbumDetailPage() {
                         <div key={song.id} className="relative group">
                           <Card
                             className={`cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg border-2 ${getSongColor(
-                              song.title
+                              song.title,
                             )}`}
                             onClick={() => handleSongClick(song.id)}
                           >
@@ -580,7 +582,7 @@ export default function AlbumDetailPage() {
                                       Beauty:
                                     </span>
                                     {renderRatingStars(
-                                      song.averageBeautifulRating
+                                      song.averageBeautifulRating,
                                     )}
                                   </div>
                                 )}
@@ -590,7 +592,7 @@ export default function AlbumDetailPage() {
                                       Difficulty:
                                     </span>
                                     {renderRatingStars(
-                                      song.averageDifficultyRating
+                                      song.averageDifficultyRating,
                                     )}
                                   </div>
                                 )}
@@ -630,7 +632,7 @@ export default function AlbumDetailPage() {
                                   </div>
                                   <div className="text-muted-foreground">
                                     {new Date(
-                                      song.createdAt
+                                      song.createdAt,
                                     ).toLocaleDateString()}
                                   </div>
                                 </div>
@@ -659,7 +661,7 @@ export default function AlbumDetailPage() {
                             {
                               length: Math.ceil(album.songs.length / pageSize),
                             },
-                            (_, i) => i + 1
+                            (_, i) => i + 1,
                           ).map((pageNum) => (
                             <Button
                               key={pageNum}

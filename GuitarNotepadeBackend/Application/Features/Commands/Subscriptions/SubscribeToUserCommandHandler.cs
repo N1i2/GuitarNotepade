@@ -1,5 +1,6 @@
 ﻿using Application.DTOs.Subscriptions;
 using Domain.Common;
+using Domain.Entities;
 using Domain.Interfaces;
 using Domain.Interfaces.Services;
 using MediatR;
@@ -58,10 +59,7 @@ public class SubscribeToUserCommandHandler : IRequestHandler<SubscribeToUserComm
             }
         }
 
-        var subscription = Domain.Entities.Subscription.Create(
-            request.UserId,
-            request.TargetUserId,
-            true); 
+        var subscription = Subscription.CreateForUser(request.UserId, request.TargetUserId);
 
         await _unitOfWork.Subscriptions.CreateAsync(subscription, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

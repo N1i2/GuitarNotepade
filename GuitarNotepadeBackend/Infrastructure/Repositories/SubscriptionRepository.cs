@@ -9,32 +9,62 @@ public class SubscriptionRepository : BaseRepository<Subscription>, ISubscriptio
 {
     public SubscriptionRepository(AppDbContext context) : base(context) { }
 
-    public async Task<Subscription?> GetSubscriptionAsync(Guid userId, Guid subId, bool isUserSub, CancellationToken cancellationToken = default)
+    public async Task<Subscription?> GetSubscriptionAsync(Guid userId, Guid targetId, bool isUserSub, CancellationToken cancellationToken = default)
     {
-        return await _dbSet
-            .FirstOrDefaultAsync(s => s.UserId == userId && s.TargetId == subId && s.IsUserSub == isUserSub, cancellationToken);
+        if (isUserSub)
+        {
+            return await _dbSet
+                .FirstOrDefaultAsync(s => s.UserId == userId && s.TargetUserId == targetId && s.IsUserSub == isUserSub, cancellationToken);
+        }
+        else
+        {
+            return await _dbSet
+                .FirstOrDefaultAsync(s => s.UserId == userId && s.TargetAlbumId == targetId && s.IsUserSub == isUserSub, cancellationToken);
+        }
     }
 
-    public async Task<bool> ExistsAsync(Guid userId, Guid subId, bool isUserSub, CancellationToken cancellationToken = default)
+    public async Task<bool> ExistsAsync(Guid userId, Guid targetId, bool isUserSub, CancellationToken cancellationToken = default)
     {
-        return await _dbSet
-            .AnyAsync(s => s.UserId == userId && s.TargetId == subId && s.IsUserSub == isUserSub, cancellationToken);
+        if (isUserSub)
+        {
+            return await _dbSet
+                .AnyAsync(s => s.UserId == userId && s.TargetUserId == targetId && s.IsUserSub == isUserSub, cancellationToken);
+        }
+        else
+        {
+            return await _dbSet
+                .AnyAsync(s => s.UserId == userId && s.TargetAlbumId == targetId && s.IsUserSub == isUserSub, cancellationToken);
+        }
     }
 
     public async Task<List<Subscription>> GetUserSubscriptionsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return await _dbSet
             .Where(s => s.UserId == userId)
+            .Include(s => s.TargetUser)
+            .Include(s => s.TargetAlbum)
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<List<Subscription>> GetSubscribersAsync(Guid subId, bool isUserSub, CancellationToken cancellationToken = default)
+    public async Task<List<Subscription>> GetSubscribersAsync(Guid targetId, bool isUserSub, CancellationToken cancellationToken = default)
     {
-        return await _dbSet
-            .Where(s => s.TargetId == subId && s.IsUserSub == isUserSub)
-            .OrderByDescending(s => s.CreatedAt)
-            .ToListAsync(cancellationToken);
+        if (isUserSub)
+        {
+            return await _dbSet
+                .Where(s => s.TargetUserId == targetId && s.IsUserSub == isUserSub)
+                .Include(s => s.Subscriber)
+                .OrderByDescending(s => s.CreatedAt)
+                .ToListAsync(cancellationToken);
+        }
+        else
+        {
+            return await _dbSet
+                .Where(s => s.TargetAlbumId == targetId && s.IsUserSub == isUserSub)
+                .Include(s => s.Subscriber)
+                .OrderByDescending(s => s.CreatedAt)
+                .ToListAsync(cancellationToken);
+        }
     }
 
     public async Task<int> CountUserSubscriptionsAsync(Guid userId, CancellationToken cancellationToken = default)
@@ -44,10 +74,19 @@ public class SubscriptionRepository : BaseRepository<Subscription>, ISubscriptio
             .CountAsync(cancellationToken);
     }
 
-    public async Task<int> CountSubscribersAsync(Guid subId, bool isUserSub, CancellationToken cancellationToken = default)
+    public async Task<int> CountSubscribersAsync(Guid targetId, bool isUserSub, CancellationToken cancellationToken = default)
     {
-        return await _dbSet
-            .Where(s => s.TargetId == subId && s.IsUserSub == isUserSub)
-            .CountAsync(cancellationToken);
+        if (isUserSub)
+        {
+            return await _dbSet
+                .Where(s => s.TargetUserId == targetId && s.IsUserSub == isUserSub)
+                .CountAsync(cancellationToken);
+        }
+        else
+        {
+            return await _dbSet
+                .Where(s => s.TargetAlbumId == targetId && s.IsUserSub == isUserSub)
+                .CountAsync(cancellationToken);
+        }
     }
 }

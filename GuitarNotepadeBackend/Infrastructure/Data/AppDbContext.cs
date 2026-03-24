@@ -56,14 +56,14 @@ public class AppDbContext : DbContext
                 .HasMaxLength(50);
 
             entity.Property(e => e.AvatarUrl)
-                .HasMaxLength(1000);
+                .HasMaxLength(10000);
 
             entity.Property(e => e.Bio)
                 .HasMaxLength(1000);
 
             entity.Property(e => e.BlockReason)
                 .HasMaxLength(500);
-            
+
             entity.Property(e => e.HasPremium)
                 .IsRequired();
 
@@ -111,8 +111,11 @@ public class AppDbContext : DbContext
             entity.Property(e => e.UserId)
                 .IsRequired();
 
-            entity.Property(e => e.TargetId)
-                .IsRequired();
+            entity.Property(e => e.TargetUserId)
+                .IsRequired(false);
+
+            entity.Property(e => e.TargetAlbumId)
+                .IsRequired(false);
 
             entity.Property(e => e.IsUserSub)
                 .IsRequired();
@@ -126,23 +129,30 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(e => e.TargetUser)
-                .WithMany()
-                .HasForeignKey(e => e.TargetId)
-                .HasPrincipalKey(u => u.Id)
-                .OnDelete(DeleteBehavior.Restrict)
-                .IsRequired(false);
+                .WithMany(e => e.Subscribers)
+                .HasForeignKey(e => e.TargetUserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(e => e.TargetAlbum)
-                .WithMany(e => e.Subscriptions)
-                .HasForeignKey(e => e.TargetId)
-                .HasPrincipalKey(a => a.Id)
-                .OnDelete(DeleteBehavior.Restrict)
-                .IsRequired(false);
+                .WithMany(e => e.Subscribers)
+                .HasForeignKey(e => e.TargetAlbumId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasIndex(e => e.UserId);
-            entity.HasIndex(e => e.TargetId);
-            entity.HasIndex(e => new { e.UserId, e.TargetId, e.IsUserSub }).IsUnique();
+            entity.HasIndex(e => e.TargetUserId);
+            entity.HasIndex(e => e.TargetAlbumId);
+            entity.HasIndex(e => new { e.UserId, e.TargetUserId, e.IsUserSub })
+                .IsUnique()
+                .HasFilter("\"TargetUserId\" IS NOT NULL");
+            entity.HasIndex(e => new { e.UserId, e.TargetAlbumId, e.IsUserSub })
+                .IsUnique()
+                .HasFilter("\"TargetAlbumId\" IS NOT NULL");
             entity.HasIndex(e => e.CreatedAt);
+
+            entity.ToTable(t => t.HasCheckConstraint(
+                "CK_Subscription_Target",
+                "(\"IsUserSub\" = true AND \"TargetUserId\" IS NOT NULL AND \"TargetAlbumId\" IS NULL) OR " +
+                "(\"IsUserSub\" = false AND \"TargetUserId\" IS NULL AND \"TargetAlbumId\" IS NOT NULL)"));
         });
 
         modelBuilder.Entity<Song>(entity =>
@@ -168,7 +178,7 @@ public class AppDbContext : DbContext
                 .HasMaxLength(100);
 
             entity.Property(e => e.CustomAudioUrl)
-                .HasMaxLength(1000);
+                .HasMaxLength(10000);
 
             entity.Property(e => e.CustomAudioType)
                 .HasMaxLength(50);
@@ -550,7 +560,7 @@ public class AppDbContext : DbContext
                 .HasMaxLength(200);
 
             entity.Property(e => e.CoverUrl)
-                .HasMaxLength(1000);
+                .HasMaxLength(10000);
 
             entity.Property(e => e.Description)
                 .HasMaxLength(2000);
@@ -580,11 +590,11 @@ public class AppDbContext : DbContext
                 .HasForeignKey(e => e.AlbumId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasMany(e => e.Subscriptions)
-                .WithOne(e => e.TargetAlbum)
-                .HasForeignKey(e => e.TargetId)
-                .HasPrincipalKey(e => e.Id)
-                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasMany(e => e.Subscribers)
+        .WithOne(e => e.TargetAlbum)
+        .HasForeignKey(e => e.TargetAlbumId)
+        .OnDelete(DeleteBehavior.Restrict);
+
 
             entity.HasIndex(e => e.OwnerId);
             entity.HasIndex(e => e.Title);

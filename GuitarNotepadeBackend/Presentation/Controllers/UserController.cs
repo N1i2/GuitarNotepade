@@ -129,7 +129,14 @@ public class UserController : ControllerBase
     {
         try
         {
-            var command = _mapper.Map<UpdateUserProfileCommand>(dto);
+            var profile = new UpdateUserProfileWithIdDto(
+                GetCurrentUserId(),
+                dto.NikName,
+                dto.AvatarBase64,
+                dto.Bio,
+                dto.RemoveAvatar);
+
+            var command = _mapper.Map<UpdateUserProfileCommand>(profile);
             var result = await _mediator.Send(command);
 
             return Ok(result);

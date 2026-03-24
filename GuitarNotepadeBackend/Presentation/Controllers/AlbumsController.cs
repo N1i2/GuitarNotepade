@@ -15,7 +15,7 @@ namespace Presentation.Controllers;
 [Authorize]
 public class AlbumsController : ControllerBase
 {
-    private readonly IMediator _mediator; 
+    private readonly IMediator _mediator;
     private readonly IUserService _userService;
 
     public AlbumsController(IMediator mediator, IUserService userService)
@@ -154,13 +154,13 @@ public class AlbumsController : ControllerBase
         return Ok(result);
     }
 
-   /// <summary>
-   /// Gives only my albums
-   /// </summary>
-   /// <param name="includePrivate"></param>
-   /// <param name="page"></param>
-   /// <param name="pageSize"></param>
-   /// <returns></returns>
+    /// <summary>
+    /// Gives only my albums
+    /// </summary>
+    /// <param name="includePrivate"></param>
+    /// <param name="page"></param>
+    /// <param name="pageSize"></param>
+    /// <returns></returns>
     [HttpGet("my-albums")]
     public async Task<ActionResult<AlbumSearchResultDto>> GetMyAlbums(
         [FromQuery] bool includePrivate = true,

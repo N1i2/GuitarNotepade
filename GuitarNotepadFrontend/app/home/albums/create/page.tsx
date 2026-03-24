@@ -63,7 +63,68 @@ export default function CreateAlbumPage() {
 
   const currentValues = watch();
 
-  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const compressImage = async (
+    file: File,
+    maxWidth: number = 800,
+    quality: number = 0.7,
+  ): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressedFile = new File([blob], file.name, {
+                  type: "image/jpeg",
+                  lastModified: Date.now(),
+                });
+                console.log(
+                  "Original size:",
+                  (file.size / 1024).toFixed(2),
+                  "KB",
+                );
+                console.log(
+                  "Compressed size:",
+                  (compressedFile.size / 1024).toFixed(2),
+                  "KB",
+                );
+                resolve(compressedFile);
+              } else {
+                reject(new Error("Compression failed"));
+              }
+            },
+            "image/jpeg",
+            quality,
+          );
+        };
+        img.onerror = reject;
+      };
+      reader.onerror = reject;
+    });
+  };
+
+  const handleImageSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -77,13 +138,24 @@ export default function CreateAlbumPage() {
       return;
     }
 
-    setSelectedImage(file);
+    let processedFile = file;
+    if (file.size > 500 * 1024) {
+      try {
+        processedFile = await compressImage(file, 800, 0.7);
+      } catch (error) {
+        console.error("Compression error:", error);
+        toast.error("Failed to compress image");
+        return;
+      }
+    }
+
+    setSelectedImage(processedFile);
 
     const reader = new FileReader();
     reader.onloadend = () => {
       setImagePreview(reader.result as string);
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(processedFile);
   };
 
   const removeSelectedImage = () => {
@@ -95,43 +167,125 @@ export default function CreateAlbumPage() {
   };
 
   const convertImageToBase64 = async (file: File): Promise<string> => {
+    console.log("Converting file to base64:", {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+    });
+
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
+      reader.onload = () => {
+        const result = reader.result as string;
+        console.log("Conversion complete, length:", result.length);
+        console.log("Starts with:", result.substring(0, 50));
+        resolve(result);
+      };
+      reader.onerror = (error) => {
+        console.error("FileReader error:", error);
+        reject(error);
+      };
     });
   };
 
   const onSubmit = async (data: CreateAlbumFormValues) => {
     setIsLoading(true);
     try {
+      console.log("=== START ALBUM CREATION ===");
+      console.log("Form data:", {
+        title: data.title,
+        isPublic: data.isPublic,
+        genre: data.genre,
+        theme: data.theme,
+        description: data.description,
+        hasImage: !!selectedImage,
+        imageSize: selectedImage?.size,
+        imageName: selectedImage?.name,
+      });
+
       let coverUrl = null;
 
       if (selectedImage) {
+        console.log("Converting image to base64...");
         coverUrl = await convertImageToBase64(selectedImage);
+        console.log("Base64 length:", coverUrl.length);
+        console.log("Base64 preview:", coverUrl.substring(0, 100));
+        console.log(
+          "Base64 ends with:",
+          coverUrl.substring(coverUrl.length - 50),
+        );
+
+        if (coverUrl.startsWith("data:image/")) {
+          console.log("✅ Base64 has correct data:image prefix");
+        } else {
+          console.error("❌ Base64 does not start with data:image/");
+        }
       }
 
       const createAlbumDto: CreateAlbumDto = {
         title: data.title,
         isPublic: data.isPublic,
-        ...(data.genre && data.genre.trim() !== "" && { genre: data.genre }),
-        ...(data.theme && data.theme.trim() !== "" && { theme: data.theme }),
+        ...(data.genre &&
+          data.genre.trim() !== "" &&
+          data.genre !== "Empty" && { genre: data.genre }),
+        ...(data.theme &&
+          data.theme.trim() !== "" &&
+          data.theme !== "Empty" && { theme: data.theme }),
         ...(data.description &&
           data.description.trim() !== "" && { description: data.description }),
         ...(coverUrl && { coverUrl }),
       };
 
+      console.log("Sending DTO:", {
+        title: createAlbumDto.title,
+        isPublic: createAlbumDto.isPublic,
+        genre: createAlbumDto.genre,
+        theme: createAlbumDto.theme,
+        description: createAlbumDto.description,
+        hasCoverUrl: !!createAlbumDto.coverUrl,
+        coverUrlLength: createAlbumDto.coverUrl?.length,
+      });
+
+      const jsonString = JSON.stringify(createAlbumDto);
+      console.log("JSON size:", (jsonString.length / 1024).toFixed(2), "KB");
+
+      if (jsonString.length > 1000000) {
+        console.warn("⚠️ Request is very large:", jsonString.length, "bytes");
+      }
+
+      console.log("Calling AlbumService.createAlbum...");
       const createdAlbum = await AlbumService.createAlbum(createAlbumDto);
+      console.log("Album created successfully:", createdAlbum);
 
       toast.success(`Album "${createdAlbum.title}" created successfully!`);
       router.push(`/home/albums/${createdAlbum.id}`);
     } catch (error: unknown) {
+      console.error("=== ERROR IN ALBUM CREATION ===");
+      console.error("Full error:", error);
+
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
+
+      if (error && typeof error === "object" && "response" in error) {
+        const apiError = error as any;
+        console.error("API Response:", {
+          status: apiError.response?.status,
+          data: apiError.response?.data,
+          headers: apiError.response?.headers,
+        });
+      }
+
       const isApiError =
         error && typeof error === "object" && "status" in error;
 
       if (isApiError) {
         const apiError = error as { status: number; message?: string };
+        console.error("API Error status:", apiError.status);
+        console.error("API Error message:", apiError.message);
+
         if (apiError.status === 409) {
           toast.error("You already have an album with this title");
         } else {
@@ -260,7 +414,7 @@ export default function CreateAlbumPage() {
                                 Drag & drop or click to upload
                               </p>
                               <p className="text-xs text-gray-500 mt-1">
-                                PNG, JPG, GIF up to 5MB
+                                PNG, JPG, GIF up to 5MB (will be compressed)
                               </p>
                             </div>
                             <Button

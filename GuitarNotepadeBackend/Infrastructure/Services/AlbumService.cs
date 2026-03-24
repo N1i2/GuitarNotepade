@@ -27,19 +27,56 @@ public class AlbumService : IAlbumService
     }
 
     public async Task<Album> CreateAlbumAsync(
-        Guid userId,
-        string title,
-        bool isPublic,
-        string? genre = null,
-        string? theme = null,
-        string? coverUrl = null,
-        string? description = null,
-        CancellationToken cancellationToken = default)
+    Guid userId,
+    string title,
+    bool isPublic,
+    string? genre = null,
+    string? theme = null,
+    string? coverBase64 = null,
+    string? description = null,
+    CancellationToken cancellationToken = default)
     {
         if (await _unitOfWork.Alboms.ExistsByTitleAndOwnerAsync(title, userId, cancellationToken))
             throw new InvalidOperationException($"You already have an album with title '{title}'");
 
-        var album = Album.Create(userId, title, genre, theme, isPublic, coverUrl, description);
+        string? coverFileName = null;
+
+        _logger.LogInformation("CreateAlbumAsync called with coverBase64 length: {Length}", coverBase64?.Length ?? 0);
+        _logger.LogInformation("coverBase64 preview: {Preview}", coverBase64?.Substring(0, Math.Min(100, coverBase64?.Length ?? 0)));
+
+        if (!string.IsNullOrEmpty(coverBase64))
+        {
+            try
+            {
+                var newAlbumId = Guid.NewGuid();
+                _logger.LogInformation("Uploading album cover for album {AlbumId}", newAlbumId);
+                coverFileName = await _webDavService.UploadAlbumCoverAsync(coverBase64, newAlbumId);
+                _logger.LogInformation("Upload successful, coverFileName: {FileName}", coverFileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to upload album cover");
+                throw;
+            }
+        }
+        else
+        {
+            _logger.LogInformation("No cover image provided");
+        }
+
+        _logger.LogInformation("Creating album with coverFileName: {FileName}", coverFileName ?? "null");
+
+        var album = Album.Create(
+            userId,
+            title,
+            genre,
+            theme,
+            isPublic,
+            coverFileName,
+            description);
+
+        _logger.LogInformation("Album created with CoverUrl: {CoverUrl}", album.CoverUrl ?? "null");
+
         album = await _unitOfWork.Alboms.CreateAsync(album, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -59,15 +96,15 @@ public class AlbumService : IAlbumService
     }
 
     public async Task<Album> UpdateAlbumAsync(
-        Guid albumId,
-        Guid userId,
-        string? title = null,
-        bool? isPublic = null,
-        string? genre = null,
-        string? theme = null,
-        string? coverUrl = null,
-        string? description = null,
-        CancellationToken cancellationToken = default)
+    Guid albumId,
+    Guid userId,
+    string? title = null,
+    bool? isPublic = null,
+    string? genre = null,
+    string? theme = null,
+    string? coverBase64 = null,
+    string? description = null,
+    CancellationToken cancellationToken = default)
     {
         var album = await _unitOfWork.Alboms.GetByIdAsync(albumId, cancellationToken);
         if (album == null)
@@ -89,7 +126,19 @@ public class AlbumService : IAlbumService
                 throw new InvalidOperationException($"You already have an album with title '{title}'");
         }
 
-        album.Update(title, genre, theme, coverUrl, description, isPublic);
+        string? coverFileName = album.CoverUrl;
+
+        if (!string.IsNullOrEmpty(coverBase64))
+        {
+            if (!string.IsNullOrEmpty(album.CoverUrl))
+            {
+                await _webDavService.DeleteAlbumCoverAsync(album.CoverUrl);
+            }
+
+            coverFileName = await _webDavService.UploadAlbumCoverAsync(coverBase64, albumId);
+        }
+
+        album.Update(title, genre, theme, coverFileName, description, isPublic);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Album updated: {AlbumId} by user {UserId}", albumId, userId);

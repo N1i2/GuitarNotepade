@@ -76,7 +76,25 @@ export class AlbumService {
   }
 
   static async createAlbum(data: CreateAlbumDto): Promise<AlbumDto> {
-    return await apiClient.post<CreateAlbumDto, AlbumDto>(this.BASE_PATH, data);
+    console.log("AlbumService.createAlbum called");
+    console.log("Data received:", {
+      title: data.title,
+      isPublic: data.isPublic,
+      hasCoverUrl: !!data.coverUrl,
+      coverUrlLength: data.coverUrl?.length,
+    });
+
+    try {
+      const response = await apiClient.post<CreateAlbumDto, AlbumDto>(
+        this.BASE_PATH,
+        data,
+      );
+      console.log("AlbumService.createAlbum response:", response);
+      return response;
+    } catch (error) {
+      console.error("AlbumService.createAlbum error:", error);
+      throw error;
+    }
   }
 
   static async updateAlbum(

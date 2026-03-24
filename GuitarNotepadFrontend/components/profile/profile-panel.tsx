@@ -47,14 +47,19 @@ const profileSchema = z
       .or(z.literal("")),
   })
   .refine(
-    (data) => !data.password || (!!data.password && !!data.currentPassword),
-    { message: "Enter your current password", path: ["currentPassword"] }
+    (data) => {
+      if (data.password && data.password.length > 0) {
+        return !!data.currentPassword && data.currentPassword.length > 0;
+      }
+      return true;
+    },
+    { message: "Enter your current password", path: ["currentPassword"] },
   )
   .refine(
     (data) =>
       (!data.currentPassword && !data.password) ||
       data.password === data.confirmPassword,
-    { message: "The passwords don't match", path: ["confirmPassword"] }
+    { message: "The passwords don't match", path: ["confirmPassword"] },
   )
   .refine(
     (data) => {
@@ -67,7 +72,7 @@ const profileSchema = z
     {
       message: "Password is too weak",
       path: ["password"],
-    }
+    },
   );
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -78,6 +83,7 @@ export function ProfilePanel() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarSrc, setAvatarSrc] = useState<string>("");
+  const [isAvatarChanged, setIsAvatarChanged] = useState(false);
 
   const formDefaults: ProfileFormValues = {
     nikName: user?.nikName || "",
@@ -93,10 +99,15 @@ export function ProfilePanel() {
     reset,
     setError,
     formState: { errors, isSubmitting, isDirty },
+    watch,
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: formDefaults,
   });
+
+  const watchedFields = watch();
+
+  const hasChanges = isDirty || isAvatarChanged;
 
   const processAvatarFromBackend = (avatarData: string) => {
     if (!avatarData) {
@@ -110,8 +121,8 @@ export function ProfilePanel() {
     const mimeType = avatarData.startsWith("/9j/")
       ? "image/jpeg"
       : avatarData.startsWith("iVBORw")
-      ? "image/png"
-      : "image/jpeg";
+        ? "image/png"
+        : "image/jpeg";
     const dataUrl = `data:${mimeType};base64,${avatarData}`;
     setAvatarSrc(dataUrl);
   };
@@ -130,6 +141,7 @@ export function ProfilePanel() {
       } else {
         setAvatarSrc("");
       }
+      setIsAvatarChanged(false);
     }
   }, [user, reset]);
 
@@ -145,56 +157,69 @@ export function ProfilePanel() {
   const onSubmit = async (data: ProfileFormValues) => {
     if (avatarFile) {
       if (!avatarFile.type.startsWith("image/")) {
-        setError("nikName", {
-          type: "manual",
-          message: "Avatar must be an image",
-        });
         toast.error("Please select an image file");
         return;
       }
       if (avatarFile.size > 2 * 1024 * 1024) {
-        setError("nikName", {
-          type: "manual",
-          message: "Image must be smaller than 2MB",
-        });
         toast.error("Image must be smaller than 2MB");
         return;
       }
     }
+
     try {
-      const payload: updateUserInfo = {
-        nikName: data.nikName,
-        bio: data.bio,
-      };
-      if (avatarFile) {
-        const base64 = await fileToBase64(avatarFile);
-        payload.avatarBase64 = base64;
-      }
-      if (data.currentPassword && data.password && data.confirmPassword) {
-        payload.currentPassword = data.currentPassword;
-        payload.newPassword = data.password;
-        payload.confirmNewPassword = data.confirmPassword;
-      }
-      const response = await ProfileService.updateProfile(payload);
-      if (response) {
-        setUser(response);
-        if (response.avatarUrl) {
-          processAvatarFromBackend(response.avatarUrl);
-        } else {
-          setAvatarSrc("");
+      if (isDirty || isAvatarChanged) {
+        const profilePayload: updateUserInfo = {
+          nikName: data.nikName,
+          bio: data.bio,
+        };
+
+        if (avatarFile) {
+          const base64 = await fileToBase64(avatarFile);
+          profilePayload.avatarBase64 = base64;
         }
-        setAvatarFile(null);
-        if (fileInputRef.current) fileInputRef.current.value = "";
-        toast.success("Profile updated successfully");
+
+        const response = await ProfileService.updateProfile(profilePayload);
+
+        if (response) {
+          setUser(response);
+          if (response.avatarUrl) {
+            processAvatarFromBackend(response.avatarUrl);
+          } else {
+            setAvatarSrc("");
+          }
+          setAvatarFile(null);
+          if (fileInputRef.current) fileInputRef.current.value = "";
+          setIsAvatarChanged(false);
+
+          toast.success("Profile updated successfully");
+
+          reset({
+            nikName: response.nikName || "",
+            bio: response.bio || "",
+            currentPassword: "",
+            password: "",
+            confirmPassword: "",
+          });
+        }
+      }
+
+      if (data.currentPassword && data.password && data.confirmPassword) {
+        await ProfileService.changePassword(
+          data.currentPassword,
+          data.password,
+          data.confirmPassword,
+        );
+        toast.success("Password changed successfully");
+
         reset({
-          nikName: response.nikName || "",
-          bio: response.bio || "",
+          ...data,
           currentPassword: "",
           password: "",
           confirmPassword: "",
         });
       }
     } catch (error: unknown) {
+      console.error("Update error:", error);
       if (error instanceof Error) {
         toast.error(error.message || "Failed to save profile");
       } else {
@@ -206,19 +231,26 @@ export function ProfilePanel() {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     const MAX_SIZE = 2 * 1024 * 1024;
+
     if (!file) {
       setAvatarFile(null);
+      setIsAvatarChanged(false);
       return;
     }
+
     if (!file.type.startsWith("image/")) {
       toast.error("Please select an image file");
       return;
     }
+
     if (file.size > MAX_SIZE) {
       toast.error("Image must be smaller than 2MB");
       return;
     }
+
     setAvatarFile(file);
+    setIsAvatarChanged(true);
+
     const reader = new FileReader();
     reader.onload = () => {
       setAvatarSrc(reader.result as string);
@@ -226,7 +258,25 @@ export function ProfilePanel() {
     reader.readAsDataURL(file);
   };
 
-  const { isLoading: usageLoading, error: usageError, chordsCount, patternsCount, songsCount, subscriptionsCount } = useUsageCounters();
+  const handleCancelAvatar = () => {
+    setAvatarFile(null);
+    setIsAvatarChanged(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (user?.avatarUrl) {
+      processAvatarFromBackend(user.avatarUrl);
+    } else {
+      setAvatarSrc("");
+    }
+  };
+
+  const {
+    isLoading: usageLoading,
+    error: usageError,
+    chordsCount,
+    patternsCount,
+    songsCount,
+    subscriptionsCount,
+  } = useUsageCounters();
 
   const freeLimits = {
     chords: 3,
@@ -263,7 +313,8 @@ export function ProfilePanel() {
           <CardHeader>
             <CardTitle>Usage</CardTitle>
             <CardDescription>
-              Free users are limited to a few items. Upgrade to Premium for unlimited access.
+              Free users are limited to a few items. Upgrade to Premium for
+              unlimited access.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-4">
@@ -275,7 +326,9 @@ export function ProfilePanel() {
                 <span className="text-lg font-semibold">
                   {formatUsage(chordsCount, freeLimits.chords)}
                 </span>
-                <Badge variant="secondary">{usageLoading ? "Loading" : "Free"}</Badge>
+                <Badge variant="secondary">
+                  {usageLoading ? "Loading" : "Free"}
+                </Badge>
               </div>
             </div>
             <div>
@@ -286,7 +339,9 @@ export function ProfilePanel() {
                 <span className="text-lg font-semibold">
                   {formatUsage(patternsCount, freeLimits.patterns)}
                 </span>
-                <Badge variant="secondary">{usageLoading ? "Loading" : "Free"}</Badge>
+                <Badge variant="secondary">
+                  {usageLoading ? "Loading" : "Free"}
+                </Badge>
               </div>
             </div>
             <div>
@@ -297,7 +352,9 @@ export function ProfilePanel() {
                 <span className="text-lg font-semibold">
                   {formatUsage(songsCount, freeLimits.songs)}
                 </span>
-                <Badge variant="secondary">{usageLoading ? "Loading" : "Free"}</Badge>
+                <Badge variant="secondary">
+                  {usageLoading ? "Loading" : "Free"}
+                </Badge>
               </div>
             </div>
             <div>
@@ -308,7 +365,9 @@ export function ProfilePanel() {
                 <span className="text-lg font-semibold">
                   {formatUsage(subscriptionsCount, freeLimits.subscriptions)}
                 </span>
-                <Badge variant="secondary">{usageLoading ? "Loading" : "Free"}</Badge>
+                <Badge variant="secondary">
+                  {usageLoading ? "Loading" : "Free"}
+                </Badge>
               </div>
             </div>
           </CardContent>
@@ -372,18 +431,10 @@ export function ProfilePanel() {
                     />
                     {avatarFile && (
                       <Button
+                        type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          setAvatarFile(null);
-                          if (fileInputRef.current)
-                            fileInputRef.current.value = "";
-                          if (user?.avatarUrl) {
-                            processAvatarFromBackend(user.avatarUrl);
-                          } else {
-                            setAvatarSrc("");
-                          }
-                        }}
+                        onClick={handleCancelAvatar}
                       >
                         Cancel
                       </Button>
@@ -529,7 +580,9 @@ export function ProfilePanel() {
                   )}
                 </div>
               </div>
-              <PasswordStrength password={""} />{" "}
+              {watchedFields.password && watchedFields.password.length > 0 && (
+                <PasswordStrength password={watchedFields.password} />
+              )}
               <p className="text-sm text-muted-foreground">
                 Leave password fields empty if you don't want to change it
               </p>
@@ -539,7 +592,7 @@ export function ProfilePanel() {
           <div className="flex justify-end">
             <Button
               type="submit"
-              disabled={isSubmitting || !isDirty}
+              disabled={isSubmitting || !hasChanges}
               size="lg"
               className="w-full md:w-auto"
             >

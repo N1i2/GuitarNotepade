@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect } from "react"
+import { useEffect } from "react"
 import { useAuth } from "@/components/providers/auth-provider"
 import ProfilePanel from "@/components/profile/profile-panel"
 import { useRouter } from "next/navigation"
