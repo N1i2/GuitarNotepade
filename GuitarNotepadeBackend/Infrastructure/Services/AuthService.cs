@@ -33,12 +33,12 @@ public class AuthService : IAuthService
 
         var claims = new[]
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()), 
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim(JwtRegisteredClaimNames.UniqueName, user.NikName),
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), 
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Role, user.Role),
-            new Claim("userId", user.Id.ToString()), 
+            new Claim("userId", user.Id.ToString()),
             new Claim("role", user.Role),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
@@ -56,18 +56,10 @@ public class AuthService : IAuthService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    //public string HashPassword(string password)
-    //{
-    //    using var sha256 = SHA256.Create();
-    //    var bytes = Encoding.UTF8.GetBytes(password);
-    //    var hash = sha256.ComputeHash(bytes);
-    //    return Convert.ToBase64String(hash);
-    //}
-
     public string HashPassword(string password)
     {
         using var sha256 = SHA256.Create();
-        var bytes = Encoding.UTF8.GetBytes(password + _jwtSecret); 
+        var bytes = Encoding.UTF8.GetBytes(password + _jwtSecret);
         var hash = sha256.ComputeHash(bytes);
         return Convert.ToBase64String(hash);
     }

@@ -698,7 +698,7 @@ const AudioInputPanel: React.FC<AudioInputPanelProps> = ({
             {activeTab === AudioInputType.RECORD && (
               <div className="space-y-4">
                 {isRecording && (
-                  <div className="space-y-3 p-4 bg-gradient-to-r from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-800/10 rounded-lg border border-teal-200 dark:border-teal-700 mb-4">
+                  <div className="space-y-3 p-4 bg-linear-to-r from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-800/10 rounded-lg border border-teal-200 dark:border-teal-700 mb-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="relative">

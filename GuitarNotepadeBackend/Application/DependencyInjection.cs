@@ -24,8 +24,7 @@ public static class DependencyInjection
         services.AddScoped<IValidator<UpdateSongCommand>, UpdateSongCommandValidator>();
         services.AddScoped<IValidator<CreateSongReviewDto>, CreateSongReviewDtoValidator>();
 
-        services.AddScoped<IValidator<SubscribeToUserCommand>, SubscribeToUserCommandValidator>();
-        services.AddScoped<IValidator<SubscribeToAlbumCommand>, SubscribeToAlbumCommandValidator>();
+        services.AddScoped<IValidator<SubscribeCommand>, SubscribeCommandValidator>();
 
         services.AddScoped<IValidator<UpgradeToPremiumCommand>, UpgradeToPremiumCommandValidator>();
 

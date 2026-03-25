@@ -107,7 +107,7 @@ public class AlbumsController : ControllerBase
     {
         try
         {
-            var query = new GetAlbumByIdWithSongsQuery(id);
+            var query = new GetAlbumByIdWithSongsQuery(id, GetCurrentUserId());
             var result = await _mediator.Send(query);
             return Ok(result);
         }

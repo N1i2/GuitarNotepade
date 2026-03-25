@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class AddNotificationEntity : Migration
+    public partial class init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -20,7 +20,7 @@ namespace Infrastructure.Data.Migrations
                     NikName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     PasswordHash = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     Role = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    AvatarUrl = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    AvatarUrl = table.Column<string>(type: "character varying(10000)", maxLength: 10000, nullable: true),
                     Bio = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
                     BlockReason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     HasPremium = table.Column<bool>(type: "boolean", nullable: false),
@@ -38,7 +38,7 @@ namespace Infrastructure.Data.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    CoverUrl = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    CoverUrl = table.Column<string>(type: "character varying(10000)", maxLength: 10000, nullable: true),
                     Description = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
                     IsPublic = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     Genre = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
@@ -94,7 +94,7 @@ namespace Infrastructure.Data.Migrations
                     ParentSongId = table.Column<Guid>(type: "uuid", nullable: true),
                     Genre = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Theme = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    CustomAudioUrl = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    CustomAudioUrl = table.Column<string>(type: "character varying(10000)", maxLength: 10000, nullable: true),
                     CustomAudioType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -150,23 +150,16 @@ namespace Infrastructure.Data.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    TargetId = table.Column<Guid>(type: "uuid", nullable: false),
-                    IsUserSub = table.Column<bool>(type: "boolean", nullable: false),
+                    TargetAlbumId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Subscriptions", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Subscriptions_Albums_TargetId",
-                        column: x => x.TargetId,
+                        name: "FK_Subscriptions_Albums_TargetAlbumId",
+                        column: x => x.TargetAlbumId,
                         principalTable: "Albums",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_Subscriptions_Users_TargetId",
-                        column: x => x.TargetId,
-                        principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
@@ -710,9 +703,9 @@ namespace Infrastructure.Data.Migrations
                 column: "CreatedAt");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Subscriptions_TargetId",
+                name: "IX_Subscriptions_TargetAlbumId",
                 table: "Subscriptions",
-                column: "TargetId");
+                column: "TargetAlbumId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Subscriptions_UserId",
@@ -720,10 +713,11 @@ namespace Infrastructure.Data.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Subscriptions_UserId_TargetId_IsUserSub",
+                name: "IX_Subscriptions_UserId_TargetAlbumId",
                 table: "Subscriptions",
-                columns: new[] { "UserId", "TargetId", "IsUserSub" },
-                unique: true);
+                columns: new[] { "UserId", "TargetAlbumId" },
+                unique: true,
+                filter: "\"TargetAlbumId\" IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_Email",

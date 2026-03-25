@@ -118,7 +118,7 @@ function EditAlbumPageContent({ albumId }: { albumId: string }) {
         } else {
           try {
             const coverBase64 = await AlbumService.getAlbumCoverBase64(
-              album.coverUrl
+              album.coverUrl,
             );
             setImagePreview(coverBase64);
           } catch (error) {
@@ -243,7 +243,7 @@ function EditAlbumPageContent({ albumId }: { albumId: string }) {
 
       const updatedAlbum = await AlbumService.updateAlbum(
         albumId,
-        updateAlbumDto
+        updateAlbumDto,
       );
 
       toast.success(`Album "${updatedAlbum.title}" updated successfully!`);
@@ -521,7 +521,7 @@ function EditAlbumPageContent({ albumId }: { albumId: string }) {
                               alt="Album cover preview"
                               className="w-full h-full object-cover"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                            <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
                           </div>
                           <div className="absolute top-2 right-2 w-12 h-12 rounded-md overflow-hidden border-2 border-white/30 shadow-lg z-10">
                             <img
@@ -532,7 +532,7 @@ function EditAlbumPageContent({ albumId }: { albumId: string }) {
                           </div>
                         </>
                       ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-400 to-purple-500">
+                        <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-linear-to-br from-blue-400 to-purple-500">
                           <div className="h-16 w-16 rounded-full bg-white/20 flex items-center justify-center mb-4 backdrop-blur-sm">
                             <span className="text-white text-2xl font-bold">
                               {currentValues.title

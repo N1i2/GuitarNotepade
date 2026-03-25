@@ -70,7 +70,7 @@ export function AlbumCover({
   if (error || !imageSrc) {
     return (
       <div
-        className={`${sizeClasses[size]} rounded-lg bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center ${className}`}
+        className={`${sizeClasses[size]} rounded-lg bg-linear-to-br from-blue-400 to-purple-500 flex items-center justify-center ${className}`}
       >
         {fallbackLetter ? (
           <span className="text-white text-2xl font-bold">

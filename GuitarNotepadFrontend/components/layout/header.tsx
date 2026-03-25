@@ -29,24 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { useNotifications } from "@/hooks/use-notifications";
-
-function NotificationBell() {
-  const { unreadCount } = useNotifications(true);
-
-  return (
-    <Button asChild variant="ghost" size="sm" className="relative">
-      <Link href="/home/messages" className="flex items-center">
-        <Bell className="h-5 w-5" />
-        {unreadCount > 0 && (
-          <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full text-[10px]">
-            {unreadCount}
-          </Badge>
-        )}
-      </Link>
-    </Button>
-  );
-}
+import { NotificationsDropdown } from "../notifications/notifications-dropdown";
 
 export function Header() {
   const { user, isGuest, isAdmin, logout, isLoading } = useAuth();
@@ -256,14 +239,6 @@ export function Header() {
                         <Star className="h-4 w-4" /> Premium
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link
-                        href="/home/messages"
-                        className="flex items-center gap-2"
-                      >
-                        <Bell className="h-4 w-4" /> Messages
-                      </Link>
-                    </DropdownMenuItem>
                   </>
                 )}
               </DropdownMenuContent>
@@ -293,7 +268,7 @@ export function Header() {
             </div>
           ) : (
             <>
-              <NotificationBell />
+              <NotificationsDropdown />
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

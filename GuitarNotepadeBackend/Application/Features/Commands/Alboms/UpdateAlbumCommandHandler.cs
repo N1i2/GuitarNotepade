@@ -1,9 +1,6 @@
 ﻿using Application.DTOs.Alboms;
 using AutoMapper;
-using Domain.Entities;
-using Domain.Interfaces;
 using Domain.Interfaces.Services;
-using Domain.ValidationRules.AlbomRules;
 using MediatR;
 using Microsoft.Extensions.Logging;
 

@@ -94,7 +94,7 @@ export default function EditPatternPage() {
   });
 
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>(
-    {}
+    {},
   );
 
   const parseFingerStyleSteps = (pattern: string): string[] => {
@@ -273,7 +273,7 @@ export default function EditPatternPage() {
 
         setLoadError(errorMessage);
         toastRef.current.error(errorMessage);
-        
+
         setTimeout(() => {
           routerRef.current.push("/home/patterns");
         }, 100);
@@ -289,7 +289,7 @@ export default function EditPatternPage() {
     return () => {
       isMounted = false;
     };
-  }, [patternId]); 
+  }, [patternId]);
 
   const updateFormField = (field: FormField, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -354,14 +354,14 @@ export default function EditPatternPage() {
       if (Object.keys(updateData).length === 0) {
         toast.info("No changes detected");
         router.push(
-          `/home/patterns/${encodeURIComponent(originalPattern?.name || "")}`
+          `/home/patterns/${encodeURIComponent(originalPattern?.name || "")}`,
         );
         return;
       }
 
       const updatedPattern = await PatternsService.updatePattern(
         patternId,
-        updateData
+        updateData,
       );
 
       toast.success(`Pattern "${updatedPattern.name}" updated successfully!`);
@@ -377,7 +377,7 @@ export default function EditPatternPage() {
         } else if (apiError.status === 403) {
           errorMessage = "You don't have permission to edit this pattern";
           router.push(
-            `/home/patterns/${encodeURIComponent(originalPattern?.name || "")}`
+            `/home/patterns/${encodeURIComponent(originalPattern?.name || "")}`,
           );
         } else if (apiError.status === 404) {
           errorMessage = "Pattern not found";
@@ -398,7 +398,7 @@ export default function EditPatternPage() {
     if (!hasChanges()) {
       if (originalPattern) {
         router.push(
-          `/home/patterns/${encodeURIComponent(originalPattern.name)}`
+          `/home/patterns/${encodeURIComponent(originalPattern.name)}`,
         );
       } else {
         router.push("/home/patterns");
@@ -408,12 +408,12 @@ export default function EditPatternPage() {
 
     if (
       confirm(
-        "You have unsaved changes. Are you sure you want to discard them?"
+        "You have unsaved changes. Are you sure you want to discard them?",
       )
     ) {
       if (originalPattern) {
         router.push(
-          `/home/patterns/${encodeURIComponent(originalPattern.name)}`
+          `/home/patterns/${encodeURIComponent(originalPattern.name)}`,
         );
       } else {
         router.push("/home/patterns");
@@ -511,7 +511,11 @@ export default function EditPatternPage() {
             <Button
               variant="outline"
               className="mt-4"
-              onClick={() => router.push(`/home/patterns/${encodeURIComponent(originalPattern.name)}`)}
+              onClick={() =>
+                router.push(
+                  `/home/patterns/${encodeURIComponent(originalPattern.name)}`,
+                )
+              }
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Pattern
@@ -544,7 +548,7 @@ export default function EditPatternPage() {
               size="sm"
               onClick={() =>
                 router.push(
-                  `/home/patterns/${encodeURIComponent(originalPattern.name)}`
+                  `/home/patterns/${encodeURIComponent(originalPattern.name)}`,
                 )
               }
               className="mb-2"
@@ -613,7 +617,7 @@ export default function EditPatternPage() {
                       </div>
                       <div className="font-medium">
                         {new Date(
-                          originalPattern.updatedAt
+                          originalPattern.updatedAt,
                         ).toLocaleDateString()}
                       </div>
                     </div>
@@ -847,7 +851,7 @@ export default function EditPatternPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="border rounded-lg p-4 bg-gradient-to-b from-background to-muted/20">
+                <div className="border rounded-lg p-4 from-background to-muted/20">
                   {formData.isFingerStyle ? (
                     <FingerStyleDiagram
                       pattern={formData.fingerStylePattern}

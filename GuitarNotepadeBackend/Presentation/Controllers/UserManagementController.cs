@@ -12,7 +12,7 @@ namespace Presentation.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Policy = "Admin")] 
+[Authorize(Policy = "Admin")]
 public class UserManagementController : ControllerBase
 {
     private readonly IMediator _mediator;

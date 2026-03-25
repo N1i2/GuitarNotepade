@@ -10,4 +10,3 @@ public interface INotificationRepository : IBaseRepository<Notification>
         int skip = 0,
         CancellationToken cancellationToken = default);
 }
-

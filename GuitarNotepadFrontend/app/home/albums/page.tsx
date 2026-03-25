@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +40,8 @@ import {
   Hash,
   AtSign,
   UserCircle,
+  Bell,
+  BellOff,
 } from "lucide-react";
 import { Pagination } from "@/components/user-management/pagination";
 import { genres, themes } from "@/lib/validations/album";
@@ -48,7 +50,7 @@ import { SubscriptionsService } from "@/lib/api/subscriptions-service";
 
 export default function AlbumsPage() {
   const router = useRouter();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, isGuest } = useAuth();
   const toast = useToast();
 
   const [allAlbums, setAllAlbums] = useState<AlbumDto[]>([]);
@@ -203,7 +205,7 @@ export default function AlbumsPage() {
     user,
   ]);
 
-  const loadAllAlbums = async () => {
+  const loadAllAlbums = useCallback(async () => {
     setIsLoading(true);
     try {
       let allAlbumsData: AlbumDto[] = [];
@@ -212,10 +214,12 @@ export default function AlbumsPage() {
       const loadPageSize = 100;
 
       const userId = user?.id ? `${user.id}` : "";
+      const isGuestUser = !user || user.role === "Guest";
 
       while (hasMore) {
         const data: AlbumSearchResultDto = await AlbumService.searchAlbums({
           userId: userId,
+          isPublic: isGuestUser ? true : undefined,
           page: currentPageNum,
           pageSize: loadPageSize,
           sortBy: "createdAt",
@@ -237,65 +241,56 @@ export default function AlbumsPage() {
 
       setAllAlbums(allAlbumsData);
     } catch (error: any) {
-      if (error.status === 400) {
-        toast.error("Invalid request. Please try again.");
-      } else if (error.status === 401 || error.status === 403) {
-        try {
-          const publicData: AlbumSearchResultDto =
-            await AlbumService.searchAlbums({
-              userId: user?.id ? `${user.id}` : "",
-              isPublic: true,
-              page: 1,
-              pageSize: 50,
-              sortBy: "createdAt",
-              sortOrder: "desc",
-            });
+      console.error("Failed to load albums:", error);
 
-          setAllAlbums(publicData.albums || []);
-          setTotalAlbumsCount(publicData.totalCount);
-        } catch (publicError: any) {
-          toast.error("Failed to load public albums");
-        }
+      if (error.status === 401) {
+        setAllAlbums([]);
+        setTotalAlbumsCount(0);
       } else {
         toast.error("Failed to load albums. Please try again.");
       }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user, toast]);
 
-  const loadSubscriptions = async () => {
-    if (!user) return;
+  const loadSubscriptions = useCallback(async () => {
+    if (!user || isGuest) return;
 
     try {
       const subs = await SubscriptionsService.getMySubscriptions();
-      const albumSubs = new Set(
-        subs.filter((s) => !s.isUserSub).map((s) => s.targetId),
-      );
+      const albumSubs = new Set(subs.map((s) => s.targetId));
       setSubscribedAlbumIds(albumSubs);
-    } catch (error) {}
-  };
+    } catch (error) {
+      console.error("Failed to load subscriptions:", error);
+    }
+  }, [user, isGuest]);
 
   const handleToggleAlbumSubscription = async (
     albumId: string,
     e: React.MouseEvent,
   ) => {
     e.stopPropagation();
-    if (!user) return;
+    if (!user || isGuest) {
+      toast.warning("Please log in to subscribe to albums");
+      return;
+    }
 
     setSubscriptionLoadingId(albumId);
     try {
       const isSubscribed = subscribedAlbumIds.has(albumId);
       if (isSubscribed) {
-        await SubscriptionsService.unsubscribeFromAlbum(albumId);
+        await SubscriptionsService.unsubscribe(albumId);
         setSubscribedAlbumIds((prev) => {
           const next = new Set(prev);
           next.delete(albumId);
           return next;
         });
+        toast.success("Unsubscribed from album");
       } else {
-        await SubscriptionsService.subscribeToAlbum(albumId);
+        await SubscriptionsService.subscribe(albumId);
         setSubscribedAlbumIds((prev) => new Set(prev).add(albumId));
+        toast.success("Subscribed to album");
       }
     } catch (error: any) {
       toast.error(error.message || "Subscription action failed");
@@ -307,9 +302,11 @@ export default function AlbumsPage() {
   useEffect(() => {
     if (!authLoading) {
       loadAllAlbums();
-      loadSubscriptions();
+      if (user && !isGuest) {
+        loadSubscriptions();
+      }
     }
-  }, [authLoading]);
+  }, [authLoading, user, isGuest, loadAllAlbums, loadSubscriptions]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -503,12 +500,12 @@ export default function AlbumsPage() {
                   onCheckedChange={(checked) =>
                     setShowOnlyMyAlbums(checked as boolean)
                   }
-                  disabled={!user}
+                  disabled={!user || isGuest}
                 />
                 <Label
                   htmlFor="showOnlyMyAlbums"
                   className={`text-sm font-medium cursor-pointer ${
-                    !user ? "text-muted-foreground" : ""
+                    !user || isGuest ? "text-muted-foreground" : ""
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -531,6 +528,7 @@ export default function AlbumsPage() {
                   onClick={handleCreateNew}
                   variant="default"
                   className="w-full sm:w-auto"
+                  disabled={isGuest}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Create New Album
@@ -680,7 +678,7 @@ export default function AlbumsPage() {
               )}
             </div>
 
-            {user && showOnlyMyAlbums && (
+            {user && !isGuest && showOnlyMyAlbums && (
               <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
                 <div className="flex items-center gap-2 text-sm">
                   <User className="h-4 w-4 text-blue-600" />
@@ -691,12 +689,12 @@ export default function AlbumsPage() {
               </div>
             )}
 
-            {!user && (
+            {isGuest && (
               <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-md border border-amber-200 dark:border-amber-800">
                 <div className="flex items-center gap-2 text-sm">
                   <EyeOff className="h-4 w-4 text-amber-600" />
                   <span className="text-amber-700 dark:text-amber-300">
-                    Sign in to use "Only my albums" filter
+                    Sign in to use "Only my albums" filter and create albums
                   </span>
                 </div>
               </div>
@@ -778,12 +776,13 @@ export default function AlbumsPage() {
                   {filteredAlbums.items.map((album) => {
                     const isFavorite = album.title.toLowerCase() === "favorite";
                     const canEdit =
-                      !isFavorite && user
+                      !isFavorite && user && !isGuest
                         ? user.id === album.ownerId || user.role === "Admin"
                         : false;
-
+                    const isSubscribed = subscribedAlbumIds.has(album.id);
                     const displayOwnerName =
                       album.ownerName || album.ownerId || "Unknown";
+                    const isOwner = user?.id === album.ownerId;
 
                     return (
                       <div
@@ -879,13 +878,11 @@ export default function AlbumsPage() {
                                 )}
                               </div>
 
-                              {user && !isFavorite && (
+                              {user && !isGuest && !isFavorite && !isOwner && (
                                 <Button
                                   size="sm"
                                   variant={
-                                    subscribedAlbumIds.has(album.id)
-                                      ? "outline"
-                                      : "secondary"
+                                    isSubscribed ? "outline" : "secondary"
                                   }
                                   onClick={(e) =>
                                     handleToggleAlbumSubscription(album.id, e)
@@ -893,11 +890,19 @@ export default function AlbumsPage() {
                                   disabled={subscriptionLoadingId === album.id}
                                   className="flex items-center gap-1"
                                 >
-                                  {subscriptionLoadingId === album.id
-                                    ? "..."
-                                    : subscribedAlbumIds.has(album.id)
-                                      ? "Unsubscribe"
-                                      : "Subscribe"}
+                                  {subscriptionLoadingId === album.id ? (
+                                    "..."
+                                  ) : isSubscribed ? (
+                                    <>
+                                      <BellOff className="h-3 w-3" />
+                                      Unsubscribe
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Bell className="h-3 w-3" />
+                                      Subscribe
+                                    </>
+                                  )}
                                 </Button>
                               )}
                             </div>
@@ -1064,10 +1069,12 @@ export default function AlbumsPage() {
                   selectedGenre !== "all" ||
                   selectedTheme !== "all") && (
                   <div className="flex gap-2 justify-center mt-4 flex-wrap">
-                    <Button variant="default" onClick={handleCreateNew}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create New Album
-                    </Button>
+                    {!isGuest && (
+                      <Button variant="default" onClick={handleCreateNew}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create New Album
+                      </Button>
+                    )}
                     <Button variant="outline" onClick={clearAllFilters}>
                       Clear Filters
                     </Button>

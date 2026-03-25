@@ -3,7 +3,7 @@ import axios from "axios";
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 export const validateAudioFile = (
-  file: File
+  file: File,
 ): { isValid: boolean; error?: string } => {
   const validExtensions = [
     ".mp3",
@@ -36,7 +36,7 @@ export const validateAudioFile = (
 };
 
 export const validateAudioUrl = async (
-  url: string
+  url: string,
 ): Promise<{ isValid: boolean; error?: string }> => {
   try {
     new URL(url);
@@ -51,7 +51,7 @@ export const validateAudioUrl = async (
       ".opus",
     ];
     const hasAudioExtension = audioExtensions.some((ext) =>
-      url.toLowerCase().includes(ext)
+      url.toLowerCase().includes(ext),
     );
 
     if (!hasAudioExtension) {

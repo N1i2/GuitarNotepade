@@ -571,13 +571,7 @@ namespace Infrastructure.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<bool>("IsUserSub")
-                        .HasColumnType("boolean");
-
                     b.Property<Guid?>("TargetAlbumId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("TargetUserId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("UserId")
@@ -589,22 +583,13 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasIndex("TargetAlbumId");
 
-                    b.HasIndex("TargetUserId");
-
                     b.HasIndex("UserId");
 
-                    b.HasIndex("UserId", "TargetAlbumId", "IsUserSub")
+                    b.HasIndex("UserId", "TargetAlbumId")
                         .IsUnique()
                         .HasFilter("\"TargetAlbumId\" IS NOT NULL");
 
-                    b.HasIndex("UserId", "TargetUserId", "IsUserSub")
-                        .IsUnique()
-                        .HasFilter("\"TargetUserId\" IS NOT NULL");
-
-                    b.ToTable("Subscriptions", t =>
-                        {
-                            t.HasCheckConstraint("CK_Subscription_Target", "(\"IsUserSub\" = true AND \"TargetUserId\" IS NOT NULL AND \"TargetAlbumId\" IS NULL) OR (\"IsUserSub\" = false AND \"TargetUserId\" IS NULL AND \"TargetAlbumId\" IS NOT NULL)");
-                        });
+                    b.ToTable("Subscriptions");
                 });
 
             modelBuilder.Entity("Domain.Entities.User", b =>
@@ -913,11 +898,6 @@ namespace Infrastructure.Data.Migrations
                         .HasForeignKey("TargetAlbumId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("Domain.Entities.User", "TargetUser")
-                        .WithMany("Subscribers")
-                        .HasForeignKey("TargetUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("Domain.Entities.User", "Subscriber")
                         .WithMany("Subscriptions")
                         .HasForeignKey("UserId")
@@ -927,8 +907,6 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Subscriber");
 
                     b.Navigation("TargetAlbum");
-
-                    b.Navigation("TargetUser");
                 });
 
             modelBuilder.Entity("Domain.Entities.Album", b =>
@@ -998,8 +976,6 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Songs");
 
                     b.Navigation("StrummingPatterns");
-
-                    b.Navigation("Subscribers");
 
                     b.Navigation("Subscriptions");
                 });

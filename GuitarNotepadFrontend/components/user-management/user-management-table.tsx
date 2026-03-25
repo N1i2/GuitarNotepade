@@ -32,7 +32,6 @@ export function UserManagementTable() {
       const result = await ProfileService.getAllUsers(filters);
       setData(result);
     } catch (error) {
-
       toast.error("Failed to load users. Please try again.");
       setData(null);
     } finally {
@@ -52,34 +51,38 @@ export function UserManagementTable() {
     setFilters((prev) => ({ ...prev, page }));
   };
 
-const handleToggleBlock = async (user: User, reason?: string, blockedUntil?: Date) => {
-  if (!currentUser || user.id === currentUser.id) return;
-  
-  setIsActionLoading(user.id);
-  try {
-    if (reason && blockedUntil) {
-      await ProfileService.blockUser({
-        email: user.email,
-        reason,
-        blockedUntil: blockedUntil.toISOString()
-      });
-      toast.success(`User ${user.email} has been blocked`);
-    } else {
-      await ProfileService.unblockUser(user.email);
-      toast.success(`User ${user.email} has been unblocked`);
+  const handleToggleBlock = async (
+    user: User,
+    reason?: string,
+    blockedUntil?: Date,
+  ) => {
+    if (!currentUser || user.id === currentUser.id) return;
+
+    setIsActionLoading(user.id);
+    try {
+      if (reason && blockedUntil) {
+        await ProfileService.blockUser({
+          email: user.email,
+          reason,
+          blockedUntil: blockedUntil.toISOString(),
+        });
+        toast.success(`User ${user.email} has been blocked`);
+      } else {
+        await ProfileService.unblockUser(user.email);
+        toast.success(`User ${user.email} has been unblocked`);
+      }
+
+      await loadUsers();
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to manage block");
+      }
+    } finally {
+      setIsActionLoading(null);
     }
-    
-    await loadUsers();
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      toast.error(error.message);
-    } else {
-      toast.error("Failed to manage block");
-    }
-  } finally {
-    setIsActionLoading(null);
-  }
-};
+  };
 
   const handleToggleRole = async (user: User) => {
     if (!currentUser || user.id === currentUser.id) return;
@@ -127,7 +130,7 @@ const handleToggleBlock = async (user: User, reason?: string, blockedUntil?: Dat
             <h3 className="text-lg font-semibold">No users found</h3>
             <p className="text-muted-foreground text-center mt-2">
               {Object.values(filters).some(
-                (v) => v !== undefined && v !== "" && v !== null
+                (v) => v !== undefined && v !== "" && v !== null,
               )
                 ? "Try adjusting your filters to find users"
                 : "There are no users in the system yet"}

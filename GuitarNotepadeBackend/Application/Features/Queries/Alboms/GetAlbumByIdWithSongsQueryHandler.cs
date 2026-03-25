@@ -2,6 +2,7 @@
 using Application.DTOs.Alboms;
 using Domain.Interfaces;
 using Domain.Interfaces.Services;
+using Domain.Common;
 using AutoMapper;
 
 namespace Application.Features.Queries.Alboms;
@@ -28,6 +29,7 @@ public class GetAlbumByIdWithSongsQueryHandler :
         CancellationToken cancellationToken)
     {
         var album = await _unitOfWork.Alboms.GetByIdAsync(request.Id, cancellationToken);
+
         if (album == null)
         {
             throw new KeyNotFoundException($"Album with id {request.Id} not found");
@@ -37,6 +39,18 @@ public class GetAlbumByIdWithSongsQueryHandler :
         if (owner == null)
         {
             throw new KeyNotFoundException($"Owner of album not found");
+        }
+
+        if (!album.IsPublic)
+        {
+            var user = await _unitOfWork.Users.GetByIdAsync(request.UserId, cancellationToken);
+            var isOwner = album.OwnerId == request.UserId;
+            var isAdmin = user?.Role == Constants.Roles.Admin;
+
+            if (!isOwner && !isAdmin)
+            {
+                throw new UnauthorizedAccessException("This album is private");
+            }
         }
 
         var songs = await _unitOfWork.SongAlboms.GetSongsByAlbumIdAsync(request.Id, cancellationToken);

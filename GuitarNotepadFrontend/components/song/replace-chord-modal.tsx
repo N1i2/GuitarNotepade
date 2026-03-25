@@ -54,15 +54,15 @@ export function ReplaceChordModal({
           (chord) =>
             chord.name.toLowerCase().includes(searchLower) &&
             chord.id !== chordId &&
-            !existingChordIds.includes(chord.id)
-        )
+            !existingChordIds.includes(chord.id),
+        ),
       );
     } else {
       setFilteredChords(
         chords.filter(
           (chord) =>
-            chord.id !== chordId && !existingChordIds.includes(chord.id)
-        )
+            chord.id !== chordId && !existingChordIds.includes(chord.id),
+        ),
       );
     }
   }, [searchTerm, chords, chordId, existingChordIds]);

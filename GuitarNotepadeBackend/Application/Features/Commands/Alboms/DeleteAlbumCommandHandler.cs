@@ -1,4 +1,5 @@
-﻿using Domain.Common;
+﻿using Microsoft.EntityFrameworkCore;
+using Domain.Common;
 using Domain.Entities;
 using Domain.Interfaces;
 using Domain.Interfaces.Services;
@@ -10,13 +11,16 @@ public class DeleteAlbumCommandHandler : IRequestHandler<DeleteAlbumCommand>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IWebDavService _webDavService;
+    private readonly INotificationService _notificationService;
 
     public DeleteAlbumCommandHandler(
         IUnitOfWork unitOfWork,
-        IWebDavService webDavService)
+        IWebDavService webDavService,
+        INotificationService notificationService)
     {
         _unitOfWork = unitOfWork;
         _webDavService = webDavService;
+        _notificationService = notificationService;
     }
 
     public async Task Handle(DeleteAlbumCommand request, CancellationToken cancellationToken)
@@ -41,9 +45,14 @@ public class DeleteAlbumCommandHandler : IRequestHandler<DeleteAlbumCommand>
                 throw new InvalidOperationException("Cannot delete the Favorite album");
             }
 
-            if (!string.IsNullOrEmpty(album.CoverUrl))
+            var subscriptions = await _unitOfWork.Subscriptions
+                .GetQueryable()
+                .Where(s => s.TargetAlbumId == album.Id)
+                .ToListAsync(cancellationToken);
+
+            foreach (var subscription in subscriptions)
             {
-                await _webDavService.DeleteAlbumCoverAsync(album.CoverUrl);
+                await _unitOfWork.Subscriptions.DeleteAsync(subscription.Id, cancellationToken);
             }
 
             var songAlbums = await _unitOfWork.SongAlboms.GetByAlbumIdAsync(album.Id, cancellationToken);
@@ -52,8 +61,17 @@ public class DeleteAlbumCommandHandler : IRequestHandler<DeleteAlbumCommand>
                 await _unitOfWork.SongAlboms.DeleteAsync(songAlbum.Id, cancellationToken);
             }
 
-            await _unitOfWork.Alboms.DeleteAsync(album.Id, cancellationToken);
+            if (!string.IsNullOrEmpty(album.CoverUrl))
+            {
+                await _webDavService.DeleteAlbumCoverAsync(album.CoverUrl);
+            }
 
+            await _notificationService.NotifyAlbumChangedAsync(
+                albumId: album.Id,
+                type: NotificationType.AlbumDeleted,
+                cancellationToken: cancellationToken);
+
+            await _unitOfWork.Alboms.DeleteAsync(album.Id, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }, cancellationToken);
     }

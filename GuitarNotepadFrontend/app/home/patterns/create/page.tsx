@@ -40,7 +40,7 @@ interface ExtendedPatternFormData {
 export default function CreatePatternPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const returnTo = searchParams.get('returnTo');
+  const returnTo = searchParams.get("returnTo");
   const toast = useToast();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -155,7 +155,7 @@ export default function CreatePatternPage() {
 
   const updateFormField = <K extends keyof ExtendedPatternFormData>(
     field: K,
-    value: ExtendedPatternFormData[K]
+    value: ExtendedPatternFormData[K],
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -184,10 +184,10 @@ export default function CreatePatternPage() {
   };
 
   const handleBack = () => {
-    if (returnTo === 'song-create') {
-      router.push('/home/songs/create');
+    if (returnTo === "song-create") {
+      router.push("/home/songs/create");
     } else {
-      router.push('/home/patterns');
+      router.push("/home/patterns");
     }
   };
 
@@ -207,9 +207,9 @@ export default function CreatePatternPage() {
       });
 
       toast.success(`Pattern "${createdPattern.name}" created successfully!`);
-      
-      if (returnTo === 'song-create') {
-        router.push('/home/songs/create');
+
+      if (returnTo === "song-create") {
+        router.push("/home/songs/create");
       } else {
         router.push(`/home/patterns/${createdPattern.name}`);
       }

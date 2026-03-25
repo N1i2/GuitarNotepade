@@ -57,8 +57,8 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
       const mimeType = MediaRecorder.isTypeSupported("audio/mp4")
         ? "audio/mp4"
         : MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : "audio/webm";
+          ? "audio/webm;codecs=opus"
+          : "audio/webm";
 
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: mimeType,

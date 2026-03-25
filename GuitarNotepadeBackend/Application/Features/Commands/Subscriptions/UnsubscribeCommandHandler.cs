@@ -22,11 +22,12 @@ public class UnsubscribeCommandHandler : IRequestHandler<UnsubscribeCommand, Uni
         var subscription = await _unitOfWork.Subscriptions.GetSubscriptionAsync(
             request.UserId,
             request.SubId,
-            request.IsUserSub,
             cancellationToken);
 
         if (subscription == null)
+        {
             throw new KeyNotFoundException("Subscription not found");
+        }
 
         await _unitOfWork.Subscriptions.DeleteAsync(subscription.Id, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -34,7 +35,6 @@ public class UnsubscribeCommandHandler : IRequestHandler<UnsubscribeCommand, Uni
         _logger.LogInformation(
             "User {UserId} unsubscribed from {Type} {SubId}",
             request.UserId,
-            request.IsUserSub ? "user" : "album",
             request.SubId);
 
         return Unit.Value;

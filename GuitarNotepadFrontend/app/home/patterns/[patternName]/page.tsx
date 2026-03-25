@@ -40,7 +40,7 @@ export default function PatternDetailPage() {
   const toast = useToast();
 
   const patternName = decodeURIComponent(params.patternName as string);
-  const returnTo = searchParams.get('returnTo');
+  const returnTo = searchParams.get("returnTo");
 
   const [pattern, setPattern] = useState<Pattern | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,24 +74,24 @@ export default function PatternDetailPage() {
   }, [patternName]);
 
   const handleBack = () => {
-    if (returnTo === 'song-create') {
-      router.push('/home/songs/create');
+    if (returnTo === "song-create") {
+      router.push("/home/songs/create");
     } else {
-      router.push('/home/patterns');
+      router.push("/home/patterns");
     }
   };
 
   const handleEdit = () => {
     if (!pattern) return;
-    router.push(`/home/patterns/edit/${pattern.id}?returnTo=${returnTo || ''}`);
+    router.push(`/home/patterns/edit/${pattern.id}?returnTo=${returnTo || ""}`);
   };
 
   const handleDeleteSuccess = () => {
     toast.success(`Pattern "${pattern?.name}" deleted successfully`);
-    if (returnTo === 'song-create') {
-      router.push('/home/songs/create');
+    if (returnTo === "song-create") {
+      router.push("/home/songs/create");
     } else {
-      router.push('/home/patterns');
+      router.push("/home/patterns");
     }
   };
 
@@ -120,11 +120,7 @@ export default function PatternDetailPage() {
             <p className="text-muted-foreground mt-2">
               Pattern "{patternName}" was not found or has been removed.
             </p>
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={handleBack}
-            >
+            <Button variant="outline" className="mt-4" onClick={handleBack}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Go Back
             </Button>

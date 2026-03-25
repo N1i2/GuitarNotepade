@@ -124,7 +124,7 @@ public class MappingProfile : Profile
 
         CreateMap<Subscription, SubscriptionDto>()
             .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.Subscriber != null ? src.Subscriber.NikName : string.Empty))
-            .ForMember(dest => dest.SubName, opt => opt.Ignore())
+            .ForMember(dest => dest.TargetName, opt => opt.Ignore())
             .ForMember(dest => dest.TargetId, opt => opt.Ignore());
 
         CreateMap<Notification, NotificationDto>()

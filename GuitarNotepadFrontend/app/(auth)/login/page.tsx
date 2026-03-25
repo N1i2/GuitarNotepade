@@ -1,10 +1,9 @@
-import Link from "next/link"
-import { LoginForm } from "@/components/forms/login-form"
+import Link from "next/link";
+import { LoginForm } from "@/components/forms/login-form";
 
 export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center from-background to-muted p-4">
-      
       <div className="w-full max-w-md space-y-8">
         <LoginForm />
         <div className="text-center">
@@ -17,5 +16,5 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

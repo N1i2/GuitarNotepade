@@ -6,7 +6,6 @@ public class SubscriptionDto
     public Guid UserId { get; set; }
     public string UserName { get; set; } = string.Empty;
     public Guid TargetId { get; set; }
-    public string SubName { get; set; } = string.Empty;
-    public bool IsUserSub { get; set; }
+    public string TargetName { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
 }

@@ -49,7 +49,7 @@ export function FingerStyleDiagram({
         const symbols = content
           .split("")
           .filter((char) =>
-            ["1", "2", "3", "4", "5", "6", "X", "."].includes(char)
+            ["1", "2", "3", "4", "5", "6", "X", "."].includes(char),
           ) as FingerStyleSymbol[];
 
         steps.push({
@@ -86,7 +86,7 @@ export function FingerStyleDiagram({
 
     if (diagramRef.current && stepsContainerRef.current) {
       const stepElement = diagramRef.current.querySelector(
-        `[data-step="${stepIndex}"]`
+        `[data-step="${stepIndex}"]`,
       );
       if (stepElement) {
         stepElement.scrollIntoView({
@@ -97,7 +97,7 @@ export function FingerStyleDiagram({
 
         const stepsContainer = stepsContainerRef.current;
         const stepButton = stepsContainer.querySelector(
-          `[data-step-button="${stepIndex}"]`
+          `[data-step-button="${stepIndex}"]`,
         );
         if (stepButton) {
           stepButton.scrollIntoView({
@@ -113,7 +113,7 @@ export function FingerStyleDiagram({
           stepElement.classList.remove(
             "ring-2",
             "ring-primary",
-            "ring-offset-2"
+            "ring-offset-2",
           );
         }, 2000);
       }
@@ -453,7 +453,7 @@ export function FingerStyleDiagram({
                       .replace("bg-", "bg-")
                       .replace(
                         "dark:bg-",
-                        "dark:bg-"
+                        "dark:bg-",
                       )} bg-opacity-10 border-current border-opacity-20`}
                   >
                     <div

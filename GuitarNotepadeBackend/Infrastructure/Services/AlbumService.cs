@@ -86,12 +86,6 @@ public class AlbumService : IAlbumService
             album.Title,
             userId);
 
-        await _notificationService.NotifyUserContentChangedAsync(
-            authorId: userId,
-            message: $"User updated their content: created album \"{album.Title}\".",
-            albumId: album.Id,
-            cancellationToken: cancellationToken);
-
         return album;
     }
 
@@ -126,6 +120,19 @@ public class AlbumService : IAlbumService
                 throw new InvalidOperationException($"You already have an album with title '{title}'");
         }
 
+        var wasPublic = album.IsPublic;
+        var updatedFields = new List<string>();
+
+        if (title != null && title != album.Title)
+        {
+            updatedFields.Add($"title changed to \"{title}\"");
+        }
+
+        if (isPublic.HasValue && isPublic.Value != album.IsPublic)
+        {
+            updatedFields.Add($"visibility changed to {(isPublic.Value ? "public" : "private")}");
+        }
+
         string? coverFileName = album.CoverUrl;
 
         if (!string.IsNullOrEmpty(coverBase64))
@@ -136,6 +143,22 @@ public class AlbumService : IAlbumService
             }
 
             coverFileName = await _webDavService.UploadAlbumCoverAsync(coverBase64, albumId);
+            updatedFields.Add("cover image updated");
+        }
+
+        if (description != null && description != album.Description)
+        {
+            updatedFields.Add("description updated");
+        }
+
+        if (genre != null && genre != album.Genre)
+        {
+            updatedFields.Add($"genre changed to {genre}");
+        }
+
+        if (theme != null && theme != album.Theme)
+        {
+            updatedFields.Add($"theme changed to {theme}");
         }
 
         album.Update(title, genre, theme, coverFileName, description, isPublic);
@@ -143,18 +166,32 @@ public class AlbumService : IAlbumService
 
         _logger.LogInformation("Album updated: {AlbumId} by user {UserId}", albumId, userId);
 
-        await _notificationService.NotifyAlbumChangedAsync(
-            albumId: album.Id,
-            message: $"Album \"{album.Title}\" was updated.",
-            cancellationToken: cancellationToken);
+        if (updatedFields.Any())
+        {
+            var updatedFieldsMessage = string.Join(", ", updatedFields);
+
+            await _notificationService.NotifyAlbumChangedAsync(
+                albumId: album.Id,
+                updatedFields: updatedFieldsMessage,
+                cancellationToken: cancellationToken);
+        }
+
+        if (isPublic.HasValue && isPublic.Value != wasPublic)
+        {
+            await _notificationService.NotifyAlbumChangedAsync(
+                albumId: album.Id,
+                type: NotificationType.AlbumVisibilityChanged,
+                wasPublic: wasPublic,
+                cancellationToken: cancellationToken);
+        }
 
         return album;
     }
 
     public async Task DeleteAlbumAsync(
-        Guid albumId,
-        Guid userId,
-        CancellationToken cancellationToken = default)
+    Guid albumId,
+    Guid userId,
+    CancellationToken cancellationToken = default)
     {
         var album = await _unitOfWork.Alboms.GetByIdAsync(albumId, cancellationToken);
         if (album == null)
@@ -169,6 +206,11 @@ public class AlbumService : IAlbumService
 
         if (album.Title == "Favorite")
             throw new InvalidOperationException("Cannot delete the Favorite album");
+
+        await _notificationService.NotifyAlbumChangedAsync(
+            albumId: album.Id,
+            type: NotificationType.AlbumDeleted,
+            cancellationToken: cancellationToken);
 
         if (!string.IsNullOrEmpty(album.CoverUrl))
         {
@@ -232,10 +274,10 @@ public class AlbumService : IAlbumService
     }
 
     public async Task AddSongToAlbumAsync(
-        Guid albumId,
-        Guid songId,
-        Guid userId,
-        CancellationToken cancellationToken = default)
+    Guid albumId,
+    Guid songId,
+    Guid userId,
+    CancellationToken cancellationToken = default)
     {
         var album = await _unitOfWork.Alboms.GetByIdAsync(albumId, cancellationToken);
         if (album == null)
@@ -269,23 +311,16 @@ public class AlbumService : IAlbumService
 
         await _notificationService.NotifyAlbumChangedAsync(
             albumId: album.Id,
-            message: $"Album \"{album.Title}\" was updated: song \"{song.Title}\" was added.",
+            type: NotificationType.SongAdded,
             songId: song.Id,
-            cancellationToken: cancellationToken);
-
-        await _notificationService.NotifyUserContentChangedAsync(
-            authorId: album.OwnerId,
-            message: $"User updated their content: song \"{song.Title}\" was added to album \"{album.Title}\".",
-            songId: song.Id,
-            albumId: album.Id,
             cancellationToken: cancellationToken);
     }
 
     public async Task RemoveSongFromAlbumAsync(
-        Guid albumId,
-        Guid songId,
-        Guid userId,
-        CancellationToken cancellationToken = default)
+    Guid albumId,
+    Guid songId,
+    Guid userId,
+    CancellationToken cancellationToken = default)
     {
         var album = await _unitOfWork.Alboms.GetByIdAsync(albumId, cancellationToken);
         if (album == null)
@@ -312,15 +347,8 @@ public class AlbumService : IAlbumService
 
         await _notificationService.NotifyAlbumChangedAsync(
             albumId: album.Id,
-            message: $"Album \"{album.Title}\" was updated: song \"{song.Title}\" was removed.",
+            type: NotificationType.SongRemoved,
             songId: song.Id,
-            cancellationToken: cancellationToken);
-
-        await _notificationService.NotifyUserContentChangedAsync(
-            authorId: album.OwnerId,
-            message: $"User updated their content: song \"{song.Title}\" was removed from album \"{album.Title}\".",
-            songId: song.Id,
-            albumId: album.Id,
             cancellationToken: cancellationToken);
     }
 

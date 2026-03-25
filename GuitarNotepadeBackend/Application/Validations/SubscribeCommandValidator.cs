@@ -3,9 +3,9 @@ using FluentValidation;
 
 namespace Application.Validations;
 
-public class SubscribeToAlbumCommandValidator : AbstractValidator<SubscribeToAlbumCommand>
+public class SubscribeCommandValidator : AbstractValidator<SubscribeCommand>
 {
-    public SubscribeToAlbumCommandValidator()
+    public SubscribeCommandValidator()
     {
         RuleFor(x => x.UserId).NotEmpty();
         RuleFor(x => x.AlbumId).NotEmpty();

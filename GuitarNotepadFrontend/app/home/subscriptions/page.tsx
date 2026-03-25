@@ -8,11 +8,17 @@ import {
   SubscriptionsService,
   SubscriptionDto,
 } from "@/lib/api/subscriptions-service";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Users, X } from "lucide-react";
+import { Users, X, Disc } from "lucide-react";
 
 export default function SubscriptionsPage() {
   const router = useRouter();
@@ -23,14 +29,7 @@ export default function SubscriptionsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  const userSubscriptions = useMemo(
-    () => subscriptions.filter((s) => s.isUserSub),
-    [subscriptions],
-  );
-  const albumSubscriptions = useMemo(
-    () => subscriptions.filter((s) => !s.isUserSub),
-    [subscriptions],
-  );
+  const albumSubscriptions = useMemo(() => subscriptions, [subscriptions]);
 
   const loadSubscriptions = useCallback(async () => {
     setIsLoading(true);
@@ -60,11 +59,7 @@ export default function SubscriptionsPage() {
   const handleUnsubscribe = async (subscription: SubscriptionDto) => {
     setActionLoadingId(subscription.id);
     try {
-      if (subscription.isUserSub) {
-        await SubscriptionsService.unsubscribeFromUser(subscription.targetId);
-      } else {
-        await SubscriptionsService.unsubscribeFromAlbum(subscription.targetId);
-      }
+      await SubscriptionsService.unsubscribe(subscription.targetId);
       toast.success("Unsubscribed successfully");
       await loadSubscriptions();
     } catch (error: any) {
@@ -74,14 +69,20 @@ export default function SubscriptionsPage() {
     }
   };
 
+  const handleAlbumClick = (albumId: string) => {
+    router.push(`/home/albums/${albumId}`);
+  };
+
   return (
     <main className="min-h-screen container mx-auto px-4 sm:px-6 lg:px-20 py-8">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Subscriptions</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Album Subscriptions
+            </h1>
             <p className="text-muted-foreground mt-2">
-              Here you can manage your subscriptions to users and albums.
+              Here you can manage your subscriptions to albums.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -93,6 +94,9 @@ export default function SubscriptionsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Subscription list</CardTitle>
+            <CardDescription>
+              You are subscribed to the following albums
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {isLoading ? (
@@ -111,94 +115,70 @@ export default function SubscriptionsPage() {
                 ))}
               </div>
             ) : (
-              <div className="space-y-6">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold">Users</h2>
-                    <Badge variant="outline">{userSubscriptions.length}</Badge>
-                  </div>
-                  {userSubscriptions.length === 0 ? (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      You are not subscribed to any users yet.
-                    </p>
-                  ) : (
-                    <div className="space-y-3 mt-4">
-                      {userSubscriptions.map((sub) => (
-                        <div
-                          key={sub.id}
-                          className="flex items-center justify-between gap-4 rounded-lg border p-4"
-                        >
-                          <div className="flex flex-col">
-                            <span className="font-medium">{sub.subName}</span>
-                            <span className="text-xs text-muted-foreground">
-                              Subscribed on{" "}
-                              {new Date(sub.createdAt).toLocaleDateString()}
-                            </span>
-                          </div>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => handleUnsubscribe(sub)}
-                            disabled={!!actionLoadingId}
-                          >
-                            {actionLoadingId === sub.id ? (
-                              "Unsubscribing..."
-                            ) : (
-                              <span className="flex items-center gap-2">
-                                <X className="h-3 w-3" />
-                                Unsubscribe
-                              </span>
-                            )}
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold">Albums</h2>
+                  <Badge variant="outline">{albumSubscriptions.length}</Badge>
                 </div>
-
-                <div>
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold">Albums</h2>
-                    <Badge variant="outline">{albumSubscriptions.length}</Badge>
-                  </div>
-                  {albumSubscriptions.length === 0 ? (
-                    <p className="text-sm text-muted-foreground mt-2">
+                {albumSubscriptions.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Disc className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold">
+                      No subscriptions yet
+                    </h3>
+                    <p className="text-muted-foreground mt-2">
                       You are not subscribed to any albums yet.
                     </p>
-                  ) : (
-                    <div className="space-y-3 mt-4">
-                      {albumSubscriptions.map((sub) => (
-                        <div
-                          key={sub.id}
-                          className="flex items-center justify-between gap-4 rounded-lg border p-4"
-                        >
-                          <div className="flex flex-col">
-                            <span className="font-medium">{sub.subName}</span>
+                    <Button
+                      variant="outline"
+                      className="mt-4"
+                      onClick={() => router.push("/home/albums")}
+                    >
+                      Browse Albums
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {albumSubscriptions.map((sub) => (
+                      <div
+                        key={sub.id}
+                        className="flex items-center justify-between gap-4 rounded-lg border p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => handleAlbumClick(sub.targetId)}
+                      >
+                        <div className="flex flex-col flex-1">
+                          <span className="font-medium">{sub.targetName}</span>
+                          <div className="flex items-center gap-2 mt-1">
                             <span className="text-xs text-muted-foreground">
                               Subscribed on{" "}
                               {new Date(sub.createdAt).toLocaleDateString()}
                             </span>
+                            <Badge variant="outline" className="text-xs">
+                              Album
+                            </Badge>
                           </div>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => handleUnsubscribe(sub)}
-                            disabled={!!actionLoadingId}
-                          >
-                            {actionLoadingId === sub.id ? (
-                              "Unsubscribing..."
-                            ) : (
-                              <span className="flex items-center gap-2">
-                                <X className="h-3 w-3" />
-                                Unsubscribe
-                              </span>
-                            )}
-                          </Button>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUnsubscribe(sub);
+                          }}
+                          disabled={!!actionLoadingId}
+                        >
+                          {actionLoadingId === sub.id ? (
+                            "Unsubscribing..."
+                          ) : (
+                            <span className="flex items-center gap-2">
+                              <X className="h-3 w-3" />
+                              Unsubscribe
+                            </span>
+                          )}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

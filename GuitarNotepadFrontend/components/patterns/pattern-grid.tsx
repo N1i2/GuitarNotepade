@@ -14,12 +14,12 @@ interface PatternsGridProps {
   currentUserId?: string;
 }
 
-export function PatternsGrid({ 
-  patterns, 
-  onPatternClick, 
+export function PatternsGrid({
+  patterns,
+  onPatternClick,
   onEditClick,
   showOnlyMyPatterns = false,
-  currentUserId
+  currentUserId,
 }: PatternsGridProps) {
   const getPatternColor = (name: string) => {
     const colors = [
@@ -31,12 +31,14 @@ export function PatternsGrid({
       "bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/20 border-emerald-200 dark:border-emerald-800",
     ];
 
-    const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const hash = name
+      .split("")
+      .reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return colors[hash % colors.length];
   };
 
   const handleCardClick = (name: string, e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('.edit-button')) {
+    if ((e.target as HTMLElement).closest(".edit-button")) {
       return;
     }
     onPatternClick(name);
@@ -64,7 +66,7 @@ export function PatternsGrid({
         const canEdit = canEditPattern(pattern);
         const patternTypeIcon = getPatternTypeIcon(pattern.isFingerStyle);
         const patternTypeText = getPatternTypeText(pattern.isFingerStyle);
-        
+
         return (
           <Card
             key={pattern.id}
@@ -79,12 +81,12 @@ export function PatternsGrid({
                 </Badge>
               </div>
             )}
-            
+
             <CardContent className="p-6 flex flex-col items-center justify-center h-32">
               <div className="text-5xl font-bold text-center mb-3">
                 {pattern.name}
               </div>
-              
+
               <div className="text-sm mt-1">
                 <div className="flex items-center justify-center gap-1">
                   <span className="text-muted-foreground">Type:</span>
@@ -94,7 +96,7 @@ export function PatternsGrid({
                   </span>
                 </div>
               </div>
-              
+
               {canEdit && onEditClick && (
                 <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button

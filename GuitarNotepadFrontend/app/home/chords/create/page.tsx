@@ -32,7 +32,7 @@ const createChordSchema = z.object({
     .min(1, "Fingering is required")
     .regex(
       /^[0-9XTx\-]{6,17}$/,
-      "Fingering must be 6 values separated by hyphens"
+      "Fingering must be 6 values separated by hyphens",
     )
     .refine(
       (value) => {
@@ -40,7 +40,7 @@ const createChordSchema = z.object({
         if (parts.length !== 6) return false;
         return parts.every((part) => /^[0-9]{1,2}$|^X$/i.test(part));
       },
-      { message: "Each value must be a number (0-12) or X" }
+      { message: "Each value must be a number (0-12) or X" },
     )
     .refine(
       (value) => {
@@ -51,7 +51,7 @@ const createChordSchema = z.object({
           return num <= 12;
         });
       },
-      { message: "Fret number cannot exceed 12" }
+      { message: "Fret number cannot exceed 12" },
     ),
   description: z
     .string()
@@ -65,7 +65,7 @@ type CreateChordFormValues = z.infer<typeof createChordSchema>;
 export default function CreateChordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const returnTo = searchParams.get('returnTo');
+  const returnTo = searchParams.get("returnTo");
   const toast = useToast();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -97,10 +97,10 @@ export default function CreateChordPage() {
   };
 
   const handleBack = () => {
-    if (returnTo === 'song-create') {
-      router.push('/home/songs/create');
+    if (returnTo === "song-create") {
+      router.push("/home/songs/create");
     } else {
-      router.push('/home/chords');
+      router.push("/home/chords");
     }
   };
 
@@ -120,9 +120,9 @@ export default function CreateChordPage() {
       });
 
       toast.success(`Chord ${createdChord.name} created successfully!`);
-      
-      if (returnTo === 'song-create') {
-        router.push('/home/songs/create');
+
+      if (returnTo === "song-create") {
+        router.push("/home/songs/create");
       } else {
         router.push(`/home/chords/${createdChord.name}`);
       }
@@ -133,10 +133,9 @@ export default function CreateChordPage() {
       if (isApiError) {
         const apiError = error as { status: number; message?: string };
 
-        if(apiError.message === null){
+        if (apiError.message === null) {
           toast.error("Chord with this fingering already exists");
-        }
-        else{
+        } else {
           toast.error(apiError.message || "Failed to create chord");
         }
       } else if (error instanceof Error) {

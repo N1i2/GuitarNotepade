@@ -5,8 +5,7 @@ export interface SubscriptionDto {
   userId: string;
   userName: string;
   targetId: string;
-  subName: string;
-  isUserSub: boolean;
+  targetName: string;
   createdAt: string;
 }
 
@@ -17,27 +16,19 @@ export class SubscriptionsService {
     return await apiClient.get<SubscriptionDto[]>(this.BASE_PATH);
   }
 
-  static async subscribeToUser(userId: string): Promise<void> {
-    await apiClient.post<void, void>(`${this.BASE_PATH}/users/${userId}`);
+  static async subscribe(albumId: string): Promise<void> {
+    await apiClient.post<void, void>(`${this.BASE_PATH}/${albumId}`);
   }
 
-  static async unsubscribeFromUser(userId: string): Promise<void> {
-    await apiClient.delete<void>(`${this.BASE_PATH}/users/${userId}`);
-  }
-
-  static async subscribeToAlbum(albumId: string): Promise<void> {
-    await apiClient.post<void, void>(`${this.BASE_PATH}/albums/${albumId}`);
-  }
-
-  static async unsubscribeFromAlbum(albumId: string): Promise<void> {
-    await apiClient.delete<void>(`${this.BASE_PATH}/albums/${albumId}`);
-  }
-
-  static async checkUserSubscription(userId: string): Promise<boolean> {
-    return await apiClient.get<boolean>(`${this.BASE_PATH}/check/user/${userId}`);
+  static async unsubscribe(albumId: string): Promise<void> {
+    await apiClient.delete<void>(`${this.BASE_PATH}/${albumId}`);
   }
 
   static async checkAlbumSubscription(albumId: string): Promise<boolean> {
-    return await apiClient.get<boolean>(`${this.BASE_PATH}/check/album/${albumId}`);
+    return await apiClient.get<boolean>(`${this.BASE_PATH}/check/${albumId}`);
+  }
+
+  static async countOfCreateSubscription(): Promise<number> {
+    return await apiClient.get<number>(`${this.BASE_PATH}/count-of-create`);
   }
 }

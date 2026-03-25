@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
-import { Toaster } from "@/components/ui/sonner"
+import { Toaster } from "@/components/ui/sonner";
 
 export function ToastProvider() {
   return (
-    <Toaster 
+    <Toaster
       position="bottom-right"
       expand={true}
       richColors
       closeButton
       duration={5000}
     />
-  )
+  );
 }

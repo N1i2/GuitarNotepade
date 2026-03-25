@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260316163156_AddNotificationEntity")]
-    partial class AddNotificationEntity
+    [Migration("20260325125816_init")]
+    partial class init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -32,8 +32,8 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("CoverUrl")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
+                        .HasMaxLength(10000)
+                        .HasColumnType("character varying(10000)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -200,8 +200,8 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("character varying(50)");
 
                     b.Property<string>("CustomAudioUrl")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
+                        .HasMaxLength(10000)
+                        .HasColumnType("character varying(10000)");
 
                     b.Property<string>("Description")
                         .HasMaxLength(2000)
@@ -574,10 +574,7 @@ namespace Infrastructure.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<bool>("IsUserSub")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid>("TargetId")
+                    b.Property<Guid?>("TargetAlbumId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("UserId")
@@ -587,12 +584,13 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasIndex("CreatedAt");
 
-                    b.HasIndex("TargetId");
+                    b.HasIndex("TargetAlbumId");
 
                     b.HasIndex("UserId");
 
-                    b.HasIndex("UserId", "TargetId", "IsUserSub")
-                        .IsUnique();
+                    b.HasIndex("UserId", "TargetAlbumId")
+                        .IsUnique()
+                        .HasFilter("\"TargetAlbumId\" IS NOT NULL");
 
                     b.ToTable("Subscriptions");
                 });
@@ -604,8 +602,8 @@ namespace Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("AvatarUrl")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
+                        .HasMaxLength(10000)
+                        .HasColumnType("character varying(10000)");
 
                     b.Property<string>("Bio")
                         .IsRequired()
@@ -899,13 +897,8 @@ namespace Infrastructure.Data.Migrations
             modelBuilder.Entity("Domain.Entities.Subscription", b =>
                 {
                     b.HasOne("Domain.Entities.Album", "TargetAlbum")
-                        .WithMany("Subscriptions")
-                        .HasForeignKey("TargetId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Domain.Entities.User", "TargetUser")
-                        .WithMany()
-                        .HasForeignKey("TargetId")
+                        .WithMany("Subscribers")
+                        .HasForeignKey("TargetAlbumId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Domain.Entities.User", "Subscriber")
@@ -917,8 +910,6 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Subscriber");
 
                     b.Navigation("TargetAlbum");
-
-                    b.Navigation("TargetUser");
                 });
 
             modelBuilder.Entity("Domain.Entities.Album", b =>
@@ -927,7 +918,7 @@ namespace Infrastructure.Data.Migrations
 
                     b.Navigation("SongAlbums");
 
-                    b.Navigation("Subscriptions");
+                    b.Navigation("Subscribers");
                 });
 
             modelBuilder.Entity("Domain.Entities.Chord", b =>

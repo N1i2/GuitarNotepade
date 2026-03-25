@@ -5,7 +5,13 @@ import { useRouter, useParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { ChordsService } from "@/lib/api/chords-service";
 import { Chord, UpdateChordDto } from "@/types/chords";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,35 +36,41 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
 const editChordSchema = z.object({
-  name: z.string()
+  name: z
+    .string()
     .min(1, "Chord name is required")
     .max(20, "Chord name cannot exceed 20 characters"),
-  fingering: z.string()
+  fingering: z
+    .string()
     .min(1, "Fingering is required")
-    .regex(/^[0-9XTx\-]{6,17}$/, "Fingering must be 6 values separated by hyphens")
-    .refine(
-      (value) => {
-        const parts = value.split('-');
-        if (parts.length !== 6) return false;
-        return parts.every(part => /^[0-9]{1,2}$|^X$/i.test(part));
-      },
-      { message: "Each value must be a number (0-12) or X" }
+    .regex(
+      /^[0-9XTx\-]{6,17}$/,
+      "Fingering must be 6 values separated by hyphens",
     )
     .refine(
       (value) => {
-        const parts = value.split('-');
-        return parts.every(part => {
+        const parts = value.split("-");
+        if (parts.length !== 6) return false;
+        return parts.every((part) => /^[0-9]{1,2}$|^X$/i.test(part));
+      },
+      { message: "Each value must be a number (0-12) or X" },
+    )
+    .refine(
+      (value) => {
+        const parts = value.split("-");
+        return parts.every((part) => {
           if (/^X$/i.test(part)) return true;
           const num = parseInt(part, 10);
           return num <= 12;
         });
       },
-      { message: "Fret number cannot exceed 12" }
+      { message: "Fret number cannot exceed 12" },
     ),
-  description: z.string()
+  description: z
+    .string()
     .max(500, "Description cannot exceed 500 characters")
     .optional()
-    .or(z.literal(''))
+    .or(z.literal("")),
 });
 
 type EditChordFormValues = z.infer<typeof editChordSchema>;
@@ -70,7 +82,7 @@ export default function EditChordPage() {
   const toast = useToast();
 
   const chordId = params.id as string;
-  
+
   const [originalChord, setOriginalChord] = useState<Chord | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -92,15 +104,15 @@ export default function EditChordPage() {
     watch,
     setValue,
     getValues,
-    trigger
+    trigger,
   } = useForm<EditChordFormValues>({
     resolver: zodResolver(editChordSchema),
     mode: "onBlur",
     defaultValues: {
       name: "",
       fingering: "0-0-0-0-0-0",
-      description: ""
-    }
+      description: "",
+    },
   });
 
   const currentValues = watch();
@@ -116,25 +128,26 @@ export default function EditChordPage() {
 
       try {
         const chord = await ChordsService.getChordById(chordId);
-        
+
         if (!isMounted) return;
 
         setOriginalChord(chord);
         reset({
           name: chord.name,
           fingering: chord.fingering,
-          description: chord.description || ""
+          description: chord.description || "",
         });
       } catch (error: unknown) {
         if (!isMounted) return;
-        
-        const errorMessage = error instanceof Error 
-          ? error.message 
-          : "Failed to load chord. It may have been deleted.";
-        
+
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Failed to load chord. It may have been deleted.";
+
         setLoadError(errorMessage);
         toastRef.current.error(errorMessage);
-        
+
         setTimeout(() => {
           routerRef.current.push("/home/chords");
         }, 100);
@@ -150,10 +163,13 @@ export default function EditChordPage() {
     return () => {
       isMounted = false;
     };
-  }, [chordId, reset]); 
+  }, [chordId, reset]);
 
   const handleFingeringChange = (newFingering: string) => {
-    setValue("fingering", newFingering, { shouldDirty: true, shouldValidate: true });
+    setValue("fingering", newFingering, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
   };
 
   const handleSubmit = async () => {
@@ -162,7 +178,7 @@ export default function EditChordPage() {
       toast.error("Please fix the errors in the form");
       return;
     }
-    
+
     setShowConfirmDialog(true);
   };
 
@@ -173,22 +189,22 @@ export default function EditChordPage() {
       const updateData: UpdateChordDto = {
         name: values.name,
         fingering: values.fingering.toUpperCase(),
-        description: values.description || undefined 
+        description: values.description || undefined,
       };
-      
+
       const updatedChord = await ChordsService.updateChord(chordId, updateData);
       toast.success(`Chord ${updatedChord.name} updated successfully!`);
-      
+
       router.push(`/home/chords/${encodeURIComponent(updatedChord.name)}`);
-    } catch (error: unknown) {      
-      const isApiError = error && typeof error === 'object' && 'status' in error;
-      
+    } catch (error: unknown) {
+      const isApiError =
+        error && typeof error === "object" && "status" in error;
+
       if (isApiError) {
         const apiError = error as { status: number; message?: string };
-       if(apiError.message === null){
+        if (apiError.message === null) {
           toast.error("Chord with this fingering already exists");
-        }
-        else{
+        } else {
           toast.error(apiError.message || "Failed to create chord");
         }
       } else if (error instanceof Error) {
@@ -212,7 +228,11 @@ export default function EditChordPage() {
       return;
     }
 
-    if (confirm("You have unsaved changes. Are you sure you want to discard them?")) {
+    if (
+      confirm(
+        "You have unsaved changes. Are you sure you want to discard them?",
+      )
+    ) {
       if (originalChord) {
         router.push(`/home/chords/${encodeURIComponent(originalChord.name)}`);
       } else {
@@ -226,13 +246,14 @@ export default function EditChordPage() {
       reset({
         name: originalChord.name,
         fingering: originalChord.fingering,
-        description: originalChord.description || ""
+        description: originalChord.description || "",
       });
       toast.info("All changes have been reset");
     }
   };
 
-  const canEdit = user?.id === originalChord?.createdByUserId || user?.role === "Admin";
+  const canEdit =
+    user?.id === originalChord?.createdByUserId || user?.role === "Admin";
 
   if (loadError && !isLoading) {
     return (
@@ -242,8 +263,8 @@ export default function EditChordPage() {
             <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
             <h3 className="text-lg font-semibold">Error Loading Chord</h3>
             <p className="text-muted-foreground mt-2">{loadError}</p>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="mt-4"
               onClick={() => router.push("/home/chords")}
             >
@@ -255,7 +276,7 @@ export default function EditChordPage() {
       </div>
     );
   }
-  
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
@@ -277,8 +298,8 @@ export default function EditChordPage() {
             <p className="text-muted-foreground mt-2">
               The chord you're trying to edit may have been deleted.
             </p>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="mt-4"
               onClick={() => router.push("/home/chords")}
             >
@@ -301,10 +322,14 @@ export default function EditChordPage() {
             <p className="text-muted-foreground mt-2">
               You don't have permission to edit this chord.
             </p>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="mt-4"
-              onClick={() => router.push(`/home/chords/${encodeURIComponent(originalChord.name)}`)}
+              onClick={() =>
+                router.push(
+                  `/home/chords/${encodeURIComponent(originalChord.name)}`,
+                )
+              }
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Chord
@@ -325,7 +350,7 @@ export default function EditChordPage() {
               size="sm"
               onClick={() =>
                 router.push(
-                  `/home/chords/${encodeURIComponent(originalChord.name)}`
+                  `/home/chords/${encodeURIComponent(originalChord.name)}`,
                 )
               }
               className="mb-2"

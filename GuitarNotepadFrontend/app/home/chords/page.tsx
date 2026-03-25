@@ -6,11 +6,26 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
 import { ChordsService } from "@/lib/api/chords-service";
 import { Chord } from "@/types/chords";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Plus, Music, Grid3x3, Hash, User, Eye, EyeOff } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Music,
+  Grid3x3,
+  Hash,
+  User,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -23,8 +38,8 @@ interface UniqueChordItem {
   totalVariations: number;
   sampleFingering: string;
   createdAt: Date;
-  canEdit: boolean; 
-  userVariations: Chord[]; 
+  canEdit: boolean;
+  userVariations: Chord[];
 }
 
 interface ChordGridItem {
@@ -57,8 +72,8 @@ export default function ChordsPage() {
 
   const uniqueChords = useMemo(() => {
     const chordMap = new Map<string, UniqueChordItem>();
-    
-    allChords.forEach(chord => {
+
+    allChords.forEach((chord) => {
       if (!chordMap.has(chord.name)) {
         chordMap.set(chord.name, {
           name: chord.name,
@@ -67,56 +82,56 @@ export default function ChordsPage() {
           sampleFingering: chord.fingering,
           createdAt: new Date(chord.createdAt),
           canEdit: false,
-          userVariations: []
+          userVariations: [],
         });
       }
       const item = chordMap.get(chord.name)!;
       item.variations.push(chord);
       item.totalVariations = item.variations.length;
-      
+
       const isUserChord = user && chord.createdByUserId === user.id;
       if (isUserChord) {
         item.userVariations.push(chord);
-        item.canEdit = true; 
+        item.canEdit = true;
       }
-      
+
       if (user?.role === "Admin") {
         item.canEdit = true;
       }
-      
+
       const chordDate = new Date(chord.createdAt);
       if (chordDate < item.createdAt) {
         item.createdAt = chordDate;
       }
     });
-    
+
     let chordsArray = Array.from(chordMap.values());
-    
+
     if (showOnlyMyChords && user) {
-      chordsArray = chordsArray.filter(chord => 
-        chord.userVariations.length > 0 || chord.canEdit
+      chordsArray = chordsArray.filter(
+        (chord) => chord.userVariations.length > 0 || chord.canEdit,
       );
     }
-    
+
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
-      chordsArray = chordsArray.filter(chord => 
-        chord.name.toLowerCase().includes(searchLower)
+      chordsArray = chordsArray.filter((chord) =>
+        chord.name.toLowerCase().includes(searchLower),
       );
     }
-    
+
     chordsArray.sort((a, b) => a.name.localeCompare(b.name));
-    
+
     const startIndex = (currentPage - 1) * pageSize;
     const paginated = chordsArray.slice(startIndex, startIndex + pageSize);
-    
+
     return {
       items: paginated,
       totalCount: chordsArray.length,
       currentPage,
       totalPages: Math.ceil(chordsArray.length / pageSize),
       hasPreviousPage: currentPage > 1,
-      hasNextPage: startIndex + pageSize < chordsArray.length
+      hasNextPage: startIndex + pageSize < chordsArray.length,
     };
   }, [allChords, searchTerm, currentPage, showOnlyMyChords, user]);
 
@@ -133,20 +148,25 @@ export default function ChordsPage() {
           page: currentPageNum,
           pageSize: loadPageSize,
           sortBy: "name",
-          sortOrder: "asc"
+          sortOrder: "asc",
         });
 
         allChordsData = [...allChordsData, ...data.items];
-        
-        if (data.items.length < loadPageSize || data.currentPage === data.totalPages) {
+
+        if (
+          data.items.length < loadPageSize ||
+          data.currentPage === data.totalPages
+        ) {
           hasMore = false;
         } else {
           currentPageNum++;
         }
       }
-      
+
       setAllChords(allChordsData);
-      setUniqueChordsCount(new Set(allChordsData.map(chord => chord.name)).size);
+      setUniqueChordsCount(
+        new Set(allChordsData.map((chord) => chord.name)).size,
+      );
     } catch (error: unknown) {
       toast.error("Failed to load chords. Please try again.");
     } finally {
@@ -160,8 +180,8 @@ export default function ChordsPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setCurrentPage(1); 
-    }, 300); 
+      setCurrentPage(1);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
@@ -183,25 +203,27 @@ export default function ChordsPage() {
   };
 
   const handleEditChord = (chordName: string, e: React.MouseEvent) => {
-    e.stopPropagation(); 
-    const chordItem = uniqueChords.items.find(item => item.name === chordName);
+    e.stopPropagation();
+    const chordItem = uniqueChords.items.find(
+      (item) => item.name === chordName,
+    );
     if (chordItem && chordItem.userVariations.length > 0) {
       router.push(`/home/chords/edit/${chordItem.userVariations[0].id}`);
     }
   };
 
   const getChordItemsForGrid = (): ChordGridItem[] => {
-    return uniqueChords.items.map(item => ({
+    return uniqueChords.items.map((item) => ({
       id: item.name,
       name: item.name,
       fingering: item.sampleFingering,
-      description: `${item.totalVariations} variation${item.totalVariations !== 1 ? 's' : ''}`,
+      description: `${item.totalVariations} variation${item.totalVariations !== 1 ? "s" : ""}`,
       createdAt: item.createdAt.toISOString(),
       createdByUserId: "",
       createdByNikName: "",
       variationsCount: item.totalVariations,
       canEdit: item.canEdit,
-      userVariationsCount: item.userVariations.length
+      userVariationsCount: item.userVariations.length,
     }));
   };
 
@@ -210,9 +232,12 @@ export default function ChordsPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Chords Library</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Chords Library
+            </h1>
             <p className="text-muted-foreground mt-2">
-              Browse and manage guitar chords. Click any chord to see its variations.
+              Browse and manage guitar chords. Click any chord to see its
+              variations.
             </p>
           </div>
           <div className="hidden md:block">
@@ -223,11 +248,9 @@ export default function ChordsPage() {
                   <span className="text-sm font-medium">Chord Database</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {isLoadingAll ? (
-                    "Loading chords..."
-                  ) : (
-                    `${uniqueChordsCount} unique chords`
-                  )}
+                  {isLoadingAll
+                    ? "Loading chords..."
+                    : `${uniqueChordsCount} unique chords`}
                 </p>
               </CardContent>
             </Card>
@@ -248,18 +271,20 @@ export default function ChordsPage() {
                   />
                 </div>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="showOnlyMyChords" 
+                  <Checkbox
+                    id="showOnlyMyChords"
                     checked={showOnlyMyChords}
-                    onCheckedChange={(checked) => setShowOnlyMyChords(checked as boolean)}
+                    onCheckedChange={(checked) =>
+                      setShowOnlyMyChords(checked as boolean)
+                    }
                     disabled={isGuest}
                   />
-                  <Label 
-                    htmlFor="showOnlyMyChords" 
-                    className={`text-sm font-medium cursor-pointer ${!user ? 'text-muted-foreground' : ''}`}
+                  <Label
+                    htmlFor="showOnlyMyChords"
+                    className={`text-sm font-medium cursor-pointer ${!user ? "text-muted-foreground" : ""}`}
                   >
                     <div className="flex items-center gap-2">
                       {showOnlyMyChords ? (
@@ -271,14 +296,18 @@ export default function ChordsPage() {
                     </div>
                   </Label>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="hidden md:flex">
                     <Hash className="h-3 w-3 mr-1" />
                     {isLoadingAll ? "..." : uniqueChords.totalCount} chords
                   </Badge>
                   {!isGuest && (
-                    <Button onClick={handleCreateNew} variant="default" className="w-full sm:w-auto">
+                    <Button
+                      onClick={handleCreateNew}
+                      variant="default"
+                      className="w-full sm:w-auto"
+                    >
                       <Plus className="h-4 w-4 mr-2" />
                       Create New Chord
                     </Button>
@@ -286,7 +315,7 @@ export default function ChordsPage() {
                 </div>
               </div>
             </div>
-            
+
             {user && showOnlyMyChords && (
               <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
                 <div className="flex items-center gap-2 text-sm">
@@ -297,7 +326,7 @@ export default function ChordsPage() {
                 </div>
               </div>
             )}
-            
+
             {isGuest && (
               <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-md border border-amber-200 dark:border-amber-800">
                 <div className="flex items-center gap-2 text-sm">
@@ -332,7 +361,7 @@ export default function ChordsPage() {
               )}
             </div>
             <CardDescription>
-              {showOnlyMyChords 
+              {showOnlyMyChords
                 ? "Chords that you can edit. Click edit icon to modify your variations."
                 : "Click any chord to explore its different fingerings and variations"}
             </CardDescription>
@@ -347,7 +376,7 @@ export default function ChordsPage() {
             ) : uniqueChords.items.length > 0 ? (
               <>
                 <ChordGrid
-                  chords={getChordItemsForGrid()} 
+                  chords={getChordItemsForGrid()}
                   onChordClick={handleChordClick}
                   onEditClick={handleEditChord}
                   showVariationCount={true}
@@ -375,8 +404,8 @@ export default function ChordsPage() {
                   {searchTerm
                     ? `No chords matching "${searchTerm}"`
                     : showOnlyMyChords
-                    ? "You haven't created any chords yet. Create your first one!"
-                    : "No chords available yet. Create the first one!"}
+                      ? "You haven't created any chords yet. Create your first one!"
+                      : "No chords available yet. Create the first one!"}
                 </p>
                 {(searchTerm || showOnlyMyChords) && (
                   <div className="flex gap-2 justify-center mt-4">
@@ -400,10 +429,7 @@ export default function ChordsPage() {
                         Show All Chords
                       </Button>
                     )}
-                    <Button
-                      variant="default"
-                      onClick={handleCreateNew}
-                    >
+                    <Button variant="default" onClick={handleCreateNew}>
                       <Plus className="h-4 w-4 mr-2" />
                       Create New Chord
                     </Button>

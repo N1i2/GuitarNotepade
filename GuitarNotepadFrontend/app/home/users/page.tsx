@@ -5,13 +5,12 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
 import { ProfileService } from "@/lib/api/profile-service";
-import { SubscriptionsService } from "@/lib/api/subscriptions-service";
 import { FiltersForUsers, PaginatedUsers, User } from "@/types/profile";
 import { UserTable } from "@/components/user-management/user-table";
 import { UserFilters } from "@/components/user-management/user-filters";
 import { Pagination } from "@/components/user-management/pagination";
 import { Card, CardContent } from "@/components/ui/card";
-import { Shield } from "lucide-react";
+import { Shield, Users } from "lucide-react";
 
 export default function UsersPage() {
   const { user, isLoading: authLoading, isGuest } = useAuth();
@@ -28,9 +27,6 @@ export default function UsersPage() {
   const [data, setData] = useState<PaginatedUsers | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState<string | null>(null);
-  const [subscriptionIds, setSubscriptionIds] = useState<Set<string>>(
-    new Set(),
-  );
 
   const loadUsers = useCallback(async () => {
     setIsLoading(true);
@@ -47,16 +43,6 @@ export default function UsersPage() {
     }
   }, [filters, toast]);
 
-  const loadSubscriptions = useCallback(async () => {
-    try {
-      const subs = await SubscriptionsService.getMySubscriptions();
-      const userSubs = new Set<string>(
-        subs.filter((s) => s.isUserSub).map((s) => s.targetId),
-      );
-      setSubscriptionIds(userSubs);
-    } catch {}
-  }, []);
-
   useEffect(() => {
     if (!authLoading && isGuest) {
       toast.warning("Access denied", {
@@ -67,9 +53,8 @@ export default function UsersPage() {
 
     if (!authLoading && user && !isGuest) {
       loadUsers();
-      loadSubscriptions();
     }
-  }, [authLoading, isGuest, user, router, toast, loadUsers, loadSubscriptions]);
+  }, [authLoading, isGuest, user, router, toast, loadUsers]);
 
   const handleFilterChange = (newFilters: Partial<FiltersForUsers>) => {
     setFilters((prev) => ({ ...prev, ...newFilters, page: 1 }));
@@ -77,32 +62,6 @@ export default function UsersPage() {
 
   const handlePageChange = (page: number) => {
     setFilters((prev) => ({ ...prev, page }));
-  };
-
-  const handleToggleSubscribe = async (targetUser: User) => {
-    if (!user) return;
-
-    setIsActionLoading(targetUser.id);
-    try {
-      const isSubscribed = subscriptionIds.has(targetUser.id);
-      if (isSubscribed) {
-        await SubscriptionsService.unsubscribeFromUser(targetUser.id);
-        toast.success(`Unsubscribed from ${targetUser.nikName}`);
-      } else {
-        await SubscriptionsService.subscribeToUser(targetUser.id);
-        toast.success(`Subscribed to ${targetUser.nikName}`);
-      }
-
-      await loadSubscriptions();
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        toast.error(error.message || "Failed to update subscription");
-      } else {
-        toast.error("Failed to update subscription");
-      }
-    } finally {
-      setIsActionLoading(null);
-    }
   };
 
   const handleToggleBlock = async (
@@ -156,7 +115,6 @@ export default function UsersPage() {
     }
   };
 
-  const isSubscribed = (userItem: User) => subscriptionIds.has(userItem.id);
   const isCurrentUser = (userItem: User) => user?.id === userItem.id;
 
   return (
@@ -166,19 +124,18 @@ export default function UsersPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Users</h1>
             <p className="text-muted-foreground mt-2">
-              Browse users and subscribe to those whose content you want to
-              follow.
+              Browse users and view their profiles.
             </p>
           </div>
           <div className="hidden md:block">
             <Card className="border-primary/20">
               <CardContent className="p-3">
                 <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-primary" />
+                  <Users className="h-4 w-4 text-primary" />
                   <span className="text-sm font-medium">User directory</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Subscriptions are limited for free users.
+                  {data ? `${data.totalCount} total users` : "Loading..."}
                 </p>
               </CardContent>
             </Card>
@@ -191,13 +148,12 @@ export default function UsersPage() {
           users={data?.items ?? []}
           currentUserId={user?.id}
           isActionLoading={isActionLoading}
-          onToggleSubscribe={handleToggleSubscribe}
           onToggleBlock={handleToggleBlock}
           onToggleRole={handleToggleRole}
-          isSubscribed={isSubscribed}
+          isSubscribed={() => false}
           isCurrentUser={isCurrentUser}
           showAdminActions={!!user?.role && user.role === "Admin"}
-          showSubscribeAction={!!user}
+          showSubscribeAction={false}
         />
 
         {data && data.totalPages > 1 && (

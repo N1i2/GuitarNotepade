@@ -415,7 +415,7 @@ export function StrummingEditor({
                       (char) =>
                         ["D", "U", "X", "-", "."].includes(char) ||
                         char.toLowerCase() === "d" ||
-                        char.toLowerCase() === "u"
+                        char.toLowerCase() === "u",
                     )
                     .join("");
                   const trimmed = filtered.slice(0, maxLength);

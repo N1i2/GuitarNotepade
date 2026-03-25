@@ -14,7 +14,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Calendar, Clock, Loader2, ShieldAlert, UserCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  Calendar,
+  Clock,
+  Loader2,
+  ShieldAlert,
+  UserCheck,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface ManageBlockDialogProps {
@@ -36,9 +43,15 @@ export function ManageBlockDialog({
 }: ManageBlockDialogProps) {
   const [reason, setReason] = useState(user.blockReason || "");
   const [duration, setDuration] = useState("1");
-  const [durationUnit, setDurationUnit] = useState<"minutes" | "hours" | "days" | "months" | "years">("days");
-  const [errors, setErrors] = useState<{ reason?: string; duration?: string }>({});
-  const [mode, setMode] = useState<"block" | "unblock">(user.isBlocked ? "unblock" : "block");
+  const [durationUnit, setDurationUnit] = useState<
+    "minutes" | "hours" | "days" | "months" | "years"
+  >("days");
+  const [errors, setErrors] = useState<{ reason?: string; duration?: string }>(
+    {},
+  );
+  const [mode, setMode] = useState<"block" | "unblock">(
+    user.isBlocked ? "unblock" : "block",
+  );
 
   useEffect(() => {
     if (user.isBlocked && user.blockedUntil) {
@@ -46,7 +59,7 @@ export function ManageBlockDialog({
       const now = new Date();
       const diffMs = blockedUntil.getTime() - now.getTime();
       const diffMinutes = Math.max(1, Math.ceil(diffMs / 60000));
-      
+
       if (diffMinutes < 60) {
         setDuration(diffMinutes.toString());
         setDurationUnit("minutes");
@@ -63,7 +76,7 @@ export function ManageBlockDialog({
         setDuration(Math.ceil(diffMinutes / (365 * 24 * 60)).toString());
         setDurationUnit("years");
       }
-      
+
       setReason(user.blockReason || "");
     } else {
       setReason("");
@@ -99,12 +112,18 @@ export function ManageBlockDialog({
 
   const getMinutesFromDuration = (value: number, unit: string): number => {
     switch (unit) {
-      case "minutes": return value;
-      case "hours": return value * 60;
-      case "days": return value * 24 * 60;
-      case "months": return value * 30 * 24 * 60;
-      case "years": return value * 365 * 24 * 60;
-      default: return value;
+      case "minutes":
+        return value;
+      case "hours":
+        return value * 60;
+      case "days":
+        return value * 24 * 60;
+      case "months":
+        return value * 30 * 24 * 60;
+      case "years":
+        return value * 365 * 24 * 60;
+      default:
+        return value;
     }
   };
 
@@ -129,36 +148,38 @@ export function ManageBlockDialog({
 
     const minutes = getMinutesFromDuration(durationNum, durationUnit);
     const blockedUntil = new Date(Date.now() + minutes * 60000);
-    
-    return blockedUntil.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZoneName: 'short'
+
+    return blockedUntil.toLocaleString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZoneName: "short",
     });
   };
 
   const formatRemainingTime = () => {
     if (!user.blockedUntil) return "";
-    
+
     const blockedUntil = new Date(user.blockedUntil);
     const now = new Date();
     const diffMs = blockedUntil.getTime() - now.getTime();
-    
+
     if (diffMs <= 0) return "Block has expired";
-    
+
     const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const hours = Math.floor(
+      (diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+    );
     const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     const parts = [];
     if (days > 0) parts.push(`${days}d`);
     if (hours > 0) parts.push(`${hours}h`);
     if (minutes > 0) parts.push(`${minutes}m`);
-    
-    return parts.join(' ');
+
+    return parts.join(" ");
   };
 
   return (
@@ -166,7 +187,9 @@ export function ManageBlockDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-full ${user.isBlocked ? 'bg-amber-100 dark:bg-amber-900/20' : 'bg-red-100 dark:bg-red-900/20'}`}>
+            <div
+              className={`p-2 rounded-full ${user.isBlocked ? "bg-amber-100 dark:bg-amber-900/20" : "bg-red-100 dark:bg-red-900/20"}`}
+            >
               {user.isBlocked ? (
                 <AlertTriangle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
               ) : (
@@ -175,13 +198,12 @@ export function ManageBlockDialog({
             </div>
             <div>
               <DialogTitle className="text-lg">
-                {user.isBlocked ? 'Manage Block' : 'Block User'}
+                {user.isBlocked ? "Manage Block" : "Block User"}
               </DialogTitle>
               <DialogDescription>
-                {user.isBlocked 
+                {user.isBlocked
                   ? `Manage block for ${user.email}`
-                  : `Block ${user.email} from accessing their account`
-                }
+                  : `Block ${user.email} from accessing their account`}
               </DialogDescription>
             </div>
           </div>
@@ -192,13 +214,17 @@ export function ManageBlockDialog({
             <div className="flex justify-between items-start">
               <div>
                 <div className="font-medium">{user.nikName}</div>
-                <div className="text-sm text-muted-foreground">{user.email}</div>
+                <div className="text-sm text-muted-foreground">
+                  {user.email}
+                </div>
               </div>
-              <div className={`px-2 py-1 rounded text-xs ${user.isBlocked ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'}`}>
-                {user.isBlocked ? 'BLOCKED' : 'ACTIVE'}
+              <div
+                className={`px-2 py-1 rounded text-xs ${user.isBlocked ? "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300" : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"}`}
+              >
+                {user.isBlocked ? "BLOCKED" : "ACTIVE"}
               </div>
             </div>
-            
+
             {user.isBlocked && user.blockedUntil && (
               <div className="mt-2 space-y-1 text-sm">
                 <div className="flex items-center gap-2">
@@ -211,14 +237,14 @@ export function ManageBlockDialog({
                 <div className="flex items-center gap-2">
                   <Clock className="h-3 w-3" />
                   <span>Time remaining: </span>
-                  <span className="font-medium">
-                    {formatRemainingTime()}
-                  </span>
+                  <span className="font-medium">{formatRemainingTime()}</span>
                 </div>
                 {user.blockReason && (
                   <div>
                     <span className="font-medium">Reason: </span>
-                    <span className="text-muted-foreground">{user.blockReason}</span>
+                    <span className="text-muted-foreground">
+                      {user.blockReason}
+                    </span>
                   </div>
                 )}
               </div>
@@ -230,9 +256,9 @@ export function ManageBlockDialog({
               type="button"
               onClick={() => setMode("block")}
               className={`flex-1 py-2 text-center text-sm font-medium transition-colors ${
-                mode === "block" 
-                  ? 'bg-destructive text-destructive-foreground' 
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                mode === "block"
+                  ? "bg-destructive text-destructive-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
               }`}
             >
               <div className="flex items-center justify-center gap-2">
@@ -245,9 +271,9 @@ export function ManageBlockDialog({
                 type="button"
                 onClick={() => setMode("unblock")}
                 className={`flex-1 py-2 text-center text-sm font-medium transition-colors ${
-                  mode === "unblock" 
-                    ? 'bg-green-600 text-white' 
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  mode === "unblock"
+                    ? "bg-green-600 text-white"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
                 }`}
               >
                 <div className="flex items-center justify-center gap-2">
@@ -270,7 +296,8 @@ export function ManageBlockDialog({
                   value={reason}
                   onChange={(e) => {
                     setReason(e.target.value);
-                    if (errors.reason) setErrors({...errors, reason: undefined});
+                    if (errors.reason)
+                      setErrors({ ...errors, reason: undefined });
                   }}
                   placeholder="Enter the reason for blocking this user..."
                   className="min-h-[100px]"
@@ -288,7 +315,7 @@ export function ManageBlockDialog({
                   <Clock className="h-4 w-4" />
                   Block Duration *
                 </Label>
-                
+
                 <div className="flex gap-2">
                   <Input
                     id="duration"
@@ -297,14 +324,24 @@ export function ManageBlockDialog({
                     value={duration}
                     onChange={(e) => {
                       setDuration(e.target.value);
-                      if (errors.duration) setErrors({...errors, duration: undefined});
+                      if (errors.duration)
+                        setErrors({ ...errors, duration: undefined });
                     }}
                     className="flex-1"
                     placeholder="Enter duration"
                   />
                   <select
                     value={durationUnit}
-                    onChange={(e) => setDurationUnit(e.target.value as "minutes" | "hours" | "days" | "months" | "years")}
+                    onChange={(e) =>
+                      setDurationUnit(
+                        e.target.value as
+                          | "minutes"
+                          | "hours"
+                          | "days"
+                          | "months"
+                          | "years",
+                      )
+                    }
                     className="px-3 py-2 rounded-md border border-input bg-background text-sm"
                   >
                     <option value="minutes">Minutes</option>
@@ -314,7 +351,7 @@ export function ManageBlockDialog({
                     <option value="years">Years</option>
                   </select>
                 </div>
-                
+
                 {errors.duration && (
                   <p className="text-sm text-red-500">{errors.duration}</p>
                 )}
@@ -346,7 +383,8 @@ export function ManageBlockDialog({
                     This will immediately restore access to their account.
                     {user.blockedUntil && (
                       <span className="block mt-1">
-                        Original block was until: {new Date(user.blockedUntil).toLocaleString()}
+                        Original block was until:{" "}
+                        {new Date(user.blockedUntil).toLocaleString()}
                       </span>
                     )}
                   </p>
@@ -371,7 +409,7 @@ export function ManageBlockDialog({
             variant={mode === "unblock" ? "default" : "destructive"}
             onClick={handleSubmit}
             disabled={isLoading}
-            className={`w-full sm:w-auto ${mode === "unblock" ? 'bg-green-600 hover:bg-green-700' : ''}`}
+            className={`w-full sm:w-auto ${mode === "unblock" ? "bg-green-600 hover:bg-green-700" : ""}`}
           >
             {isLoading ? (
               <>

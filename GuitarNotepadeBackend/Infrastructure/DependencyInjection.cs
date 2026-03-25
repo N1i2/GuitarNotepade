@@ -1,6 +1,7 @@
 using Domain.Interfaces;
 using Domain.Interfaces.Repositories;
 using Domain.Interfaces.Services;
+using Infrastructure.BackgroundServices;
 using Infrastructure.Data;
 using Infrastructure.Handlers;
 using Infrastructure.Repositories;
@@ -46,6 +47,7 @@ public static class DependencyInjection
         services.AddScoped<IAlbomRepository, AlbomRepository>();
         services.AddScoped<ISongAlbomRepository, SongAlbomRepository>();
         services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+        services.AddScoped<INotificationMessageService, NotificationMessageService>();
 
         services.AddScoped<IExecutionStrategy, ExecutionStrategy>();
 
@@ -81,6 +83,8 @@ public static class DependencyInjection
         services.AddScoped<IPatternService, PatternService>();
         services.AddScoped<IAlbumService, AlbumService>();
         services.AddScoped<INotificationService, NotificationService>();
+
+        services.AddHostedService<NotificationCleanupService>();
 
         return services;
     }

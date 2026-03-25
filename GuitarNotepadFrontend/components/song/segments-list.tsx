@@ -61,7 +61,7 @@ export function SegmentsList({
 }: SegmentsListProps) {
   const getSegmentComments = (segmentId: string): UIComment[] => {
     const passedComments = comments.filter(
-      (comment) => comment.segmentId === segmentId
+      (comment) => comment.segmentId === segmentId,
     );
 
     const segment = segments.find((s) => s.id === segmentId);
@@ -70,7 +70,7 @@ export function SegmentsList({
     const allComments = [...passedComments, ...segmentComments];
 
     const uniqueComments = Array.from(
-      new Map(allComments.map((comment) => [comment.id, comment])).values()
+      new Map(allComments.map((comment) => [comment.id, comment])).values(),
     );
 
     return uniqueComments;
@@ -82,7 +82,7 @@ export function SegmentsList({
     const all = [...fromProps, ...fromSegments];
 
     return Array.from(
-      new Map(all.map((comment) => [comment.id, comment])).values()
+      new Map(all.map((comment) => [comment.id, comment])).values(),
     );
   }, [segments, comments]);
 
@@ -106,7 +106,7 @@ export function SegmentsList({
     }> = [];
 
     const sortedSegments = [...segments].sort(
-      (a, b) => a.startIndex - b.startIndex
+      (a, b) => a.startIndex - b.startIndex,
     );
 
     sortedSegments.forEach((segment) => {
@@ -114,7 +114,7 @@ export function SegmentsList({
         (g) =>
           g.chord?.id === segment.chordId &&
           g.pattern?.id === segment.patternId &&
-          g.text === segment.text
+          g.text === segment.text,
       );
 
       const segmentComments = getSegmentComments(segment.id);
@@ -179,7 +179,7 @@ export function SegmentsList({
   const commentsStats = useMemo(() => {
     const totalComments = allComments.length;
     const segmentsWithComments = segments.filter(
-      (segment) => getSegmentComments(segment.id).length > 0
+      (segment) => getSegmentComments(segment.id).length > 0,
     ).length;
 
     return { totalComments, segmentsWithComments };
@@ -321,7 +321,7 @@ export function SegmentsList({
                             </span>
                             <Link
                               href={`/home/chords/${encodeURIComponent(
-                                group.chord.name
+                                group.chord.name,
                               )}`}
                               target="_blank"
                               className="text-xs text-primary hover:underline flex items-center gap-1"
@@ -343,7 +343,7 @@ export function SegmentsList({
                             </span>
                             <Link
                               href={`/home/patterns/${encodeURIComponent(
-                                group.pattern.name
+                                group.pattern.name,
                               )}`}
                               target="_blank"
                               className="text-xs text-primary hover:underline flex items-center gap-1"
@@ -439,7 +439,7 @@ export function SegmentsList({
                               </span>
                               <span className="text-xs text-muted-foreground">
                                 {new Date(
-                                  comment.createdAt
+                                  comment.createdAt,
                                 ).toLocaleDateString()}
                               </span>
                             </div>

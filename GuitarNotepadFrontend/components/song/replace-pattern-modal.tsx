@@ -59,7 +59,7 @@ export function ReplacePatternModal({
         (pattern) =>
           pattern.name.toLowerCase().includes(searchLower) ||
           (pattern.description &&
-            pattern.description.toLowerCase().includes(searchLower))
+            pattern.description.toLowerCase().includes(searchLower)),
       );
     }
 
@@ -67,7 +67,7 @@ export function ReplacePatternModal({
       filtered = filtered.filter((pattern) =>
         patternType === "strumming"
           ? !pattern.isFingerStyle
-          : pattern.isFingerStyle
+          : pattern.isFingerStyle,
       );
     }
 

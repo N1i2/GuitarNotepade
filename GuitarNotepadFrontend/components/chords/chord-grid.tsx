@@ -14,16 +14,16 @@ interface ChordGridProps {
   })[];
   onChordClick: (chordName: string) => void;
   onEditClick?: (chordName: string, e: React.MouseEvent) => void;
-  showVariationCount?: boolean; 
+  showVariationCount?: boolean;
   showOnlyMyChords?: boolean;
 }
 
-export function ChordGrid({ 
-  chords: chords, 
-  onChordClick, 
+export function ChordGrid({
+  chords: chords,
+  onChordClick,
   onEditClick,
   showVariationCount = true,
-  showOnlyMyChords = false 
+  showOnlyMyChords = false,
 }: ChordGridProps) {
   const getChordColor = (name: string) => {
     const colors = [
@@ -35,12 +35,14 @@ export function ChordGrid({
       "bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/20 border-emerald-200 dark:border-emerald-800",
     ];
 
-    const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const hash = name
+      .split("")
+      .reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return colors[hash % colors.length];
   };
 
   const handleCardClick = (chordName: string, e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('.edit-button')) {
+    if ((e.target as HTMLElement).closest(".edit-button")) {
       return;
     }
     onChordClick(chordName);
@@ -62,12 +64,10 @@ export function ChordGrid({
               </Badge>
             </div>
           )}
-          
+
           <CardContent className="p-6 flex flex-col items-center justify-center h-32">
-            <div className="text-5xl font-bold text-center">
-              {chord.name}
-            </div>
-            
+            <div className="text-5xl font-bold text-center">{chord.name}</div>
+
             {showVariationCount && chord.variationsCount && (
               <div className="mt-2 text-sm">
                 <div className="flex items-center justify-center gap-1">
@@ -76,20 +76,20 @@ export function ChordGrid({
                     {chord.variationsCount}
                   </span>
                   <span className="text-muted-foreground">/</span>
-                  <span className={`font-medium ${
-                    chord.userVariationsCount && chord.userVariationsCount > 0 
-                      ? 'text-blue-600 dark:text-blue-400' 
-                      : 'text-amber-600 dark:text-amber-400'
-                  }`}>
+                  <span
+                    className={`font-medium ${
+                      chord.userVariationsCount && chord.userVariationsCount > 0
+                        ? "text-blue-600 dark:text-blue-400"
+                        : "text-amber-600 dark:text-amber-400"
+                    }`}
+                  >
                     {chord.userVariationsCount || 0}
                   </span>
-                  <span className="text-muted-foreground text-xs">
-                    of your
-                  </span>
+                  <span className="text-muted-foreground text-xs">of your</span>
                 </div>
               </div>
             )}
-            
+
             {chord.canEdit && onEditClick && (
               <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button

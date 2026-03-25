@@ -89,7 +89,7 @@ export class AuthService {
       return null;
     }
   }
-  
+
   static hasToken(): boolean {
     return !!this.getToken();
   }

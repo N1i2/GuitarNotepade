@@ -4,9 +4,22 @@ import { FiltersForUsers } from "@/types/profile";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Search, Filter, Shield, ShieldOff, UserCheck, UserX } from "lucide-react";
+import {
+  Search,
+  Filter,
+  Shield,
+  ShieldOff,
+  UserCheck,
+  UserX,
+} from "lucide-react";
 
 interface UserFiltersProps {
   filters: FiltersForUsers;
@@ -14,7 +27,8 @@ interface UserFiltersProps {
 }
 
 export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
-  const isBlockedValue = filters.isBlocked === null ? undefined : filters.isBlocked;
+  const isBlockedValue =
+    filters.isBlocked === null ? undefined : filters.isBlocked;
   const roleValue = filters.role === null ? undefined : filters.role;
 
   const handleBlockedToggle = (checked: boolean) => {
@@ -35,12 +49,16 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
 
   const getBlockedText = () => {
     if (isBlockedValue === undefined) return "Show blocked users";
-    return isBlockedValue ? "Show only blocked users" : "Show only unblocked users";
+    return isBlockedValue
+      ? "Show only blocked users"
+      : "Show only unblocked users";
   };
 
   const getRoleText = () => {
     if (roleValue === undefined) return "Show by role";
-    return roleValue === "Admin" ? "Show only admins" : "Show only regular users";
+    return roleValue === "Admin"
+      ? "Show only admins"
+      : "Show only regular users";
   };
 
   return (
@@ -57,7 +75,9 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
               <Label htmlFor="sortBy">Sort by</Label>
               <Select
                 value={filters.sortBy || "createdAt"}
-                onValueChange={(value: 'email' | 'nikName' | 'createdAt') => onFilterChange({ sortBy: value })}
+                onValueChange={(value: "email" | "nikName" | "createdAt") =>
+                  onFilterChange({ sortBy: value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select sort field" />
@@ -74,7 +94,9 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
               <Label htmlFor="sortOrder">Order</Label>
               <Select
                 value={filters.sortOrder || "desc"}
-                onValueChange={(value: 'asc' | 'desc') => onFilterChange({ sortOrder: value })}
+                onValueChange={(value: "asc" | "desc") =>
+                  onFilterChange({ sortOrder: value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select order" />
@@ -94,7 +116,9 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
                   id="emailFilter"
                   placeholder="Filter by email..."
                   value={filters.emailFilter || ""}
-                  onChange={(e) => onFilterChange({ emailFilter: e.target.value || undefined })}
+                  onChange={(e) =>
+                    onFilterChange({ emailFilter: e.target.value || undefined })
+                  }
                   className="pl-8"
                 />
               </div>
@@ -108,7 +132,11 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
                   id="nikNameFilter"
                   placeholder="Filter by nickname..."
                   value={filters.nikNameFilter || ""}
-                  onChange={(e) => onFilterChange({ nikNameFilter: e.target.value || undefined })}
+                  onChange={(e) =>
+                    onFilterChange({
+                      nikNameFilter: e.target.value || undefined,
+                    })
+                  }
                   className="pl-8"
                 />
               </div>
@@ -122,21 +150,25 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
                 checked={isBlockedValue !== undefined}
                 onCheckedChange={handleBlockedToggle}
               />
-              <Label htmlFor="blocked-filter" className="cursor-pointer flex items-center gap-2">
-                {isBlockedValue !== undefined && (
-                  isBlockedValue ? (
+              <Label
+                htmlFor="blocked-filter"
+                className="cursor-pointer flex items-center gap-2"
+              >
+                {isBlockedValue !== undefined &&
+                  (isBlockedValue ? (
                     <UserX className="h-4 w-4 text-destructive" />
                   ) : (
                     <UserCheck className="h-4 w-4 text-green-600" />
-                  )
-                )}
+                  ))}
                 {getBlockedText()}
               </Label>
-              
+
               {isBlockedValue !== undefined && (
                 <Switch
                   checked={isBlockedValue}
-                  onCheckedChange={(checked) => onFilterChange({ isBlocked: checked })}
+                  onCheckedChange={(checked) =>
+                    onFilterChange({ isBlocked: checked })
+                  }
                   className="ml-2"
                 />
               )}
@@ -148,17 +180,19 @@ export function UserFilters({ filters, onFilterChange }: UserFiltersProps) {
                 checked={roleValue !== undefined}
                 onCheckedChange={handleRoleToggle}
               />
-              <Label htmlFor="role-filter" className="cursor-pointer flex items-center gap-2">
-                {roleValue !== undefined && (
-                  roleValue === "Admin" ? (
+              <Label
+                htmlFor="role-filter"
+                className="cursor-pointer flex items-center gap-2"
+              >
+                {roleValue !== undefined &&
+                  (roleValue === "Admin" ? (
                     <Shield className="h-4 w-4 text-primary" />
                   ) : (
                     <ShieldOff className="h-4 w-4 text-muted-foreground" />
-                  )
-                )}
+                  ))}
                 {getRoleText()}
               </Label>
-              
+
               {roleValue !== undefined && (
                 <Select
                   value={roleValue}

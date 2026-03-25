@@ -12,7 +12,9 @@ export function useUsageCounters() {
   const [chordsCount, setChordsCount] = useState<number | null>(null);
   const [patternsCount, setPatternsCount] = useState<number | null>(null);
   const [songsCount, setSongsCount] = useState<number | null>(null);
-  const [subscriptionsCount, setSubscriptionsCount] = useState<number | null>(null);
+  const [subscriptionsCount, setSubscriptionsCount] = useState<number | null>(
+    null,
+  );
 
   useEffect(() => {
     const load = async () => {

@@ -59,7 +59,7 @@ export function AddPatternModal({
 
   const availableColors = PATTERN_COLORS.filter(
     (color) =>
-      isColorValidForType(color, "pattern") && !allUsedColors.includes(color)
+      isColorValidForType(color, "pattern") && !allUsedColors.includes(color),
   );
 
   useEffect(() => {
@@ -71,7 +71,7 @@ export function AddPatternModal({
 
   useEffect(() => {
     let filtered = patterns.filter(
-      (pattern) => !existingPatternIds.includes(pattern.id)
+      (pattern) => !existingPatternIds.includes(pattern.id),
     );
 
     if (searchTerm.trim()) {
@@ -80,7 +80,7 @@ export function AddPatternModal({
         (pattern) =>
           pattern.name.toLowerCase().includes(searchLower) ||
           (pattern.description &&
-            pattern.description.toLowerCase().includes(searchLower))
+            pattern.description.toLowerCase().includes(searchLower)),
       );
     }
 
@@ -88,7 +88,7 @@ export function AddPatternModal({
       filtered = filtered.filter((pattern) =>
         patternType === "strumming"
           ? !pattern.isFingerStyle
-          : pattern.isFingerStyle
+          : pattern.isFingerStyle,
       );
     }
 
@@ -232,8 +232,8 @@ export function AddPatternModal({
                   {existingPatternIds.length >= 10
                     ? "The maximum of 10 patterns has been reached."
                     : searchTerm || patternType !== "all"
-                    ? "No patterns found."
-                    : "All available patterns have already been added."}
+                      ? "No patterns found."
+                      : "All available patterns have already been added."}
                 </div>
               )}
             </ScrollArea>

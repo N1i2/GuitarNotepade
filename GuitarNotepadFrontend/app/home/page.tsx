@@ -123,9 +123,7 @@ export default function HomePage() {
                 <FileMusic className="h-5 w-5" />
                 Song Library
               </CardTitle>
-              <CardDescription>
-                Browse and create songs
-              </CardDescription>
+              <CardDescription>Browse and create songs</CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
@@ -146,9 +144,7 @@ export default function HomePage() {
                   <FileText className="h-5 w-5" />
                   Albums
                 </CardTitle>
-                <CardDescription>
-                  Browse and create albums
-                </CardDescription>
+                <CardDescription>Browse and create albums</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
@@ -170,9 +166,7 @@ export default function HomePage() {
                   <FileText className="h-5 w-5" />
                   Users
                 </CardTitle>
-                <CardDescription>
-                  Browse users
-                </CardDescription>
+                <CardDescription>Browse users</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
@@ -194,9 +188,7 @@ export default function HomePage() {
                   <FileText className="h-5 w-5" />
                   Subscriptions
                 </CardTitle>
-                <CardDescription>
-                  Your Subscriptions
-                </CardDescription>
+                <CardDescription>Your Subscriptions</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
@@ -218,9 +210,7 @@ export default function HomePage() {
                   <FileText className="h-5 w-5" />
                   Premium
                 </CardTitle>
-                <CardDescription>
-                  My premium
-                </CardDescription>
+                <CardDescription>My premium</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
@@ -242,13 +232,12 @@ export default function HomePage() {
                   <FileText className="h-5 w-5" />
                   Messages
                 </CardTitle>
-                <CardDescription>
-                  Your Messages
-                </CardDescription>
+                <CardDescription>Your Messages</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Notifications about changes in the content of your subscriptions.
+                  Notifications about changes in the content of your
+                  subscriptions.
                 </p>
                 <Button asChild className="w-full">
                   <Link href="/home/messages">

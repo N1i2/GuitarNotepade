@@ -4,8 +4,11 @@ namespace Domain.Entities;
 
 public enum NotificationType
 {
-    UserContentChanged = 1,
-    AlbumChanged = 2
+    AlbumChanged = 1,
+    AlbumDeleted = 2,
+    SongAdded = 3,
+    SongRemoved = 4,
+    AlbumVisibilityChanged = 5
 }
 
 public class Notification : BaseEntityWithId

@@ -41,7 +41,7 @@ public class ChordsController : ControllerBase
             var filters = new ChordFiltersDto
             {
                 Name = name,
-                MyChordsOnly = isAuth ? myChordsOnly : false, 
+                MyChordsOnly = isAuth ? myChordsOnly : false,
                 UserId = isAuth && myChordsOnly == true ? GetCurrentUserId() : null,
                 Page = page,
                 PageSize = pageSize,

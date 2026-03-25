@@ -18,7 +18,6 @@ import {
   ArrowLeft,
   Save,
   AlertCircle,
-  Infinity,
   Music,
   ExternalLink,
 } from "lucide-react";
@@ -60,9 +59,9 @@ function LimitWarningAlert({
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
           {isWarning ? (
-            <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+            <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-0" />
           ) : (
-            <Music className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+            <Music className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-0" />
           )}
           <span
             className={`text-sm ${isWarning ? "text-red-700 dark:text-red-300" : "text-blue-700 dark:text-blue-300"}`}
@@ -71,7 +70,7 @@ function LimitWarningAlert({
           </span>
         </div>
         {showLink && (
-          <Link href="/home/premium" className="flex-shrink-0">
+          <Link href="/home/premium" className="flex-0">
             <Button
               variant="outline"
               size="sm"

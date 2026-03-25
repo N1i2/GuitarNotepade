@@ -24,9 +24,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  TooltipProvider,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   ArrowLeft,
   Edit,
@@ -804,7 +802,7 @@ export default function SongDetailPage() {
         <span
           key={segment.id}
           style={segmentStyles}
-          className={`relative inline-block group cursor-default ${isEmptyPlayback ? "min-w-[2rem]" : ""}`}
+          className={`relative inline-block group cursor-default ${isEmptyPlayback ? "min-w-8" : ""}`}
           title={!showAllHints ? chordName || undefined : undefined}
           onMouseEnter={(e) => {
             if (!showAllHints) {

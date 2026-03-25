@@ -3,5 +3,4 @@
 public class CreateSubscriptionDto
 {
     public Guid TargetId { get; set; }
-    public bool IsUserSub { get; set; }
 }

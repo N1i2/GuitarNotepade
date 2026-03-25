@@ -95,10 +95,10 @@ export function ChordDisplay({ fingering, name }: ChordDisplayProps) {
                     value === 0
                       ? "bg-green-500"
                       : value === "X"
-                      ? "bg-red-500"
-                      : typeof value === "number" && value > 0
-                      ? getFretColor(value)
-                      : "bg-gray-200"
+                        ? "bg-red-500"
+                        : typeof value === "number" && value > 0
+                          ? getFretColor(value)
+                          : "bg-gray-200"
                   }`}
                 >
                   {value === 0 ? "O" : value === "X" ? "X" : value}
@@ -149,7 +149,7 @@ export function ChordDisplay({ fingering, name }: ChordDisplayProps) {
                       {isActive ? (
                         <div
                           className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${getFretColor(
-                            fretNum
+                            fretNum,
                           )}`}
                         >
                           ●
@@ -193,8 +193,8 @@ export function ChordDisplay({ fingering, name }: ChordDisplayProps) {
                       value === 0
                         ? "bg-green-100 dark:bg-green-900/30"
                         : value === "X"
-                        ? "bg-red-100 dark:bg-red-900/30"
-                        : "bg-blue-100 dark:bg-blue-900/30"
+                          ? "bg-red-100 dark:bg-red-900/30"
+                          : "bg-blue-100 dark:bg-blue-900/30"
                     }`}
                   >
                     {getDisplayValue(value)}

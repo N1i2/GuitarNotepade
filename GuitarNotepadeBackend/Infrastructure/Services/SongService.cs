@@ -56,12 +56,6 @@ public class SongService : ISongService
 
         _logger.LogInformation("Song created: {SongId} by user {UserId}", song.Id, ownerId);
 
-        await _notificationService.NotifyUserContentChangedAsync(
-            authorId: ownerId,
-            message: $"User updated their content: created song \"{song.Title}\".",
-            songId: song.Id,
-            cancellationToken: cancellationToken);
-
         return song;
     }
 
@@ -87,12 +81,6 @@ public class SongService : ISongService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Song updated: {SongId}", songId);
-
-        await _notificationService.NotifyUserContentChangedAsync(
-            authorId: song.OwnerId,
-            message: $"User updated their content: song \"{song.Title}\" was updated.",
-            songId: song.Id,
-            cancellationToken: cancellationToken);
 
         return song;
     }

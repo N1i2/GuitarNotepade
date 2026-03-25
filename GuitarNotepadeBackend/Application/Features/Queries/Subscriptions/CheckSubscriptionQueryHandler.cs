@@ -17,7 +17,6 @@ public class CheckSubscriptionQueryHandler : IRequestHandler<CheckSubscriptionQu
         return await _unitOfWork.Subscriptions.ExistsAsync(
             request.UserId,
             request.SubId,
-            request.IsUserSub,
             cancellationToken);
     }
 }

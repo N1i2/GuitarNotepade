@@ -82,7 +82,7 @@ public class StrummingPatternsController : ControllerBase
                 Name = name,
                 Page = page,
                 PageSize = pageSize,
-                SortBy = "name", 
+                SortBy = "name",
                 SortOrder = "asc"
             };
 

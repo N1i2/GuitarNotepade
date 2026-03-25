@@ -8,18 +8,18 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Features.Commands.Subscriptions;
 
-public class SubscribeToAlbumCommandHandler : IRequestHandler<SubscribeToAlbumCommand, SubscriptionResponseDto>
+public class SubscribeCommandHandler : IRequestHandler<SubscribeCommand, SubscriptionResponseDto>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IUserService _userService;
     private readonly IAlbumService _albumService;
-    private readonly ILogger<SubscribeToAlbumCommandHandler> _logger;
+    private readonly ILogger<SubscribeCommandHandler> _logger;
 
-    public SubscribeToAlbumCommandHandler(
+    public SubscribeCommandHandler(
         IUnitOfWork unitOfWork,
         IUserService userService,
         IAlbumService albumService,
-        ILogger<SubscribeToAlbumCommandHandler> logger)
+        ILogger<SubscribeCommandHandler> logger)
     {
         _unitOfWork = unitOfWork;
         _userService = userService;
@@ -27,27 +27,41 @@ public class SubscribeToAlbumCommandHandler : IRequestHandler<SubscribeToAlbumCo
         _logger = logger;
     }
 
-    public async Task<SubscriptionResponseDto> Handle(SubscribeToAlbumCommand request, CancellationToken cancellationToken)
+    public async Task<SubscriptionResponseDto> Handle(SubscribeCommand request, CancellationToken cancellationToken)
     {
         var user = await _userService.GetByIdAsync(request.UserId, cancellationToken);
+
         if (user == null)
+        {
             throw new KeyNotFoundException($"User with ID {request.UserId} not found");
+        }
 
         var album = await _albumService.GetAlbumByIdAsync(request.AlbumId, cancellationToken);
+
         if (album == null)
+        {
             throw new KeyNotFoundException($"Album with ID {request.AlbumId} not found");
+        }
+
+        if (album.OwnerId == request.UserId)
+        {
+            throw new InvalidOperationException("You cannot subscribe to your own album");
+        }
 
         if (!album.IsPublic)
+        {
             throw new InvalidOperationException("Cannot subscribe to private album");
+        }
 
         var exists = await _unitOfWork.Subscriptions.ExistsAsync(
             request.UserId,
             request.AlbumId,
-            false,
             cancellationToken);
 
         if (exists)
+        {
             throw new InvalidOperationException("Already subscribed to this album");
+        }
 
         if (user.IsFreeUser)
         {
@@ -62,7 +76,7 @@ public class SubscribeToAlbumCommandHandler : IRequestHandler<SubscribeToAlbumCo
             }
         }
 
-        var subscription = Subscription.CreateForAlbum(request.UserId, request.AlbumId);
+        var subscription = Subscription.Create(request.UserId, request.AlbumId);
 
         await _unitOfWork.Subscriptions.CreateAsync(subscription, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

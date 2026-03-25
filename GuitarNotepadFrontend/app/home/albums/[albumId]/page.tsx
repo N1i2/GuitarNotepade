@@ -34,6 +34,7 @@ import {
   X,
   Check,
   ExternalLink,
+  EyeOff,
 } from "lucide-react";
 import {
   Dialog,
@@ -76,7 +77,13 @@ export default function AlbumDetailPage() {
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Failed to load album";
-      toast.error(message);
+
+      if ((error as any)?.status === 403 || (error as any)?.status === 401) {
+        toast.error("This album is private. You don't have access to view it.");
+      } else {
+        toast.error(message);
+      }
+
       router.push("/home/albums");
     } finally {
       setIsLoading(false);
@@ -97,6 +104,7 @@ export default function AlbumDetailPage() {
       });
 
       const albumSongIds = album?.songs.map((song) => song.id) || [];
+
       const filteredSongs = response.songs.filter(
         (song) => !albumSongIds.includes(song.id),
       );
@@ -192,6 +200,12 @@ export default function AlbumDetailPage() {
     !isFavoriteAlbum;
   const canManage = album && user?.id === album.ownerId && !isFavoriteAlbum;
 
+  const canViewSong = (song: SongInAlbumDto): boolean => {
+    if (song.isPublic) return true;
+
+    return user?.id === album?.ownerId || user?.role === "Admin";
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -219,8 +233,8 @@ export default function AlbumDetailPage() {
     return gradients[hash % gradients.length];
   };
 
-  const getSongColor = (title: string) => {
-    const colors = [
+  const getSongColor = (title: string, isPrivate: boolean) => {
+    const baseColors = [
       "bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-950/30 dark:to-teal-900/20 border-teal-200 dark:border-teal-800",
       "bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20 border-blue-200 dark:border-blue-800",
       "bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/20 border-purple-200 dark:border-purple-800",
@@ -229,10 +243,22 @@ export default function AlbumDetailPage() {
       "bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/20 border-emerald-200 dark:border-emerald-800",
     ];
 
+    const privateColors = [
+      "bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950/30 dark:to-gray-900/20 border-gray-300 dark:border-gray-700 opacity-75",
+      "bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950/30 dark:to-slate-900/20 border-slate-300 dark:border-slate-700 opacity-75",
+    ];
+
+    if (isPrivate) {
+      const hash = title
+        .split("")
+        .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      return privateColors[hash % privateColors.length];
+    }
+
     const hash = title
       .split("")
       .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return colors[hash % colors.length];
+    return baseColors[hash % baseColors.length];
   };
 
   const renderRatingStars = (rating?: number) => {
@@ -262,6 +288,12 @@ export default function AlbumDetailPage() {
   const hasAudio = (song: SongInAlbumDto): boolean => {
     return !!(song.customAudioUrl && song.customAudioType);
   };
+
+  const visibleSongs = album?.songs.filter((song) => canViewSong(song)) || [];
+  const paginatedSongs = visibleSongs.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
+  );
 
   if (isLoading) {
     return (
@@ -304,11 +336,6 @@ export default function AlbumDetailPage() {
       </div>
     );
   }
-
-  const paginatedSongs = album.songs.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize,
-  );
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
@@ -447,10 +474,15 @@ export default function AlbumDetailPage() {
                   <div className="p-4 bg-muted/50 rounded-lg">
                     <div className="text-center">
                       <div className="text-3xl font-bold text-primary">
-                        {album.countOfSongs}
+                        {visibleSongs.length}
                       </div>
                       <div className="text-sm text-muted-foreground">
                         Songs in Album
+                        {album.songs.length !== visibleSongs.length && (
+                          <span className="block text-xs">
+                            ({album.songs.length - visibleSongs.length} private)
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -498,168 +530,197 @@ export default function AlbumDetailPage() {
                   </CardTitle>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline">
-                      {album.songs.length} song
-                      {album.songs.length !== 1 ? "s" : ""}
+                      {visibleSongs.length} song
+                      {visibleSongs.length !== 1 ? "s" : ""}
+                      {album.songs.length !== visibleSongs.length && (
+                        <span className="ml-1 text-muted-foreground">
+                          ({album.songs.length} total)
+                        </span>
+                      )}
                     </Badge>
                   </div>
                 </div>
                 <CardDescription>
                   Click any song to view its details
+                  {album.songs.length !== visibleSongs.length && (
+                    <span className="block text-muted-foreground mt-1">
+                      Private songs are only visible to the album owner and
+                      admins
+                    </span>
+                  )}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {album.songs.length === 0 ? (
+                {visibleSongs.length === 0 ? (
                   <div className="text-center py-12">
                     <Music className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold">No songs yet</h3>
+                    <h3 className="text-lg font-semibold">No songs visible</h3>
                     <p className="text-muted-foreground mt-2">
-                      This album does not have any songs yet.
+                      {album.songs.length > 0
+                        ? "This album contains private songs that are only visible to the album owner."
+                        : "This album does not have any songs yet."}
                     </p>
-                    <Button
-                      onClick={() => setAddSongsDialogOpen(true)}
-                      className="mt-4"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Your First Song
-                    </Button>
+                    {canManage && album.songs.length === 0 && (
+                      <Button
+                        onClick={() => setAddSongsDialogOpen(true)}
+                        className="mt-4"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Your First Song
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {paginatedSongs.map((song) => (
-                        <div key={song.id} className="relative group">
-                          <Card
-                            className={`cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg border-2 ${getSongColor(
-                              song.title,
-                            )}`}
-                            onClick={() => handleSongClick(song.id)}
-                          >
-                            <CardContent className="p-4">
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRemoveSong(song.id, song.title);
-                                }}
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
+                      {paginatedSongs.map((song) => {
+                        const isPrivate = !song.isPublic;
+                        const isOwnerOrAdmin =
+                          user?.id === album.ownerId || user?.role === "Admin";
 
-                              <div className="flex flex-wrap gap-1 mb-2">
-                                {!song.isPublic && (
-                                  <Badge
-                                    variant="outline"
-                                    className="flex items-center gap-1 text-xs"
+                        return (
+                          <div key={song.id} className="relative group">
+                            <Card
+                              className={`cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg border-2 ${getSongColor(
+                                song.title,
+                                isPrivate && !isOwnerOrAdmin,
+                              )} ${isPrivate && !isOwnerOrAdmin ? "opacity-75" : ""}`}
+                              onClick={() => handleSongClick(song.id)}
+                            >
+                              <CardContent className="p-4">
+                                {user?.id === album.ownerId && (
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemoveSong(song.id, song.title);
+                                    }}
                                   >
-                                    <Lock className="h-2.5 w-2.5" />
-                                    Private
-                                  </Badge>
+                                    <X className="h-3 w-3" />
+                                  </Button>
                                 )}
-                                {hasAudio(song) && (
-                                  <Badge
-                                    variant="outline"
-                                    className="flex items-center gap-1 text-xs bg-blue-50 dark:bg-blue-900/30"
+
+                                <div className="flex flex-wrap gap-1 mb-2">
+                                  {!song.isPublic && (
+                                    <Badge
+                                      variant="outline"
+                                      className="flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-800"
+                                    >
+                                      <EyeOff className="h-2.5 w-2.5" />
+                                      Private
+                                    </Badge>
+                                  )}
+                                  {hasAudio(song) && (
+                                    <Badge
+                                      variant="outline"
+                                      className="flex items-center gap-1 text-xs bg-blue-50 dark:bg-blue-900/30"
+                                    >
+                                      <Music className="h-2.5 w-2.5" />
+                                      Audio
+                                    </Badge>
+                                  )}
+                                </div>
+
+                                <h3 className="font-semibold text-lg mb-1 line-clamp-1">
+                                  {song.title}
+                                  {!song.isPublic && !isOwnerOrAdmin && (
+                                    <span className="ml-2 text-xs text-muted-foreground">
+                                      (private)
+                                    </span>
+                                  )}
+                                </h3>
+                                <p className="text-sm text-muted-foreground mb-3 line-clamp-1">
+                                  {song.artist || "No artist"}
+                                </p>
+
+                                <div className="mb-3 space-y-1">
+                                  {song.averageBeautifulRating && (
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="text-muted-foreground">
+                                        Beauty:
+                                      </span>
+                                      {renderRatingStars(
+                                        song.averageBeautifulRating,
+                                      )}
+                                    </div>
+                                  )}
+                                  {song.averageDifficultyRating && (
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="text-muted-foreground">
+                                        Difficulty:
+                                      </span>
+                                      {renderRatingStars(
+                                        song.averageDifficultyRating,
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-1 mb-3">
+                                  <div className="text-center p-1 bg-white/50 dark:bg-gray-800/50 rounded">
+                                    <div className="font-bold">
+                                      {song.chordCount}
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground">
+                                      Chords
+                                    </div>
+                                  </div>
+                                  <div className="text-center p-1 bg-white/50 dark:bg-gray-800/50 rounded">
+                                    <div className="font-bold">
+                                      {song.patternCount}
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground">
+                                      Patterns
+                                    </div>
+                                  </div>
+                                  <div className="text-center p-1 bg-white/50 dark:bg-gray-800/50 rounded">
+                                    <div className="font-bold">
+                                      {song.reviewCount}
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground">
+                                      Reviews
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center justify-between text-xs">
+                                  <div>
+                                    <div className="text-muted-foreground">
+                                      By {song.ownerName}
+                                    </div>
+                                    <div className="text-muted-foreground">
+                                      {new Date(
+                                        song.createdAt,
+                                      ).toLocaleDateString()}
+                                    </div>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSongClick(song.id);
+                                    }}
                                   >
-                                    <Music className="h-2.5 w-2.5" />
-                                    Audio
-                                  </Badge>
-                                )}
-                              </div>
-
-                              <h3 className="font-semibold text-lg mb-1 line-clamp-1">
-                                {song.title}
-                              </h3>
-                              <p className="text-sm text-muted-foreground mb-3 line-clamp-1">
-                                {song.artist || "No artist"}
-                              </p>
-
-                              <div className="mb-3 space-y-1">
-                                {song.averageBeautifulRating && (
-                                  <div className="flex items-center justify-between text-xs">
-                                    <span className="text-muted-foreground">
-                                      Beauty:
-                                    </span>
-                                    {renderRatingStars(
-                                      song.averageBeautifulRating,
-                                    )}
-                                  </div>
-                                )}
-                                {song.averageDifficultyRating && (
-                                  <div className="flex items-center justify-between text-xs">
-                                    <span className="text-muted-foreground">
-                                      Difficulty:
-                                    </span>
-                                    {renderRatingStars(
-                                      song.averageDifficultyRating,
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="grid grid-cols-3 gap-1 mb-3">
-                                <div className="text-center p-1 bg-white/50 dark:bg-gray-800/50 rounded">
-                                  <div className="font-bold">
-                                    {song.chordCount}
-                                  </div>
-                                  <div className="text-[10px] text-muted-foreground">
-                                    Chords
-                                  </div>
+                                    <ExternalLink className="h-3 w-3" />
+                                  </Button>
                                 </div>
-                                <div className="text-center p-1 bg-white/50 dark:bg-gray-800/50 rounded">
-                                  <div className="font-bold">
-                                    {song.patternCount}
-                                  </div>
-                                  <div className="text-[10px] text-muted-foreground">
-                                    Patterns
-                                  </div>
-                                </div>
-                                <div className="text-center p-1 bg-white/50 dark:bg-gray-800/50 rounded">
-                                  <div className="font-bold">
-                                    {song.reviewCount}
-                                  </div>
-                                  <div className="text-[10px] text-muted-foreground">
-                                    Reviews
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center justify-between text-xs">
-                                <div>
-                                  <div className="text-muted-foreground">
-                                    By {song.ownerName}
-                                  </div>
-                                  <div className="text-muted-foreground">
-                                    {new Date(
-                                      song.createdAt,
-                                    ).toLocaleDateString()}
-                                  </div>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleSongClick(song.id);
-                                  }}
-                                >
-                                  <ExternalLink className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      ))}
+                              </CardContent>
+                            </Card>
+                          </div>
+                        );
+                      })}
                     </div>
 
-                    {album.songs.length > pageSize && (
+                    {visibleSongs.length > pageSize && (
                       <div className="mt-6 flex justify-center">
                         <div className="flex gap-2">
                           {Array.from(
                             {
-                              length: Math.ceil(album.songs.length / pageSize),
+                              length: Math.ceil(visibleSongs.length / pageSize),
                             },
                             (_, i) => i + 1,
                           ).map((pageNum) => (
@@ -727,6 +788,10 @@ export default function AlbumDetailPage() {
             <DialogTitle>Add Songs to Album</DialogTitle>
             <DialogDescription>
               Select songs to add to "{album.title}"
+              <span className="block text-muted-foreground mt-1 text-sm">
+                Private songs will only be visible to you and admins in this
+                album
+              </span>
             </DialogDescription>
           </DialogHeader>
 
@@ -798,7 +863,13 @@ export default function AlbumDetailPage() {
                         </Badge>
                       )}
                       {!song.isPublic && (
-                        <Lock className="h-4 w-4 text-muted-foreground" />
+                        <Badge
+                          variant="outline"
+                          className="text-xs bg-gray-100 dark:bg-gray-800"
+                        >
+                          <EyeOff className="h-3 w-3 mr-1" />
+                          Private
+                        </Badge>
                       )}
                     </div>
                   </div>

@@ -15,6 +15,7 @@ public class RemoveSongFromAlbumCommandHandler : IRequestHandler<RemoveSongFromA
     public async Task<Unit> Handle(RemoveSongFromAlbumCommand request, CancellationToken cancellationToken)
     {
         var album = await _unitOfWork.Alboms.GetByIdAsync(request.AlbumId, cancellationToken);
+
         if (album == null)
         {
             throw new KeyNotFoundException($"Album with id {request.AlbumId} not found");

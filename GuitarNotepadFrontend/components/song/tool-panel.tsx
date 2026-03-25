@@ -150,7 +150,7 @@ function ChordModal({
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="border rounded-lg p-6 bg-gradient-to-b from-background to-muted/20">
+            <div className="border rounded-lg p-6 bg-linear-to-b from-background to-muted/20">
               <h3 className="text-lg font-semibold mb-4 text-center">
                 Chord Diagram
               </h3>
@@ -189,15 +189,15 @@ function ChordModal({
                             fretValue === "0"
                               ? "text-green-600"
                               : fretValue === "X" || fretValue === "x"
-                              ? "text-red-600"
-                              : "text-blue-600"
+                                ? "text-red-600"
+                                : "text-blue-600"
                           }`}
                         >
                           {fretValue === "0"
                             ? "Open"
                             : fretValue === "X" || fretValue === "x"
-                            ? "Mute"
-                            : `Fret ${fretValue}`}
+                              ? "Mute"
+                              : `Fret ${fretValue}`}
                         </div>
                       </div>
                     );
@@ -318,7 +318,7 @@ function PatternModal({
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="border rounded-lg p-6 bg-gradient-to-b from-background to-muted/20">
+            <div className="border rounded-lg p-6 bg-linear-to-b from-background to-muted/20">
               <h3 className="text-lg font-semibold mb-4 text-center">
                 Pattern Visualization
               </h3>
@@ -465,19 +465,19 @@ export function ToolPanel() {
   const [showAddPattern, setShowAddPattern] = useState(false);
   const [showReplaceChord, setShowReplaceChord] = useState<string | null>(null);
   const [showReplacePattern, setShowReplacePattern] = useState<string | null>(
-    null
+    null,
   );
   const [editingChordId, setEditingChordId] = useState<string | null>(null);
   const [editingPatternId, setEditingPatternId] = useState<string | null>(null);
   const [selectedChordName, setSelectedChordName] = useState<string | null>(
-    null
+    null,
   );
   const [selectedPatternName, setSelectedPatternName] = useState<string | null>(
-    null
+    null,
   );
 
   const handleToolSelect = (
-    tool: "select" | "chord" | "pattern" | "comment"
+    tool: "select" | "chord" | "pattern" | "comment",
   ) => {
     dispatch({ type: "SET_TOOL", payload: tool });
   };
@@ -532,7 +532,7 @@ export function ToolPanel() {
         };
       } else {
         const chord = state.selectedChords.find(
-          (c) => c.id === state.selectedChordId
+          (c) => c.id === state.selectedChordId,
         );
         return {
           Title: `Chord: ${chord?.name}`,
@@ -550,7 +550,7 @@ export function ToolPanel() {
         };
       } else {
         const pattern = state.selectedPatterns.find(
-          (p) => p.id === state.selectedPatternId
+          (p) => p.id === state.selectedPatternId,
         );
         return {
           title: `Pattern: ${pattern?.name}`,
@@ -697,7 +697,7 @@ export function ToolPanel() {
                       dispatch({ type: "SELECT_CHORD", payload: chord.id });
                       dispatch({ type: "SET_TOOL", payload: "chord" });
                       toast.info(
-                        `Click on words to assign chord "${chord.name}"`
+                        `Click on words to assign chord "${chord.name}"`,
                       );
                     }}
                   >
@@ -784,7 +784,7 @@ export function ToolPanel() {
                       dispatch({ type: "SELECT_PATTERN", payload: pattern.id });
                       dispatch({ type: "SET_TOOL", payload: "pattern" });
                       toast.info(
-                        `Select text and click "Apply" or click on words to assign pattern "${pattern.name}"`
+                        `Select text and click "Apply" or click on words to assign pattern "${pattern.name}"`,
                       );
                     }}
                   >

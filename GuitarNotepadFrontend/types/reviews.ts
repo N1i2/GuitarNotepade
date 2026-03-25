@@ -50,7 +50,7 @@ export async function submitReview(
     reviewText: string;
     beautifulLevel?: number;
     difficultyLevel?: number;
-  }
+  },
 ) {
   try {
     return await ReviewsService.createReview(songId, reviewData);
@@ -65,7 +65,7 @@ export async function updateReview(
     reviewText?: string;
     beautifulLevel?: number;
     difficultyLevel?: number;
-  }
+  },
 ) {
   try {
     return await ReviewsService.updateReview(reviewId, reviewData);

@@ -22,28 +22,18 @@ public class GetUserSubscriptionsQueryHandler : IRequestHandler<GetUserSubscript
         var subscriptions = await _unitOfWork.Subscriptions
             .GetQueryable()
             .Include(s => s.Subscriber)
-            .Include(s => s.TargetUser)
             .Include(s => s.TargetAlbum)
             .Where(s => s.UserId == request.UserId)
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync(cancellationToken);
 
         var result = _mapper.Map<List<SubscriptionDto>>(subscriptions);
-        
+
         foreach (var sub in result)
         {
             var subscription = subscriptions.First(s => s.Id == sub.Id);
 
-            if (subscription.IsUserSub)
-            {
-                sub.SubName = subscription.TargetUser?.NikName ?? "Unknown User";
-                sub.TargetId = subscription.TargetUser?.Id ?? Guid.Empty;
-            }
-            else
-            {
-                sub.SubName = subscription.TargetAlbum?.Title ?? "Unknown Album";
-                sub.TargetId = subscription.TargetAlbum?.Id ?? Guid.Empty;
-            }
+            sub.TargetId = subscription.TargetAlbum?.Id ?? Guid.Empty;
 
             sub.UserName = subscription.Subscriber?.NikName ?? "Unknown User";
         }

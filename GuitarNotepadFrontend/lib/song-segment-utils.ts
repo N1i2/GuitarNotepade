@@ -6,12 +6,36 @@ import {
 } from "@/types/songs";
 
 export const ALL_COLORS = [
-  "#FF6B6B", "#4ECDC4", "#FFD166", "#06D6A0", "#118AB2",
-  "#EF476F", "#073B4C", "#FF9F1C", "#2EC4B6", "#E71D36",
-  "#B91372", "#06BCC1", "#C5D86D", "#F4D35E", "#EE964B",
-  "#F95738", "#0D3B66", "#FAF0CA", "#A663CC", "#6A994E",
-  "#E63946", "#A8DADC", "#457B9D", "#1D3557", "#F4A261",
-  "#2A9D8F", "#E9C46A", "#264653", "#E76F51", "#F4E285",
+  "#FF6B6B",
+  "#4ECDC4",
+  "#FFD166",
+  "#06D6A0",
+  "#118AB2",
+  "#EF476F",
+  "#073B4C",
+  "#FF9F1C",
+  "#2EC4B6",
+  "#E71D36",
+  "#B91372",
+  "#06BCC1",
+  "#C5D86D",
+  "#F4D35E",
+  "#EE964B",
+  "#F95738",
+  "#0D3B66",
+  "#FAF0CA",
+  "#A663CC",
+  "#6A994E",
+  "#E63946",
+  "#A8DADC",
+  "#457B9D",
+  "#1D3557",
+  "#F4A261",
+  "#2A9D8F",
+  "#E9C46A",
+  "#264653",
+  "#E76F51",
+  "#F4E285",
 ].filter((color) => color !== "#000000" && color !== "#FFFFFF");
 
 export const CHORD_COLORS = ALL_COLORS.slice(0, 20);
@@ -21,7 +45,7 @@ export function generateSegmentId(
   startIndex: number,
   length: number,
   chordId?: string,
-  patternId?: string
+  patternId?: string,
 ): string {
   const base = `${startIndex}-${length}-${chordId || "none"}-${patternId || "none"}`;
   let hash = 0;
@@ -34,25 +58,27 @@ export function generateSegmentId(
 
 export function findSegmentAtPosition(
   segments: UISegment[],
-  position: number
+  position: number,
 ): UISegment | null {
   return (
     segments.find(
       (segment) =>
         position >= segment.startIndex &&
-        position < segment.startIndex + segment.length
+        position < segment.startIndex + segment.length,
     ) || null
   );
 }
 
-export function splitTextIntoWords(text: string): Array<{word: string, start: number, end: number}> {
-  const words: Array<{word: string, start: number, end: number}> = [];
+export function splitTextIntoWords(
+  text: string,
+): Array<{ word: string; start: number; end: number }> {
+  const words: Array<{ word: string; start: number; end: number }> = [];
   let wordStart = -1;
-  
+
   for (let i = 0; i <= text.length; i++) {
-    const char = i < text.length ? text[i] : ' ';
+    const char = i < text.length ? text[i] : " ";
     const isWordChar = !isSeparator(char);
-    
+
     if (isWordChar && wordStart === -1) {
       wordStart = i;
     } else if (!isWordChar && wordStart !== -1) {
@@ -61,60 +87,81 @@ export function splitTextIntoWords(text: string): Array<{word: string, start: nu
         words.push({
           word,
           start: wordStart,
-          end: i
+          end: i,
         });
       }
       wordStart = -1;
     }
   }
-  
+
   return words;
 }
 
 function isSeparator(char: string): boolean {
-  return char === ' ' || char === '\n' || char === '\t' || 
-         char === ',' || char === '.' || char === '!' || char === '?' ||
-         char === ';' || char === ':' || char === '(' || char === ')' ||
-         char === '[' || char === ']';
+  return (
+    char === " " ||
+    char === "\n" ||
+    char === "\t" ||
+    char === "," ||
+    char === "." ||
+    char === "!" ||
+    char === "?" ||
+    char === ";" ||
+    char === ":" ||
+    char === "(" ||
+    char === ")" ||
+    char === "[" ||
+    char === "]"
+  );
 }
 
-export function findWordAtPosition(text: string, position: number): {word: string, start: number, end: number} | null {
+export function findWordAtPosition(
+  text: string,
+  position: number,
+): { word: string; start: number; end: number } | null {
   const words = splitTextIntoWords(text);
-  return words.find(word => position >= word.start && position < word.end) || null;
+  return (
+    words.find((word) => position >= word.start && position < word.end) || null
+  );
 }
 
 export function mergeSegments(segments: UISegment[]): UISegment[] {
   if (segments.length <= 1) return segments;
-  
+
   const sorted = [...segments].sort((a, b) => a.startIndex - b.startIndex);
   const result: UISegment[] = [];
-  
+
   let current = sorted[0];
-  
+
   for (let i = 1; i < sorted.length; i++) {
     const next = sorted[i];
-    
+
     const isAdjacent = current.startIndex + current.length === next.startIndex;
     const sameChord = current.chordId === next.chordId;
     const samePattern = current.patternId === next.patternId;
-    
+
     if (isAdjacent && sameChord && samePattern) {
       current = {
         ...current,
         length: current.length + next.length,
-        text: (current.text || '') + (next.text || '')
+        text: (current.text || "") + (next.text || ""),
       };
     } else {
       result.push(current);
       current = next;
     }
   }
-  
+
   result.push(current);
-  
-  return result.map(segment => ({
+
+  return result.map((segment) => ({
     ...segment,
-    id: generateSegmentId(segment.startIndex, segment.length, segment.chordId, segment.patternId)
+    id: generateSegmentId(
+      segment.startIndex,
+      segment.length,
+      segment.chordId,
+      segment.patternId,
+    ),
   }));
 }
 
@@ -124,23 +171,23 @@ export function assignChordToWord(
   wordStart: number,
   chordId: string,
   chords: SongChordDto[],
-  patterns: SongPatternDto[]
+  patterns: SongPatternDto[],
 ): UISegment[] {
   const word = findWordAtPosition(text, wordStart);
   if (!word) return segments;
-  
+
   const { start, end } = word;
-  const chord = chords.find(c => c.id === chordId);
+  const chord = chords.find((c) => c.id === chordId);
   if (!chord) return segments;
 
-  const overlappingSegments = segments.filter(s => 
-    s.startIndex < end && s.startIndex + s.length > start
+  const overlappingSegments = segments.filter(
+    (s) => s.startIndex < end && s.startIndex + s.length > start,
   );
-  
-  let result: UISegment[] = segments.filter(s => 
-    s.startIndex >= end || s.startIndex + s.length <= start
+
+  let result: UISegment[] = segments.filter(
+    (s) => s.startIndex >= end || s.startIndex + s.length <= start,
   );
-  
+
   if (overlappingSegments.length === 0) {
     const newSegment: UISegment = {
       id: generateSegmentId(start, end - start, chordId),
@@ -149,53 +196,53 @@ export function assignChordToWord(
       length: end - start,
       text: word.word,
       chordId,
-      patternId: undefined, 
+      patternId: undefined,
       color: chord.color,
       backgroundColor: undefined,
     };
     result.push(newSegment);
   } else {
-    overlappingSegments.forEach(segment => {
+    overlappingSegments.forEach((segment) => {
       const segmentEnd = segment.startIndex + segment.length;
-      
+
       const parts: Array<{
         start: number;
         end: number;
         shouldHaveChord: boolean;
       }> = [];
-      
+
       if (segment.startIndex < start) {
         parts.push({
           start: segment.startIndex,
           end: start,
-          shouldHaveChord: false
+          shouldHaveChord: false,
         });
       }
-      
+
       parts.push({
         start: Math.max(segment.startIndex, start),
         end: Math.min(segmentEnd, end),
-        shouldHaveChord: true
+        shouldHaveChord: true,
       });
-      
+
       if (segmentEnd > end) {
         parts.push({
           start: end,
           end: segmentEnd,
-          shouldHaveChord: false
+          shouldHaveChord: false,
         });
       }
-      
-      parts.forEach(part => {
+
+      parts.forEach((part) => {
         const partText = text.substring(part.start, part.end);
-        if (!partText.trim() && partText !== '') return;
-        
+        if (!partText.trim() && partText !== "") return;
+
         const newSegment: UISegment = {
           id: generateSegmentId(
             part.start,
             part.end - part.start,
             part.shouldHaveChord ? chordId : segment.chordId,
-            segment.patternId
+            segment.patternId,
           ),
           order: result.length,
           startIndex: part.start,
@@ -210,7 +257,7 @@ export function assignChordToWord(
       });
     });
   }
-  
+
   return mergeSegments(result.sort((a, b) => a.startIndex - b.startIndex));
 }
 
@@ -221,22 +268,23 @@ export function assignPatternToText(
   patternEnd: number,
   patternId: string,
   chords: SongChordDto[],
-  patterns: SongPatternDto[]
+  patterns: SongPatternDto[],
 ): UISegment[] {
-  const pattern = patterns.find(p => p.id === patternId);
+  const pattern = patterns.find((p) => p.id === patternId);
   if (!pattern || patternStart >= patternEnd) return segments;
-  
-  const rangeSegments = segments.filter(s => 
-    s.startIndex < patternEnd && s.startIndex + s.length > patternStart
+
+  const rangeSegments = segments.filter(
+    (s) => s.startIndex < patternEnd && s.startIndex + s.length > patternStart,
   );
-  
-  let result: UISegment[] = segments.filter(s => 
-    s.startIndex >= patternEnd || s.startIndex + s.length <= patternStart
+
+  let result: UISegment[] = segments.filter(
+    (s) =>
+      s.startIndex >= patternEnd || s.startIndex + s.length <= patternStart,
   );
-  
+
   if (rangeSegments.length === 0) {
     const words = splitTextIntoWords(text.substring(patternStart, patternEnd));
-    
+
     words.forEach((word, index) => {
       const newSegment: UISegment = {
         id: generateSegmentId(word.start + patternStart, word.end - word.start),
@@ -244,7 +292,7 @@ export function assignPatternToText(
         startIndex: word.start + patternStart,
         length: word.end - word.start,
         text: word.word,
-        chordId: undefined, 
+        chordId: undefined,
         patternId,
         color: undefined,
         backgroundColor: pattern.color,
@@ -252,67 +300,69 @@ export function assignPatternToText(
       result.push(newSegment);
     });
   } else {
-    rangeSegments.forEach(segment => {
+    rangeSegments.forEach((segment) => {
       const segmentEnd = segment.startIndex + segment.length;
-      
+
       const overlapStart = Math.max(segment.startIndex, patternStart);
       const overlapEnd = Math.min(segmentEnd, patternEnd);
-      
+
       const parts: Array<{
         start: number;
         end: number;
         hasPattern: boolean;
       }> = [];
-      
+
       if (segment.startIndex < patternStart) {
         parts.push({
           start: segment.startIndex,
           end: patternStart,
-          hasPattern: false
+          hasPattern: false,
         });
       }
-      
+
       if (overlapStart < overlapEnd) {
         parts.push({
           start: overlapStart,
           end: overlapEnd,
-          hasPattern: true
+          hasPattern: true,
         });
       }
-      
+
       if (segmentEnd > patternEnd) {
         parts.push({
           start: patternEnd,
           end: segmentEnd,
-          hasPattern: false
+          hasPattern: false,
         });
       }
-      
-      parts.forEach(part => {
+
+      parts.forEach((part) => {
         const partText = text.substring(part.start, part.end);
-        if (!partText.trim() && partText !== '') return;
-        
+        if (!partText.trim() && partText !== "") return;
+
         const newSegment: UISegment = {
           id: generateSegmentId(
             part.start,
             part.end - part.start,
             segment.chordId,
-            part.hasPattern ? patternId : segment.patternId
+            part.hasPattern ? patternId : segment.patternId,
           ),
           order: result.length,
           startIndex: part.start,
           length: part.end - part.start,
           text: partText,
-          chordId: segment.chordId, 
+          chordId: segment.chordId,
           patternId: part.hasPattern ? patternId : segment.patternId,
           color: segment.color,
-          backgroundColor: part.hasPattern ? pattern.color : segment.backgroundColor,
+          backgroundColor: part.hasPattern
+            ? pattern.color
+            : segment.backgroundColor,
         };
         result.push(newSegment);
       });
     });
   }
-  
+
   return mergeSegments(result.sort((a, b) => a.startIndex - b.startIndex));
 }
 
@@ -321,26 +371,26 @@ export function applyToolToSelection(
   text: string,
   start: number,
   end: number,
-  tool: 'chord' | 'pattern',
+  tool: "chord" | "pattern",
   selectedId: string,
   chords: SongChordDto[],
-  patterns: SongPatternDto[]
+  patterns: SongPatternDto[],
 ): UISegment[] {
-  if (tool === 'chord') {
+  if (tool === "chord") {
     const words = splitTextIntoWords(text.substring(start, end));
     let result = segments;
-    
-    words.forEach(word => {
+
+    words.forEach((word) => {
       result = assignChordToWord(
         result,
         text,
         word.start + start,
         selectedId,
         chords,
-        patterns
+        patterns,
       );
     });
-    
+
     return result;
   } else {
     return assignPatternToText(
@@ -350,14 +400,14 @@ export function applyToolToSelection(
       end,
       selectedId,
       chords,
-      patterns
+      patterns,
     );
   }
 }
 
 export function prepareSegmentsForBackend(
   segments: UISegment[],
-  text: string
+  text: string,
 ): any[] {
   const sorted = [...segments].sort((a, b) => a.startIndex - b.startIndex);
   const result: any[] = [];
@@ -365,7 +415,7 @@ export function prepareSegmentsForBackend(
   sorted.forEach((segment, index) => {
     const segmentText = text.substring(
       segment.startIndex,
-      segment.startIndex + segment.length
+      segment.startIndex + segment.length,
     );
 
     let segmentType = "0";
@@ -393,7 +443,7 @@ export function prepareSegmentsForBackend(
 
 export function prepareCommentsForBackend(
   comments: UIComment[],
-  segments: UISegment[]
+  segments: UISegment[],
 ): Record<number, any[]> {
   const result: Record<number, any[]> = {};
 
@@ -412,7 +462,7 @@ export function prepareCommentsForBackend(
 
 export function isColorValidForType(
   color: string,
-  type: "chord" | "pattern"
+  type: "chord" | "pattern",
 ): boolean {
   const validColors = type === "chord" ? CHORD_COLORS : PATTERN_COLORS;
   return validColors.includes(color);
@@ -420,7 +470,7 @@ export function isColorValidForType(
 
 export function getNextAvailableColorForType(
   usedColors: string[],
-  type: "chord" | "pattern"
+  type: "chord" | "pattern",
 ): string {
   const availableColors = type === "chord" ? CHORD_COLORS : PATTERN_COLORS;
 
@@ -436,7 +486,7 @@ export function getNextAvailableColorForType(
 export function updateSegmentsForTextChange(
   oldText: string,
   newText: string,
-  oldSegments: UISegment[]
+  oldSegments: UISegment[],
 ): UISegment[] {
   if (oldText === newText) return oldSegments;
 
@@ -445,7 +495,7 @@ export function updateSegmentsForTextChange(
     .map((segment) => {
       const newLength = Math.min(
         segment.length,
-        newText.length - segment.startIndex
+        newText.length - segment.startIndex,
       );
 
       return {
@@ -453,13 +503,13 @@ export function updateSegmentsForTextChange(
         length: newLength,
         text: newText.substring(
           segment.startIndex,
-          segment.startIndex + newLength
+          segment.startIndex + newLength,
         ),
         id: generateSegmentId(
           segment.startIndex,
           newLength,
           segment.chordId,
-          segment.patternId
+          segment.patternId,
         ),
       };
     })

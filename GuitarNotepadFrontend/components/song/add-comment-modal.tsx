@@ -51,7 +51,7 @@ export function AddCommentModal({
         setSegmentText(segment.text);
 
         const existingComment = state.comments.find(
-          (c) => c.segmentId === segmentId
+          (c) => c.segmentId === segmentId,
         );
         if (existingComment) {
           setComment(existingComment.text);
@@ -72,7 +72,7 @@ export function AddCommentModal({
     }
 
     const existingComment = state.comments.find(
-      (c) => c.segmentId === segmentId
+      (c) => c.segmentId === segmentId,
     );
 
     if (existingComment) {
@@ -100,7 +100,7 @@ export function AddCommentModal({
 
   const handleDelete = () => {
     const existingComment = state.comments.find(
-      (c) => c.segmentId === segmentId
+      (c) => c.segmentId === segmentId,
     );
 
     if (existingComment) {

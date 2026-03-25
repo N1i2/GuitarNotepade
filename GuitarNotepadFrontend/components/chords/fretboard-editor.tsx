@@ -194,8 +194,8 @@ export function FretboardEditor({
                         value === 0
                           ? "bg-green-100 dark:bg-green-900/30"
                           : value === "X"
-                          ? "bg-red-100 dark:bg-red-900/30"
-                          : "bg-blue-100 dark:bg-blue-900/30"
+                            ? "bg-red-100 dark:bg-red-900/30"
+                            : "bg-blue-100 dark:bg-blue-900/30"
                       }`}
                     >
                       {getDisplayValue(value)}

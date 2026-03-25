@@ -1,28 +1,34 @@
-"use client"
+"use client";
 
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { useAuth } from '@/components/providers/auth-provider'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { useToast } from '@/hooks/use-toast'
-import { showErrorToast } from '@/lib/utils/error-parser'
-import { useRouter } from 'next/navigation'
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useAuth } from "@/components/providers/auth-provider";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { showErrorToast } from "@/lib/utils/error-parser";
+import { useRouter } from "next/navigation";
 
 const loginSchema = z.object({
-  email: z.string().email('Enter a valid email'),
-  password: z.string().min(1, 'Password cannot be empty'),
-})
+  email: z.string().email("Enter a valid email"),
+  password: z.string().min(1, "Password cannot be empty"),
+});
 
-type LoginFormValues = z.infer<typeof loginSchema>
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
-  const { login } = useAuth()
-  const router = useRouter()
-  const toast = useToast()
+  const { login } = useAuth();
+  const router = useRouter();
+  const toast = useToast();
   const {
     register,
     handleSubmit,
@@ -31,20 +37,20 @@ export function LoginForm() {
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     mode: "onBlur",
-  })
+  });
 
   const onSubmit = async (values: LoginFormValues) => {
-    const loadingToastId = toast.loading('Signing you in...')
+    const loadingToastId = toast.loading("Signing you in...");
     try {
-      await login(values.email, values.password)
-      toast.dismiss(loadingToastId)
-      toast.success('Successfully logged in!')
-      router.push('/home')
+      await login(values.email, values.password);
+      toast.dismiss(loadingToastId);
+      toast.success("Successfully logged in!");
+      router.push("/home");
     } catch (err) {
-      toast.dismiss(loadingToastId)
-      showErrorToast(err, toast)
+      toast.dismiss(loadingToastId);
+      showErrorToast(err, toast);
     }
-  }
+  };
 
   return (
     <Card className="w-full max-w-md">
@@ -63,11 +69,15 @@ export function LoginForm() {
               autoComplete="username"
               type="email"
               placeholder="m@example.com"
-              {...register('email')}
+              {...register("email")}
               aria-invalid={!!errors.email}
-              aria-describedby={errors.email ? 'login-email-error' : undefined}
+              aria-describedby={errors.email ? "login-email-error" : undefined}
             />
-            {errors.email && <span id="login-email-error" className="text-red-500 text-xs">{errors.email.message}</span>}
+            {errors.email && (
+              <span id="login-email-error" className="text-red-500 text-xs">
+                {errors.email.message}
+              </span>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
@@ -75,17 +85,28 @@ export function LoginForm() {
               id="password"
               type="password"
               autoComplete="current-password"
-              {...register('password')}
+              {...register("password")}
               aria-invalid={!!errors.password}
-              aria-describedby={errors.password ? 'login-password-error' : undefined}
+              aria-describedby={
+                errors.password ? "login-password-error" : undefined
+              }
             />
-            {errors.password && <span id="login-password-error" className="text-red-500 text-xs">{errors.password.message}</span>}
+            {errors.password && (
+              <span id="login-password-error" className="text-red-500 text-xs">
+                {errors.password.message}
+              </span>
+            )}
           </div>
-          <Button type="submit" className="w-full" disabled={isSubmitting} aria-busy={isSubmitting}>
-            {isSubmitting ? 'Signing in...' : 'Sign In'}
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isSubmitting}
+            aria-busy={isSubmitting}
+          >
+            {isSubmitting ? "Signing in..." : "Sign In"}
           </Button>
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -29,15 +29,17 @@ export function ActionConfirmationDialog({
   user,
   isLoading,
 }: ActionConfirmationDialogProps) {
-  if (!user) return null; 
-  if (actionType && actionType !== "role") return null; 
+  if (!user) return null;
+  if (actionType && actionType !== "role") return null;
 
   const getDialogConfig = () => {
     return {
-      title: user.role === "Admin" ? "Remove Admin Rights" : "Give Admin Rights",
-      description: user.role === "Admin"
-        ? `Are you sure you want to remove administrator rights from ${user.email}? They will lose access to admin features.`
-        : `Are you sure you want to make ${user.email} an administrator? They will gain access to admin features.`,
+      title:
+        user.role === "Admin" ? "Remove Admin Rights" : "Give Admin Rights",
+      description:
+        user.role === "Admin"
+          ? `Are you sure you want to remove administrator rights from ${user.email}? They will lose access to admin features.`
+          : `Are you sure you want to make ${user.email} an administrator? They will gain access to admin features.`,
       icon: Shield,
       confirmText: user.role === "Admin" ? "Remove Admin" : "Make Admin",
       confirmVariant: "default" as const,
@@ -61,12 +63,14 @@ export function ActionConfirmationDialog({
               <p>{config.description}</p>
               <div className="mt-4 p-3 bg-muted rounded-md">
                 <div className="font-medium">{user.nikName}</div>
-                <div className="text-sm text-muted-foreground">{user.email}</div>
+                <div className="text-sm text-muted-foreground">
+                  {user.email}
+                </div>
               </div>
             </div>
           </DialogDescription>
         </DialogHeader>
-        
+
         <DialogFooter className="flex flex-col sm:flex-row gap-3 sm:gap-2 pt-4">
           <Button
             type="button"

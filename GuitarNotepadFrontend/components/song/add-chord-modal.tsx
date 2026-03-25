@@ -55,7 +55,7 @@ export function AddChordModal({
 
   const availableColors = CHORD_COLORS.filter(
     (color) =>
-      isColorValidForType(color, "chord") && !allUsedColors.includes(color)
+      isColorValidForType(color, "chord") && !allUsedColors.includes(color),
   );
 
   useEffect(() => {
@@ -72,12 +72,12 @@ export function AddChordModal({
         uniqueChords.filter(
           (chord) =>
             chord.name.toLowerCase().includes(searchLower) &&
-            !existingChordIds.includes(chord.id)
-        )
+            !existingChordIds.includes(chord.id),
+        ),
       );
     } else {
       setFilteredChords(
-        uniqueChords.filter((chord) => !existingChordIds.includes(chord.id))
+        uniqueChords.filter((chord) => !existingChordIds.includes(chord.id)),
       );
     }
   }, [searchTerm, uniqueChords, existingChordIds]);
@@ -196,8 +196,8 @@ export function AddChordModal({
                   {existingChordIds.length >= 20
                     ? "Maximum 20 chords reached"
                     : searchTerm
-                    ? "No chords found"
-                    : "All available chords have already been added"}
+                      ? "No chords found"
+                      : "All available chords have already been added"}
                 </div>
               )}
             </ScrollArea>

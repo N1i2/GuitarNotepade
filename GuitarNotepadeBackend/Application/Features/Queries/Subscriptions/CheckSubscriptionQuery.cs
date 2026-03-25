@@ -4,6 +4,5 @@ namespace Application.Features.Queries.Subscriptions;
 
 public record CheckSubscriptionQuery(
     Guid UserId,
-    Guid SubId,
-    bool IsUserSub
+    Guid SubId
 ) : IRequest<bool>;

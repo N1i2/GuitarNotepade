@@ -111,14 +111,8 @@ public class AppDbContext : DbContext
             entity.Property(e => e.UserId)
                 .IsRequired();
 
-            entity.Property(e => e.TargetUserId)
-                .IsRequired(false);
-
             entity.Property(e => e.TargetAlbumId)
                 .IsRequired(false);
-
-            entity.Property(e => e.IsUserSub)
-                .IsRequired();
 
             entity.Property(e => e.CreatedAt)
                 .IsRequired();
@@ -128,31 +122,17 @@ public class AppDbContext : DbContext
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasOne(e => e.TargetUser)
-                .WithMany(e => e.Subscribers)
-                .HasForeignKey(e => e.TargetUserId)
-                .OnDelete(DeleteBehavior.Restrict);
-
             entity.HasOne(e => e.TargetAlbum)
                 .WithMany(e => e.Subscribers)
                 .HasForeignKey(e => e.TargetAlbumId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasIndex(e => e.UserId);
-            entity.HasIndex(e => e.TargetUserId);
             entity.HasIndex(e => e.TargetAlbumId);
-            entity.HasIndex(e => new { e.UserId, e.TargetUserId, e.IsUserSub })
-                .IsUnique()
-                .HasFilter("\"TargetUserId\" IS NOT NULL");
-            entity.HasIndex(e => new { e.UserId, e.TargetAlbumId, e.IsUserSub })
+            entity.HasIndex(e => new { e.UserId, e.TargetAlbumId })
                 .IsUnique()
                 .HasFilter("\"TargetAlbumId\" IS NOT NULL");
             entity.HasIndex(e => e.CreatedAt);
-
-            entity.ToTable(t => t.HasCheckConstraint(
-                "CK_Subscription_Target",
-                "(\"IsUserSub\" = true AND \"TargetUserId\" IS NOT NULL AND \"TargetAlbumId\" IS NULL) OR " +
-                "(\"IsUserSub\" = false AND \"TargetUserId\" IS NULL AND \"TargetAlbumId\" IS NOT NULL)"));
         });
 
         modelBuilder.Entity<Song>(entity =>

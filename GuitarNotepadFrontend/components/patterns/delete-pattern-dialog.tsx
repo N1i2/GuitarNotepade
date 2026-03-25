@@ -11,7 +11,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { AlertTriangle, Loader2, Trash2, Music, User, Calendar } from "lucide-react";
+import {
+  AlertTriangle,
+  Loader2,
+  Trash2,
+  Music,
+  User,
+  Calendar,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PatternsService } from "@/lib/api/patterns-service";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -40,7 +47,7 @@ export function DeletePatternDialog({
       toast.success(`Pattern "${pattern.name}" deleted successfully`);
       onSuccess();
       onClose();
-    } catch (error: unknown) {      
+    } catch (error: unknown) {
       let errorMessage = "Failed to delete pattern";
       if (error && typeof error === "object" && "status" in error) {
         const err = error as { status: number; message?: string };
@@ -50,7 +57,7 @@ export function DeletePatternDialog({
           errorMessage = err.message;
         }
       }
-      
+
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -74,10 +81,10 @@ export function DeletePatternDialog({
             <div className="pt-2">
               <p>
                 Are you sure you want to delete the pattern{" "}
-                <span className="font-bold">{pattern.name}</span>?
-                This action cannot be undone.
+                <span className="font-bold">{pattern.name}</span>? This action
+                cannot be undone.
               </p>
-              
+
               <div className="mt-4 p-3 bg-muted rounded-md">
                 <div className="flex items-center gap-3 mb-2">
                   <Music className="h-5 w-5 text-muted-foreground" />
@@ -86,25 +93,30 @@ export function DeletePatternDialog({
                     {pattern.isFingerStyle ? "Fingerstyle" : "Strumming"}
                   </div>
                 </div>
-                
+
                 <div className="font-mono text-sm bg-background p-2 rounded mb-2">
                   {pattern.pattern}
                 </div>
-                
+
                 {pattern.description && (
                   <p className="text-sm text-muted-foreground">
                     {pattern.description}
                   </p>
                 )}
-                
+
                 <div className="mt-2 text-xs text-muted-foreground space-y-1">
                   <div className="flex items-center gap-2">
                     <User className="h-3 w-3" />
-                    <span>Created by: {pattern.createdByNikName || "Unknown"}</span>
+                    <span>
+                      Created by: {pattern.createdByNikName || "Unknown"}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-3 w-3" />
-                    <span>Created: {new Date(pattern.createdAt).toLocaleDateString()}</span>
+                    <span>
+                      Created:{" "}
+                      {new Date(pattern.createdAt).toLocaleDateString()}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -117,14 +129,12 @@ export function DeletePatternDialog({
                       Permissions:
                     </p>
                     <ul className="list-disc list-inside mt-1 space-y-1">
-                      {isCreator && (
-                        <li>You created this pattern</li>
-                      )}
-                      {isAdmin && (
-                        <li>You have admin privileges</li>
-                      )}
+                      {isCreator && <li>You created this pattern</li>}
+                      {isAdmin && <li>You have admin privileges</li>}
                       {!isCreator && !isAdmin && (
-                        <li>You do not have permission to delete this pattern</li>
+                        <li>
+                          You do not have permission to delete this pattern
+                        </li>
                       )}
                     </ul>
                   </div>
@@ -133,7 +143,7 @@ export function DeletePatternDialog({
             </div>
           </DialogDescription>
         </DialogHeader>
-        
+
         <DialogFooter className="flex flex-col sm:flex-row gap-3 sm:gap-2 pt-4">
           <Button
             type="button"

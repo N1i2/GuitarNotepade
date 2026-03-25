@@ -89,7 +89,7 @@ export function RegisterForm() {
         values.email,
         values.nikName,
         values.password,
-        values.confirmPassword
+        values.confirmPassword,
       );
       toast.dismiss(loadingToastId);
       toast.success("Account created successfully! 🎸", {

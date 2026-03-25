@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import { Moon, Sun, Monitor } from "lucide-react"
-import { useTheme } from "next-themes"
+import { Moon, Sun, Monitor } from "lucide-react";
+import { useTheme } from "next-themes";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 
 export function ThemeToggle() {
-  const { setTheme, theme } = useTheme()
+  const { setTheme, theme } = useTheme();
 
   return (
     <DropdownMenu>
@@ -24,7 +24,7 @@ export function ThemeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => setTheme("light")}
           className="flex items-center gap-2"
         >
@@ -34,7 +34,7 @@ export function ThemeToggle() {
             <span className="ml-auto text-xs text-black">✓</span>
           )}
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => setTheme("dark")}
           className="flex items-center gap-2"
         >
@@ -44,7 +44,7 @@ export function ThemeToggle() {
             <span className="ml-auto text-xs text-white">✓</span>
           )}
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => setTheme("system")}
           className="flex items-center gap-2"
         >
@@ -56,5 +56,5 @@ export function ThemeToggle() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

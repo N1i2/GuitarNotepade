@@ -5,8 +5,8 @@ export interface FiltersForUsers {
   role?: string | null;
   page?: number;
   pageSize?: number;
-  sortBy?: 'email' | 'nikName' | 'createdAt';
-  sortOrder?: 'asc' | 'desc';
+  sortBy?: "email" | "nikName" | "createdAt";
+  sortOrder?: "asc" | "desc";
 }
 
 export interface PaginatedUsers {
@@ -37,49 +37,49 @@ export interface User {
   bio: string;
   createAt: string;
   isBlocked: boolean;
-  blockedUntil?: string; 
+  blockedUntil?: string;
   blockReason?: string;
 }
 
 export interface AuthResponse {
-  userId: string
-  email: string
-  nikName: string
-  role: string
-  hasPremium: boolean
-  token: string
+  userId: string;
+  email: string;
+  nikName: string;
+  role: string;
+  hasPremium: boolean;
+  token: string;
 }
 
 export interface LoginRequest {
-  email: string
-  password: string
+  email: string;
+  password: string;
 }
 
 export interface RegisterRequest {
-  email: string
-  nikName: string
-  password: string
-  confirmPassword: string
+  email: string;
+  nikName: string;
+  password: string;
+  confirmPassword: string;
 }
 
 export interface UserProfileResponse {
-  id: string
-  email: string
-  nikName: string
-  role: string
-  hasPremium: boolean
-  avatarUrl: string | null
-  bio: string
-  createAt: string
-  isBlocked: boolean
-  blockedUntil?: string
-  blockReason?: string
+  id: string;
+  email: string;
+  nikName: string;
+  role: string;
+  hasPremium: boolean;
+  avatarUrl: string | null;
+  bio: string;
+  createAt: string;
+  isBlocked: boolean;
+  blockedUntil?: string;
+  blockReason?: string;
 }
 
 export interface BlockUserRequest {
   email: string;
   reason: string;
-  blockedUntil: string; 
+  blockedUntil: string;
 }
 
 export interface BlockUserResponse {

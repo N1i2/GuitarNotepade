@@ -6,11 +6,26 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
 import { PatternsService } from "@/lib/api/patterns-service";
 import { Pattern } from "@/types/patterns";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Plus, Grid3x3, Hash, User, Eye, EyeOff, ListMusic } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Grid3x3,
+  Hash,
+  User,
+  Eye,
+  EyeOff,
+  ListMusic,
+} from "lucide-react";
 import { Pagination } from "@/components/user-management/pagination";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -52,44 +67,57 @@ export default function PatternsPage() {
   const [patternsCount, setPatternsCount] = useState(0);
   const [isLoadingAll, setIsLoadingAll] = useState(true);
   const [showOnlyMyPatterns, setShowOnlyMyPatterns] = useState(false);
-  const [fingerStyleFilter, setFingerStyleFilter] = useState<boolean | null>(null);
+  const [fingerStyleFilter, setFingerStyleFilter] = useState<boolean | null>(
+    null,
+  );
   const pageSize = 16;
 
   const filteredPatterns = useMemo((): FilteredPatternsResult => {
     let filtered = allPatterns;
-    
+
     if (fingerStyleFilter !== null) {
-      filtered = filtered.filter(pattern => pattern.isFingerStyle === fingerStyleFilter);
-    }
-    
-    if (showOnlyMyPatterns && user) {
-      filtered = filtered.filter(pattern => 
-        pattern.createdByUserId === user.id
+      filtered = filtered.filter(
+        (pattern) => pattern.isFingerStyle === fingerStyleFilter,
       );
     }
-    
+
+    if (showOnlyMyPatterns && user) {
+      filtered = filtered.filter(
+        (pattern) => pattern.createdByUserId === user.id,
+      );
+    }
+
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(pattern => 
-        pattern.name.toLowerCase().includes(searchLower) ||
-        (pattern.description && pattern.description.toLowerCase().includes(searchLower))
+      filtered = filtered.filter(
+        (pattern) =>
+          pattern.name.toLowerCase().includes(searchLower) ||
+          (pattern.description &&
+            pattern.description.toLowerCase().includes(searchLower)),
       );
     }
-    
+
     filtered.sort((a, b) => a.name.localeCompare(b.name));
-    
+
     const startIndex = (currentPage - 1) * pageSize;
     const paginated = filtered.slice(startIndex, startIndex + pageSize);
-    
+
     return {
       items: paginated,
       totalCount: filtered.length,
       currentPage,
       totalPages: Math.ceil(filtered.length / pageSize),
       hasPreviousPage: currentPage > 1,
-      hasNextPage: startIndex + pageSize < filtered.length
+      hasNextPage: startIndex + pageSize < filtered.length,
     };
-  }, [allPatterns, searchTerm, currentPage, showOnlyMyPatterns, fingerStyleFilter, user]);
+  }, [
+    allPatterns,
+    searchTerm,
+    currentPage,
+    showOnlyMyPatterns,
+    fingerStyleFilter,
+    user,
+  ]);
 
   const loadAllPatterns = async () => {
     setIsLoadingAll(true);
@@ -104,18 +132,21 @@ export default function PatternsPage() {
           page: currentPageNum,
           pageSize: loadPageSize,
           sortBy: "name",
-          sortOrder: "asc"
+          sortOrder: "asc",
         });
 
         allPatternsData = [...allPatternsData, ...data.items];
-        
-        if (data.items.length < loadPageSize || data.currentPage === data.totalPages) {
+
+        if (
+          data.items.length < loadPageSize ||
+          data.currentPage === data.totalPages
+        ) {
           hasMore = false;
         } else {
           currentPageNum++;
         }
       }
-      
+
       setAllPatterns(allPatternsData);
       setPatternsCount(allPatternsData.length);
     } catch (error: unknown) {
@@ -131,8 +162,8 @@ export default function PatternsPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setCurrentPage(1); 
-    }, 300); 
+      setCurrentPage(1);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [searchTerm, showOnlyMyPatterns, fingerStyleFilter]);
@@ -150,7 +181,7 @@ export default function PatternsPage() {
   };
 
   const handleEditPattern = (patternId: string, e: React.MouseEvent) => {
-    e.stopPropagation(); 
+    e.stopPropagation();
     router.push(`/home/patterns/edit/${patternId}`);
   };
 
@@ -165,9 +196,12 @@ export default function PatternsPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Patterns Library</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Patterns Library
+            </h1>
             <p className="text-muted-foreground mt-2">
-              Browse and manage guitar playing patterns (strumming and fingerstyle).
+              Browse and manage guitar playing patterns (strumming and
+              fingerstyle).
             </p>
           </div>
           <div className="hidden md:block">
@@ -178,11 +212,9 @@ export default function PatternsPage() {
                   <span className="text-sm font-medium">Patterns Database</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {isLoadingAll ? (
-                    "Loading patterns..."
-                  ) : (
-                    `${patternsCount} total patterns`
-                  )}
+                  {isLoadingAll
+                    ? "Loading patterns..."
+                    : `${patternsCount} total patterns`}
                 </p>
               </CardContent>
             </Card>
@@ -203,7 +235,7 @@ export default function PatternsPage() {
                   />
                 </div>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center space-x-2">
@@ -216,29 +248,37 @@ export default function PatternsPage() {
                       <DropdownMenuContent>
                         <DropdownMenuLabel>Pattern Type</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setFingerStyleFilter(null)}>
+                        <DropdownMenuItem
+                          onClick={() => setFingerStyleFilter(null)}
+                        >
                           All Types
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setFingerStyleFilter(true)}>
+                        <DropdownMenuItem
+                          onClick={() => setFingerStyleFilter(true)}
+                        >
                           FingerStyle
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setFingerStyleFilter(false)}>
+                        <DropdownMenuItem
+                          onClick={() => setFingerStyleFilter(false)}
+                        >
                           Strumming
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="showOnlyMyPatterns" 
+                    <Checkbox
+                      id="showOnlyMyPatterns"
                       checked={showOnlyMyPatterns}
-                      onCheckedChange={(checked: boolean) => setShowOnlyMyPatterns(checked)}
+                      onCheckedChange={(checked: boolean) =>
+                        setShowOnlyMyPatterns(checked)
+                      }
                       disabled={isGuest}
                     />
-                    <Label 
-                      htmlFor="showOnlyMyPatterns" 
-                      className={`text-sm font-medium cursor-pointer ${!user ? 'text-muted-foreground' : ''}`}
+                    <Label
+                      htmlFor="showOnlyMyPatterns"
+                      className={`text-sm font-medium cursor-pointer ${!user ? "text-muted-foreground" : ""}`}
                     >
                       <div className="flex items-center gap-2">
                         {showOnlyMyPatterns ? (
@@ -251,14 +291,19 @@ export default function PatternsPage() {
                     </Label>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="hidden md:flex">
                     <Hash className="h-3 w-3 mr-1" />
-                    {isLoadingAll ? "..." : filteredPatterns.totalCount} patterns
+                    {isLoadingAll ? "..." : filteredPatterns.totalCount}{" "}
+                    patterns
                   </Badge>
                   {!isGuest && (
-                    <Button onClick={handleCreateNew} variant="default" className="w-full sm:w-auto">
+                    <Button
+                      onClick={handleCreateNew}
+                      variant="default"
+                      className="w-full sm:w-auto"
+                    >
                       <Plus className="h-4 w-4 mr-2" />
                       Create New Pattern
                     </Button>
@@ -266,11 +311,11 @@ export default function PatternsPage() {
                 </div>
               </div>
             </div>
-            
+
             {(fingerStyleFilter !== null || showOnlyMyPatterns) && (
               <div className="mt-4 flex flex-wrap gap-2">
                 {fingerStyleFilter !== null && (
-                  <Badge 
+                  <Badge
                     variant="secondary"
                     className="cursor-pointer hover:bg-secondary/80"
                     onClick={() => setFingerStyleFilter(null)}
@@ -279,9 +324,9 @@ export default function PatternsPage() {
                     <span className="ml-1 text-xs">×</span>
                   </Badge>
                 )}
-                
+
                 {showOnlyMyPatterns && user && (
-                  <Badge 
+                  <Badge
                     variant="secondary"
                     className="cursor-pointer hover:bg-secondary/80"
                     onClick={() => setShowOnlyMyPatterns(false)}
@@ -292,7 +337,7 @@ export default function PatternsPage() {
                 )}
               </div>
             )}
-            
+
             {user && showOnlyMyPatterns && (
               <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
                 <div className="flex items-center gap-2 text-sm">
@@ -303,7 +348,7 @@ export default function PatternsPage() {
                 </div>
               </div>
             )}
-            
+
             {isGuest && (
               <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-md border border-amber-200 dark:border-amber-800">
                 <div className="flex items-center gap-2 text-sm">
@@ -338,7 +383,7 @@ export default function PatternsPage() {
               )}
             </div>
             <CardDescription>
-              {showOnlyMyPatterns 
+              {showOnlyMyPatterns
                 ? "Patterns that you created. Click edit icon to modify."
                 : "Click any pattern to see its details and notation"}
             </CardDescription>
@@ -353,7 +398,7 @@ export default function PatternsPage() {
             ) : filteredPatterns.items.length > 0 ? (
               <>
                 <PatternsGrid
-                  patterns={filteredPatterns.items} 
+                  patterns={filteredPatterns.items}
                   onPatternClick={handlePatternClick}
                   onEditClick={handleEditPattern}
                   showOnlyMyPatterns={showOnlyMyPatterns}
@@ -375,16 +420,20 @@ export default function PatternsPage() {
               <div className="text-center py-12">
                 <ListMusic className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold">
-                  {showOnlyMyPatterns ? "No patterns found" : "No patterns available"}
+                  {showOnlyMyPatterns
+                    ? "No patterns found"
+                    : "No patterns available"}
                 </h3>
                 <p className="text-muted-foreground mt-2">
                   {searchTerm
                     ? `No patterns matching "${searchTerm}"`
                     : showOnlyMyPatterns
-                    ? "You haven't created any patterns yet. Create your first one!"
-                    : "No patterns available yet. Create the first one!"}
+                      ? "You haven't created any patterns yet. Create your first one!"
+                      : "No patterns available yet. Create the first one!"}
                 </p>
-                {(searchTerm || showOnlyMyPatterns || fingerStyleFilter !== null) && (
+                {(searchTerm ||
+                  showOnlyMyPatterns ||
+                  fingerStyleFilter !== null) && (
                   <div className="flex flex-wrap gap-2 justify-center mt-4">
                     {searchTerm && (
                       <Button
@@ -407,10 +456,7 @@ export default function PatternsPage() {
                         Clear Filters
                       </Button>
                     )}
-                    <Button
-                      variant="default"
-                      onClick={handleCreateNew}
-                    >
+                    <Button variant="default" onClick={handleCreateNew}>
                       <Plus className="h-4 w-4 mr-2" />
                       Create New Pattern
                     </Button>
