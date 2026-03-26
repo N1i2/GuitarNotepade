@@ -87,6 +87,22 @@ public class SearchAlbumsQueryHandler : IRequestHandler<SearchAlbumsQuery, Album
             .Take(filters.PageSize)
             .ToListAsync(cancellationToken);
 
+        var albumIds = albums.Select(a => a.Id).ToList();
+
+        var subscriptionsCount = new Dictionary<Guid, int>();
+
+        if (albumIds.Any())
+        {
+            var subscriptionsData = await _unitOfWork.Subscriptions
+                .GetQueryable()
+                .Where(s => s.TargetAlbumId.HasValue && albumIds.Contains(s.TargetAlbumId.Value))
+                .GroupBy(s => s.TargetAlbumId.Value)
+                .Select(g => new { AlbumId = g.Key, Count = g.Count() })
+                .ToListAsync(cancellationToken);
+
+            subscriptionsCount = subscriptionsData.ToDictionary(x => x.AlbumId, x => x.Count);
+        }
+
         var albumDtos = new List<AlbumDto>();
 
         foreach (var album in albums)
@@ -94,6 +110,7 @@ public class SearchAlbumsQueryHandler : IRequestHandler<SearchAlbumsQuery, Album
             var dto = _mapper.Map<AlbumDto>(album);
             dto.OwnerName = album.Owner.NikName;
             dto.CountOfSongs = album.SongAlbums.Count;
+            dto.SubscribersCount = subscriptionsCount.GetValueOrDefault(album.Id, 0);
 
             if (!string.IsNullOrEmpty(album.CoverUrl))
             {

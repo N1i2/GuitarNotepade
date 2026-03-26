@@ -23,6 +23,9 @@ public class AlbomRepository : BaseRepository<Album>, IAlbomRepository
         return await _context.Albums
             .Include(a => a.Owner)
             .Include(a => a.SongAlbums)
+                .ThenInclude(sa => sa.Song)
+                    .ThenInclude(s => s.Owner)
+            .Include(a => a.Subscribers)
             .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
     }
 

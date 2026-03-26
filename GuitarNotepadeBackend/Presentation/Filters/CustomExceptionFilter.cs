@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Application.Exceptions.Register;
+using Application.Exceptions;
 using System.Diagnostics;
 using System.ComponentModel.DataAnnotations;
 
@@ -58,8 +59,13 @@ public class CustomExceptionFilter : IExceptionFilter
 
             ValidationException validationEx => new ApiErrorResponse(
                 exceptionType: nameof(ValidationException),
-                message: validationEx.Message, 
+                message: validationEx.Message,
                 statusCode: StatusCodes.Status400BadRequest),
+
+            ForbiddenAccessException forbiddenEx => new ApiErrorResponse(
+                exceptionType: nameof(ForbiddenAccessException),
+                message: forbiddenEx.Message,
+                statusCode: StatusCodes.Status403Forbidden),
 
             UnauthorizedAccessException authEx => new ApiErrorResponse(
                 exceptionType: nameof(UnauthorizedAccessException),

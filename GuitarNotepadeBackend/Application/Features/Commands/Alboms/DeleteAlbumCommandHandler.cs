@@ -1,9 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Domain.Common;
+﻿using Domain.Common;
 using Domain.Entities;
 using Domain.Interfaces;
 using Domain.Interfaces.Services;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.Commands.Alboms;
 
@@ -28,7 +28,7 @@ public class DeleteAlbumCommandHandler : IRequestHandler<DeleteAlbumCommand>
         await _unitOfWork.ExecuteInTransactionAsync(async () =>
         {
             var album = await _unitOfWork.Alboms.GetByIdWithDetailsAsync(request.AlbumId, cancellationToken);
-            var user = await _unitOfWork.Users.GetByIdAsync(request.UserId);
+            var user = await _unitOfWork.Users.GetByIdAsync(request.UserId, cancellationToken);
 
             if (album == null)
             {
@@ -43,6 +43,16 @@ public class DeleteAlbumCommandHandler : IRequestHandler<DeleteAlbumCommand>
             if (album.Title.ToLower() == "favorite")
             {
                 throw new InvalidOperationException("Cannot delete the Favorite album");
+            }
+
+            var notifications = await _unitOfWork.Notifications
+                .GetQueryable()
+                .Where(n => n.AlbumId == album.Id)
+                .ToListAsync(cancellationToken);
+
+            foreach (var notification in notifications)
+            {
+                await _unitOfWork.Notifications.DeleteAsync(notification.Id, cancellationToken);
             }
 
             var subscriptions = await _unitOfWork.Subscriptions

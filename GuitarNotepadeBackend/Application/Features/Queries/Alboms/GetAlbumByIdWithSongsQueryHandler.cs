@@ -1,9 +1,10 @@
-﻿using MediatR;
-using Application.DTOs.Alboms;
+﻿using Application.DTOs.Alboms;
+using Application.Exceptions;
+using AutoMapper;
+using Domain.Common;
 using Domain.Interfaces;
 using Domain.Interfaces.Services;
-using Domain.Common;
-using AutoMapper;
+using MediatR;
 
 namespace Application.Features.Queries.Alboms;
 
@@ -28,14 +29,14 @@ public class GetAlbumByIdWithSongsQueryHandler :
         GetAlbumByIdWithSongsQuery request,
         CancellationToken cancellationToken)
     {
-        var album = await _unitOfWork.Alboms.GetByIdAsync(request.Id, cancellationToken);
+        var album = await _unitOfWork.Alboms.GetByIdWithDetailsAsync(request.Id, cancellationToken);
 
         if (album == null)
         {
             throw new KeyNotFoundException($"Album with id {request.Id} not found");
         }
 
-        var owner = await _unitOfWork.Users.GetByIdAsync(album.OwnerId);
+        var owner = await _unitOfWork.Users.GetByIdAsync(album.OwnerId, cancellationToken);
         if (owner == null)
         {
             throw new KeyNotFoundException($"Owner of album not found");
@@ -43,13 +44,18 @@ public class GetAlbumByIdWithSongsQueryHandler :
 
         if (!album.IsPublic)
         {
+            if (request.UserId == Guid.Empty)
+            {
+                throw new UnauthorizedAccessException("Please log in to view this private album");
+            }
+
             var user = await _unitOfWork.Users.GetByIdAsync(request.UserId, cancellationToken);
             var isOwner = album.OwnerId == request.UserId;
             var isAdmin = user?.Role == Constants.Roles.Admin;
 
             if (!isOwner && !isAdmin)
             {
-                throw new UnauthorizedAccessException("This album is private");
+                throw new ForbiddenAccessException("This album is private. You don't have access to view it.");
             }
         }
 
@@ -69,16 +75,16 @@ public class GetAlbumByIdWithSongsQueryHandler :
         foreach (var songDto in albumWithSongsDto.Songs)
         {
             var song = songs.First(s => s.Id == songDto.Id);
-            songDto.OwnerName = song.Owner.NikName;
-            songDto.ChordCount = song.SongChords.Count;
-            songDto.PatternCount = song.SongPatterns.Count;
-            songDto.ReviewCount = song.Reviews.Count;
-            songDto.CommentsCount = song.Comments.Count;
+            songDto.OwnerName = song.Owner?.NikName ?? "Unknown";
+            songDto.ChordCount = song.SongChords?.Count ?? 0;
+            songDto.PatternCount = song.SongPatterns?.Count ?? 0;
+            songDto.ReviewCount = song.Reviews?.Count ?? 0;
+            songDto.CommentsCount = song.Comments?.Count ?? 0;
 
             songDto.HasAudio = !string.IsNullOrEmpty(song.CustomAudioUrl) &&
                               !string.IsNullOrEmpty(song.CustomAudioType);
 
-            if (song.Reviews.Any())
+            if (song.Reviews != null && song.Reviews.Any())
             {
                 var beautifulReviews = song.Reviews.Where(r => r.BeautifulLevel.HasValue).ToList();
                 if (beautifulReviews.Any())

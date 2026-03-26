@@ -413,6 +413,17 @@ public class AlbumsController : ControllerBase
         }
     }
 
+
+    [HttpGet("count-of-create")]
+    [Authorize]
+    public async Task<int> CountOfCreateAlbum()
+    {
+        var userId = GetCurrentUserId();
+
+        var command = new CountOfCreateAlbumCommand(userId);
+
+        return await _mediator.Send(command);
+    }
     private Guid GetCurrentUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)

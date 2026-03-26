@@ -25,16 +25,16 @@ public class SubscriptionsController : ControllerBase
     }
 
     /// <summary>
-    /// It only shows my subscriptions
+    /// It only shows my subscriptions with full album details
     /// </summary>
     /// <returns></returns>
     [HttpGet]
-    public async Task<ActionResult<List<SubscriptionDto>>> GetMySubscriptions()
+    public async Task<ActionResult<List<SubscriptionWithAlbumDto>>> GetMySubscriptions()
     {
         try
         {
             var userId = GetCurrentUserId();
-            var query = new GetUserSubscriptionsQuery(userId);
+            var query = new GetUserSubscriptionsWithAlbumsQuery(userId);
             var result = await _mediator.Send(query);
             return Ok(result);
         }

@@ -11,6 +11,7 @@ export interface AlbumDto {
   createdAt: string;
   updatedAt?: string;
   countOfSongs: number;
+  subscribersCount?: number;
 }
 
 export interface CreateAlbumDto {

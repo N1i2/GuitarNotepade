@@ -75,6 +75,19 @@ class ApiClient {
         throw new ApiError("Authentication failed", 401);
       }
 
+      if (response.status === 403) {
+        let errorMessage = "Access denied";
+        let exceptionType = "ForbiddenAccessException";
+
+        try {
+          const data = await response.json();
+          errorMessage = data?.message || errorMessage;
+          exceptionType = data?.exceptionType || exceptionType;
+        } catch {}
+
+        throw new ApiError(errorMessage, 403, exceptionType);
+      }
+
       if (response.status === 204) {
         return null as T;
       }

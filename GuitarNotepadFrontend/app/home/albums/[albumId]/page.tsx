@@ -35,6 +35,7 @@ import {
   Check,
   ExternalLink,
   EyeOff,
+  Users,
 } from "lucide-react";
 import {
   Dialog,
@@ -75,16 +76,22 @@ export default function AlbumDetailPage() {
       const data = await AlbumService.getAlbumWithSongs(albumId);
       setAlbum(data);
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : "Failed to load album";
+      const err = error as any;
+      const message = err.message || "Failed to load album";
 
-      if ((error as any)?.status === 403 || (error as any)?.status === 401) {
+      if (err.status === 403) {
         toast.error("This album is private. You don't have access to view it.");
+        router.push("/home/albums");
+      } else if (err.status === 401) {
+        toast.error("Please log in to view this album");
+        router.push("/home/albums");
+      } else if (err.status === 404) {
+        toast.error("Album not found");
+        router.push("/home/albums");
       } else {
         toast.error(message);
+        router.push("/home/albums");
       }
-
-      router.push("/home/albums");
     } finally {
       setIsLoading(false);
     }
@@ -202,7 +209,6 @@ export default function AlbumDetailPage() {
 
   const canViewSong = (song: SongInAlbumDto): boolean => {
     if (song.isPublic) return true;
-
     return user?.id === album?.ownerId || user?.role === "Admin";
   };
 
@@ -471,18 +477,27 @@ export default function AlbumDetailPage() {
                     )}
                   </div>
 
-                  <div className="p-4 bg-muted/50 rounded-lg">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-primary">
-                        {visibleSongs.length}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-muted/50 rounded-lg">
+                      <div className="text-center">
+                        <div className="text-3xl font-bold text-primary">
+                          {album.countOfSongs}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Songs in Album
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        Songs in Album
-                        {album.songs.length !== visibleSongs.length && (
-                          <span className="block text-xs">
-                            ({album.songs.length - visibleSongs.length} private)
-                          </span>
-                        )}
+                    </div>
+
+                    <div className="p-4 bg-muted/50 rounded-lg">
+                      <div className="text-center">
+                        <div className="text-3xl font-bold text-primary">
+                          {album.subscribersCount || 0}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          <Users className="h-3 w-3 inline mr-1" />
+                          Subscribers
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -584,7 +599,9 @@ export default function AlbumDetailPage() {
                               className={`cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg border-2 ${getSongColor(
                                 song.title,
                                 isPrivate && !isOwnerOrAdmin,
-                              )} ${isPrivate && !isOwnerOrAdmin ? "opacity-75" : ""}`}
+                              )} ${
+                                isPrivate && !isOwnerOrAdmin ? "opacity-75" : ""
+                              }`}
                               onClick={() => handleSongClick(song.id)}
                             >
                               <CardContent className="p-4">

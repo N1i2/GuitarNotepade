@@ -1,19 +1,21 @@
 import { apiClient } from "./client";
+import { AlbumDto } from "@/types/albom";
 
-export interface SubscriptionDto {
+export interface SubscriptionWithAlbumDto {
   id: string;
   userId: string;
   userName: string;
   targetId: string;
   targetName: string;
   createdAt: string;
+  album: AlbumDto;
 }
 
 export class SubscriptionsService {
   private static readonly BASE_PATH = "/subscriptions";
 
-  static async getMySubscriptions(): Promise<SubscriptionDto[]> {
-    return await apiClient.get<SubscriptionDto[]>(this.BASE_PATH);
+  static async getMySubscriptions(): Promise<SubscriptionWithAlbumDto[]> {
+    return await apiClient.get<SubscriptionWithAlbumDto[]>(this.BASE_PATH);
   }
 
   static async subscribe(albumId: string): Promise<void> {

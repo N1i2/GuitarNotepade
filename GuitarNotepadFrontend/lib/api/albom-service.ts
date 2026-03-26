@@ -163,6 +163,10 @@ export class AlbumService {
     await apiClient.delete<void>(`${this.BASE_PATH}/favorite/${songId}`);
   }
 
+  static async countOfCreate(): Promise<number> {
+    return await apiClient.get<number>(`${this.BASE_PATH}/count-of-create`);
+  }
+
   static async isSongInFavorite(songId: string): Promise<boolean> {
     try {
       const favorite = await this.getFavoriteAlbum();

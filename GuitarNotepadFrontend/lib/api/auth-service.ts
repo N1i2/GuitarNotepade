@@ -85,6 +85,10 @@ export class AuthService {
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         this.removeToken();
+        return null;
+      }
+      if (error instanceof ApiError && error.status === 403) {
+        return null;
       }
       return null;
     }

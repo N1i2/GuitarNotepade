@@ -14,4 +14,5 @@ public class AlbumDto
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public int CountOfSongs { get; set; }
+    public int SubscribersCount { get; set; }
 }

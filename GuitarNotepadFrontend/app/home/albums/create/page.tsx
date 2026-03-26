@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
 import {
   Card,
@@ -22,7 +23,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Save, Upload, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Save,
+  Upload,
+  X,
+  AlertCircle,
+  Music,
+  ExternalLink,
+} from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -33,14 +42,121 @@ import {
 } from "@/lib/validations/album";
 import { AlbumService } from "@/lib/api/albom-service";
 import { CreateAlbumDto } from "@/types/albom";
+import Link from "next/link";
+
+function LimitWarningAlert({
+  message,
+  isWarning,
+  showLink,
+}: {
+  message: string;
+  isWarning: boolean;
+  showLink?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-lg border p-4 ${
+        isWarning
+          ? "border-red-300 bg-red-50 dark:bg-red-950/20"
+          : "border-blue-200 bg-blue-50 dark:bg-blue-950/20"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+          {isWarning ? (
+            <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-0" />
+          ) : (
+            <Music className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-0" />
+          )}
+          <span
+            className={`text-sm ${isWarning ? "text-red-700 dark:text-red-300" : "text-blue-700 dark:text-blue-300"}`}
+          >
+            {message}
+          </span>
+        </div>
+        {showLink && (
+          <Link href="/home/premium" className="flex-0">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 whitespace-nowrap border-red-300 hover:bg-red-100 dark:border-red-700 dark:hover:bg-red-900/30"
+            >
+              <ExternalLink className="h-3 w-3" />
+              Upgrade to Premium
+            </Button>
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function CreateAlbumPage() {
   const router = useRouter();
   const toast = useToast();
+  const { user, isGuest } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [remainingAlbums, setRemainingAlbums] = useState<number | null>(null);
+
+  useEffect(() => {
+    const checkRemainingAlbums = async () => {
+      if (!user || user.role === "Guest") return;
+
+      try {
+        const remaining = await AlbumService.countOfCreate();
+        setRemainingAlbums(remaining);
+        console.log("📊 Remaining albums limit:", remaining);
+      } catch (error) {
+        console.error("Failed to check album limit:", error);
+      }
+    };
+
+    checkRemainingAlbums();
+  }, [user]);
+
+  const getRemainingInfo = () => {
+    if (!user) return null;
+    if (user.role === "Guest") return null;
+    if (user.role === "Admin" || user.hasPremium) {
+      return {
+        message: "Unlimited albums available (Premium/Admin account)",
+        isWarning: false,
+        showLink: false,
+      };
+    }
+    if (remainingAlbums === null) {
+      return {
+        message: "Checking your album limit...",
+        isWarning: false,
+        showLink: false,
+      };
+    }
+    if (remainingAlbums === 0) {
+      return {
+        message:
+          "You've reached the free limit. Upgrade to Premium to create more albums!",
+        isWarning: true,
+        showLink: true,
+      };
+    }
+    if (remainingAlbums <= 2) {
+      return {
+        message: `Only ${remainingAlbums} album${remainingAlbums !== 1 ? "s" : ""} remaining in your free plan`,
+        isWarning: true,
+        showLink: false,
+      };
+    }
+    return {
+      message: `${remainingAlbums} album${remainingAlbums !== 1 ? "s" : ""} remaining in your free plan`,
+      isWarning: false,
+      showLink: false,
+    };
+  };
+
+  const remainingInfo = getRemainingInfo();
 
   const {
     register,
@@ -190,6 +306,28 @@ export default function CreateAlbumPage() {
   };
 
   const onSubmit = async (data: CreateAlbumFormValues) => {
+    if (!user) {
+      toast.error("Please log in");
+      return;
+    }
+
+    if (isGuest) {
+      toast.error("Please log in to create albums");
+      return;
+    }
+
+    if (
+      remainingAlbums !== null &&
+      remainingAlbums <= 0 &&
+      user.role !== "Admin" &&
+      !user.hasPremium
+    ) {
+      toast.error(
+        "You've reached the maximum number of albums. Upgrade to Premium to create more!",
+      );
+      return;
+    }
+
     setIsLoading(true);
     try {
       console.log("=== START ALBUM CREATION ===");
@@ -288,11 +426,27 @@ export default function CreateAlbumPage() {
 
         if (apiError.status === 409) {
           toast.error("You already have an album with this title");
+        } else if (
+          apiError.message?.includes("Free users can only create") ||
+          apiError.message?.includes("maximum number of albums")
+        ) {
+          toast.error(
+            "You've reached the maximum number of albums. Upgrade to Premium to create more!",
+          );
         } else {
           toast.error(apiError.message || "Failed to create album");
         }
       } else if (error instanceof Error) {
-        toast.error(error.message || "Failed to create album");
+        if (
+          error.message?.includes("Free users can only create") ||
+          error.message?.includes("maximum number of albums")
+        ) {
+          toast.error(
+            "You've reached the maximum number of albums. Upgrade to Premium to create more!",
+          );
+        } else {
+          toast.error(error.message || "Failed to create album");
+        }
       } else {
         toast.error("Failed to create album");
       }
@@ -300,6 +454,24 @@ export default function CreateAlbumPage() {
       setIsLoading(false);
     }
   };
+
+  if (isGuest) {
+    return (
+      <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <h3 className="text-lg font-semibold">Sign in to create albums</h3>
+            <p className="text-muted-foreground mt-2">
+              You need to be logged in to create albums.
+            </p>
+            <Button className="mt-4" onClick={() => router.push("/login")}>
+              Sign In
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
@@ -323,6 +495,14 @@ export default function CreateAlbumPage() {
             </p>
           </div>
         </div>
+
+        {user && user.role !== "Guest" && remainingInfo && (
+          <LimitWarningAlert
+            message={remainingInfo.message}
+            isWarning={remainingInfo.isWarning}
+            showLink={remainingInfo.showLink}
+          />
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -592,7 +772,14 @@ export default function CreateAlbumPage() {
                     </Button>
                     <Button
                       type="submit"
-                      disabled={isLoading || !isValid}
+                      disabled={
+                        isLoading ||
+                        !isValid ||
+                        (remainingAlbums !== null &&
+                          remainingAlbums <= 0 &&
+                          user?.role !== "Admin" &&
+                          !user?.hasPremium)
+                      }
                       className="flex-1"
                     >
                       {isLoading ? (

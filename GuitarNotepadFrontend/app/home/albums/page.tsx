@@ -42,6 +42,7 @@ import {
   UserCircle,
   Bell,
   BellOff,
+  Users,
 } from "lucide-react";
 import { Pagination } from "@/components/user-management/pagination";
 import { genres, themes } from "@/lib/validations/album";
@@ -65,6 +66,7 @@ export default function AlbumsPage() {
   const [sortOrder, setSortOrder] = useState<string>("desc");
   const [selectedGenre, setSelectedGenre] = useState<string>("all");
   const [selectedTheme, setSelectedTheme] = useState<string>("all");
+  const [remainingAlbums, setRemainingAlbums] = useState<number | null>(null);
 
   const [subscribedAlbumIds, setSubscribedAlbumIds] = useState<Set<string>>(
     new Set(),
@@ -213,12 +215,11 @@ export default function AlbumsPage() {
       let hasMore = true;
       const loadPageSize = 100;
 
-      const userId = user?.id ? `${user.id}` : "";
       const isGuestUser = !user || user.role === "Guest";
 
       while (hasMore) {
         const data: AlbumSearchResultDto = await AlbumService.searchAlbums({
-          userId: userId,
+          ...(isGuestUser ? {} : { userId: user?.id }),
           isPublic: isGuestUser ? true : undefined,
           page: currentPageNum,
           pageSize: loadPageSize,
@@ -242,7 +243,6 @@ export default function AlbumsPage() {
       setAllAlbums(allAlbumsData);
     } catch (error: any) {
       console.error("Failed to load albums:", error);
-
       if (error.status === 401) {
         setAllAlbums([]);
         setTotalAlbumsCount(0);
@@ -528,7 +528,21 @@ export default function AlbumsPage() {
                   onClick={handleCreateNew}
                   variant="default"
                   className="w-full sm:w-auto"
-                  disabled={isGuest}
+                  disabled={
+                    isGuest ||
+                    (remainingAlbums !== null &&
+                      remainingAlbums <= 0 &&
+                      user?.role !== "Admin" &&
+                      !user?.hasPremium)
+                  }
+                  title={
+                    remainingAlbums !== null &&
+                    remainingAlbums <= 0 &&
+                    user?.role !== "Admin" &&
+                    !user?.hasPremium
+                      ? "You've reached the free limit. Upgrade to Premium to create more albums!"
+                      : undefined
+                  }
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Create New Album
@@ -937,13 +951,11 @@ export default function AlbumsPage() {
                                 </div>
                                 <div className="text-center p-2 bg-white/10 backdrop-blur-sm rounded-md border border-white/20">
                                   <div className="text-lg font-bold text-white">
-                                    {album.theme && album.theme !== "Empty"
-                                      ? "✓"
-                                      : "—"}
+                                    {album.subscribersCount || 0}
                                   </div>
                                   <div className="text-xs text-white/70">
-                                    <Hash className="h-3 w-3 inline mr-1" />
-                                    Theme
+                                    <Users className="h-3 w-3 inline mr-1" />
+                                    Subscribers
                                   </div>
                                 </div>
                                 <div className="text-center p-2 bg-white/10 backdrop-blur-sm rounded-md border border-white/20">
