@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { Suspense } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
@@ -496,7 +497,7 @@ function PatternModal({
   );
 }
 
-export default function SongDetailPage() {
+function SongDetailPageContent() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1692,5 +1693,19 @@ export default function SongDetailPage() {
         )}
       </div>
     </TooltipProvider>
+  );
+}
+
+export default function SongDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
+          Loading song details...
+        </div>
+      }
+    >
+      <SongDetailPageContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -9,7 +9,7 @@ interface ReturnToSongEditorProps {
   className?: string;
 }
 
-export function ReturnToSongEditor({ className }: ReturnToSongEditorProps) {
+function ReturnToSongEditorContent({ className }: ReturnToSongEditorProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo");
@@ -34,5 +34,13 @@ export function ReturnToSongEditor({ className }: ReturnToSongEditorProps) {
       <ArrowLeft className="h-4 w-4 mr-2" />
       Back to Song Editor
     </Button>
+  );
+}
+
+export function ReturnToSongEditor({ className }: ReturnToSongEditorProps) {
+  return (
+    <Suspense fallback={null}>
+      <ReturnToSongEditorContent className={className} />
+    </Suspense>
   );
 }

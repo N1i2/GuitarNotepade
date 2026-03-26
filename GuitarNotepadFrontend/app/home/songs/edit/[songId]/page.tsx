@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { SongResourcesPanel } from "@/components/song/table-editor/song-resources-panel";
 import { useState, useEffect } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
@@ -886,10 +887,24 @@ function EditSongContent() {
   );
 }
 
-export default function EditSongPage() {
+function EditSongPageContent() {
   return (
     <TableEditorProvider>
       <EditSongContent />
     </TableEditorProvider>
+  );
+}
+
+export default function EditSongPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
+          Loading song editor...
+        </div>
+      }
+    >
+      <EditSongPageContent />
+    </Suspense>
   );
 }

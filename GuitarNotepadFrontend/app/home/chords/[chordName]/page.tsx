@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -30,7 +31,7 @@ import { SVGChordDiagram } from "@/components/chords/svg-chord-diagram";
 import { DeleteChordDialog } from "@/components/chords/delete-chord-dialog";
 import { EditChordDialog } from "@/components/chords/edit-chord-dialog";
 
-export default function ChordVariationsPage() {
+function ChordVariationsPageContent() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -540,5 +541,19 @@ export default function ChordVariationsPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function ChordVariationsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
+          Loading chord variations...
+        </div>
+      }
+    >
+      <ChordVariationsPageContent />
+    </Suspense>
   );
 }

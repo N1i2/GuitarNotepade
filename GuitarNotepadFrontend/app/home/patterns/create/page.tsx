@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
@@ -37,7 +38,7 @@ interface ExtendedPatternFormData {
   fingerStylePattern: string;
 }
 
-export default function CreatePatternPage() {
+function CreatePatternPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo");
@@ -609,5 +610,19 @@ export default function CreatePatternPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CreatePatternPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
+          Loading pattern creator...
+        </div>
+      }
+    >
+      <CreatePatternPageContent />
+    </Suspense>
   );
 }

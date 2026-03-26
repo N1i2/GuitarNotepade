@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
@@ -62,7 +63,7 @@ const createChordSchema = z.object({
 
 type CreateChordFormValues = z.infer<typeof createChordSchema>;
 
-export default function CreateChordPage() {
+function CreateChordPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo");
@@ -318,5 +319,19 @@ export default function CreateChordPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CreateChordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
+          Loading chord creator...
+        </div>
+      }
+    >
+      <CreateChordPageContent />
+    </Suspense>
   );
 }

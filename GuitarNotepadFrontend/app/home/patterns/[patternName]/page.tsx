@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -32,7 +33,7 @@ import { PatternDiagram } from "@/components/patterns/pattern-diagram";
 import { FingerStyleDiagram } from "@/components/patterns/finger-style-diagram";
 import { DeletePatternDialog } from "@/components/patterns/delete-pattern-dialog";
 
-export default function PatternDetailPage() {
+function PatternDetailPageContent() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -588,5 +589,19 @@ export default function PatternDetailPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function PatternDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
+          Loading pattern details...
+        </div>
+      }
+    >
+      <PatternDetailPageContent />
+    </Suspense>
   );
 }
