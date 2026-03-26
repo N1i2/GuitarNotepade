@@ -7,6 +7,8 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
 import { ChordsService } from "@/lib/api/chords-service";
 import { Chord, PaginatedChords } from "@/types/chords";
+import { Play, Loader2 } from "lucide-react";
+import { chordAudioService } from "@/lib/services/chord-audio-service";
 import {
   Card,
   CardContent,
@@ -47,6 +49,7 @@ function ChordVariationsPageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
   const loadVariations = async () => {
     setIsLoading(true);
@@ -109,6 +112,23 @@ function ChordVariationsPageContent() {
   const handleDelete = () => {
     if (!currentVariation) return;
     setDeleteDialogOpen(true);
+  };
+
+  const handlePlayChord = async () => {
+    if (!currentVariation?.fingering) {
+      toast.error("No fingering pattern available");
+      return;
+    }
+
+    setIsPlayingAudio(true);
+    try {
+      await chordAudioService.generateChordAudio(currentVariation.fingering);
+    } catch (error) {
+      console.error("Failed to play chord audio:", error);
+      toast.error("Failed to generate chord audio");
+    } finally {
+      setIsPlayingAudio(false);
+    }
   };
 
   const handleEditSuccess = (updatedChord: Chord) => {
@@ -303,7 +323,27 @@ function ChordVariationsPageContent() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="space-y-6">
                 <div className="border rounded-lg p-6 from-background to-muted/20">
-                  <h3 className="text-lg font-semibold mb-4">Chord Diagram</h3>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold">Chord Diagram</h3>
+                    <Button
+                      onClick={handlePlayChord}
+                      disabled={isPlayingAudio || !currentVariation?.fingering}
+                      size="sm"
+                      variant="outline"
+                    >
+                      {isPlayingAudio ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Playing...
+                        </>
+                      ) : (
+                        <>
+                          <Play className="h-4 w-4 mr-2" />
+                          Play Sound
+                        </>
+                      )}
+                    </Button>
+                  </div>
                   <div className="flex justify-center">
                     <SVGChordDiagram
                       fingering={currentVariation.fingering}

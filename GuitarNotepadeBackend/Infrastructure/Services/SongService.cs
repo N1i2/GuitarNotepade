@@ -393,7 +393,10 @@ public class SongService : ISongService
         Guid songId,
         CancellationToken cancellationToken = default)
     {
-        var song = await _unitOfWork.Songs.GetByIdAsync(songId, cancellationToken);
+        var song = await _unitOfWork.Songs.GetQueryable()
+            .AsNoTracking()
+            .Include(s => s.Reviews)
+            .FirstOrDefaultAsync(s => s.Id == songId, cancellationToken);
         if (song == null)
             throw new ArgumentException("Song not found", nameof(songId));
 

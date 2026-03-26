@@ -758,6 +758,7 @@ function SongDetailPageContent() {
             <span
               key={`text-before-${segment.id}-${lastIndex}`}
               className="whitespace-pre-wrap"
+              style={{ display: "inline-block", padding: "2px 0" }}
             >
               {beforeText}
             </span>,
@@ -782,21 +783,30 @@ function SongDetailPageContent() {
 
       const segmentStyles: React.CSSProperties = {
         display: "inline-block",
-        padding: "2px 0",
+        padding: "2px 12px",
+        margin: "0 2px",
+        borderRadius: "6px",
+        lineHeight: "1.9",
       };
 
       if (hasChord && segment.color) {
         segmentStyles.borderBottom = `3px solid ${segment.color}`;
+        segmentStyles.backgroundColor = `${segment.color}15`;
       }
 
       if (hasPattern && pattern?.color) {
         segmentStyles.backgroundColor = pattern.color;
-        segmentStyles.borderRadius = "4px";
-        segmentStyles.padding = "2px 4px";
+        segmentStyles.borderRadius = "6px";
+        segmentStyles.padding = "2px 12px";
       } else if (hasPattern && segment.backgroundColor) {
         segmentStyles.backgroundColor = segment.backgroundColor;
-        segmentStyles.borderRadius = "4px";
-        segmentStyles.padding = "2px 4px";
+        segmentStyles.borderRadius = "6px";
+        segmentStyles.padding = "2px 12px";
+      }
+
+      if (!hasChord && !hasPattern && hasContent) {
+        segmentStyles.padding = "2px 12px";
+        segmentStyles.backgroundColor = "transparent";
       }
 
       const segmentElement = (
@@ -867,7 +877,11 @@ function SongDetailPageContent() {
 
     if (lastIndex < songText.length) {
       result.push(
-        <span key={`text-end-${lastIndex}`} className="whitespace-pre-wrap">
+        <span
+          key={`text-end-${lastIndex}`}
+          className="whitespace-pre-wrap"
+          style={{ display: "inline-block", padding: "2px 0" }}
+        >
           {songText.substring(lastIndex)}
         </span>,
       );
@@ -1352,6 +1366,12 @@ function SongDetailPageContent() {
                       showAllHints ? "pt-8" : ""
                     }`}
                     onMouseMove={handleMouseMove}
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                      gap: "4px 8px",
+                    }}
                   >
                     {renderTextWithSegments() || (
                       <div className="text-muted-foreground italic h-full flex items-center justify-center">

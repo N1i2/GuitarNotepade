@@ -20,6 +20,8 @@ import { AlertTriangle, ArrowLeft, Save, Music, X } from "lucide-react";
 import { useAuth } from "@/components/providers/auth-provider";
 import { FretboardEditor } from "@/components/chords/fretboard-editor";
 import { SVGChordDiagram } from "@/components/chords/svg-chord-diagram";
+import { Play, Loader2 } from "lucide-react";
+import { chordAudioService } from "@/lib/services/chord-audio-service";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -87,6 +89,7 @@ export default function EditChordPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const toastRef = useRef(toast);
@@ -249,6 +252,24 @@ export default function EditChordPage() {
         description: originalChord.description || "",
       });
       toast.info("All changes have been reset");
+    }
+  };
+
+  const handlePlayChord = async () => {
+    const fingering = getValues().fingering;
+    if (!fingering || fingering === "0-0-0-0-0-0") {
+      toast.error("Please set a fingering pattern first");
+      return;
+    }
+
+    setIsPlayingAudio(true);
+    try {
+      await chordAudioService.generateChordAudio(fingering);
+    } catch (error) {
+      console.error("Failed to play chord audio:", error);
+      toast.error("Failed to generate chord audio");
+    } finally {
+      setIsPlayingAudio(false);
     }
   };
 
@@ -598,11 +619,38 @@ export default function EditChordPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col items-center">
+                <div className="flex flex-col items-center space-y-4">
                   <SVGChordDiagram
                     fingering={currentValues.fingering}
                     name={currentValues.name}
                   />
+
+                  <Button
+                    onClick={handlePlayChord}
+                    disabled={
+                      isPlayingAudio ||
+                      !currentValues.fingering ||
+                      currentValues.fingering === "0-0-0-0-0-0"
+                    }
+                    className="w-full max-w-xs"
+                    variant="outline"
+                  >
+                    {isPlayingAudio ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Playing chord...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="h-4 w-4 mr-2" />
+                        Play chord sound
+                      </>
+                    )}
+                  </Button>
+
+                  <p className="text-xs text-muted-foreground text-center">
+                    Click to hear how this chord sounds on guitar
+                  </p>
                 </div>
               </CardContent>
             </Card>
