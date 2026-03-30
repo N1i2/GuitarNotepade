@@ -1,14 +1,14 @@
-1ASP.NET Core
-2next.ts
-3Ultimate Guitar
-4Songsterr
-5PostgreSQL
-6EntityFramwork
-7миграции
-8MediatR
-9AutoMapper
-10JwtBearer
-11Tools
-12shadcn/ui 
-13axios 
-14Onion 
+1 ASP.NET Core
+2 next.ts
+3 Ultimate Guitar
+4 Songsterr
+5 PostgreSQL
+6 EntityFramwork
+7 миграции
+8 MediatR
+9 AutoMapper
+10 JwtBearer
+11 Tools
+12 shadcn/ui 
+13 axios 
+14 Onion 
