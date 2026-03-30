@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { Suspense } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
@@ -496,7 +497,7 @@ function PatternModal({
   );
 }
 
-export default function SongDetailPage() {
+function SongDetailPageContent() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -757,6 +758,7 @@ export default function SongDetailPage() {
             <span
               key={`text-before-${segment.id}-${lastIndex}`}
               className="whitespace-pre-wrap"
+              style={{ display: "inline-block", padding: "2px 0" }}
             >
               {beforeText}
             </span>,
@@ -781,21 +783,30 @@ export default function SongDetailPage() {
 
       const segmentStyles: React.CSSProperties = {
         display: "inline-block",
-        padding: "2px 0",
+        padding: "2px 12px",
+        margin: "0 2px",
+        borderRadius: "6px",
+        lineHeight: "1.9",
       };
 
       if (hasChord && segment.color) {
         segmentStyles.borderBottom = `3px solid ${segment.color}`;
+        segmentStyles.backgroundColor = `${segment.color}15`;
       }
 
       if (hasPattern && pattern?.color) {
         segmentStyles.backgroundColor = pattern.color;
-        segmentStyles.borderRadius = "4px";
-        segmentStyles.padding = "2px 4px";
+        segmentStyles.borderRadius = "6px";
+        segmentStyles.padding = "2px 12px";
       } else if (hasPattern && segment.backgroundColor) {
         segmentStyles.backgroundColor = segment.backgroundColor;
-        segmentStyles.borderRadius = "4px";
-        segmentStyles.padding = "2px 4px";
+        segmentStyles.borderRadius = "6px";
+        segmentStyles.padding = "2px 12px";
+      }
+
+      if (!hasChord && !hasPattern && hasContent) {
+        segmentStyles.padding = "2px 12px";
+        segmentStyles.backgroundColor = "transparent";
       }
 
       const segmentElement = (
@@ -866,7 +877,11 @@ export default function SongDetailPage() {
 
     if (lastIndex < songText.length) {
       result.push(
-        <span key={`text-end-${lastIndex}`} className="whitespace-pre-wrap">
+        <span
+          key={`text-end-${lastIndex}`}
+          className="whitespace-pre-wrap"
+          style={{ display: "inline-block", padding: "2px 0" }}
+        >
           {songText.substring(lastIndex)}
         </span>,
       );
@@ -1351,6 +1366,12 @@ export default function SongDetailPage() {
                       showAllHints ? "pt-8" : ""
                     }`}
                     onMouseMove={handleMouseMove}
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                      gap: "4px 8px",
+                    }}
                   >
                     {renderTextWithSegments() || (
                       <div className="text-muted-foreground italic h-full flex items-center justify-center">
@@ -1692,5 +1713,19 @@ export default function SongDetailPage() {
         )}
       </div>
     </TooltipProvider>
+  );
+}
+
+export default function SongDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
+          Loading song details...
+        </div>
+      }
+    >
+      <SongDetailPageContent />
+    </Suspense>
   );
 }
