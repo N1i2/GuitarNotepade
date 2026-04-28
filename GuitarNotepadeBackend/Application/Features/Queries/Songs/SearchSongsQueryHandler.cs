@@ -80,21 +80,42 @@ public class SearchSongsQueryHandler : IRequestHandler<SearchSongsQuery, SongSea
             if (filters.MinRating.HasValue && filters.MaxRating.HasValue)
             {
                 query = query.Where(s =>
-                    s.AverageBeautifulRating.HasValue &&
-                    s.AverageBeautifulRating >= (decimal)filters.MinRating.Value &&
-                    s.AverageBeautifulRating <= (decimal)filters.MaxRating.Value);
+                    s.Reviews
+                        .Where(r => r.BeautifulLevel.HasValue)
+                        .Select(r => (decimal?)r.BeautifulLevel!.Value)
+                        .Average().HasValue &&
+                    s.Reviews
+                        .Where(r => r.BeautifulLevel.HasValue)
+                        .Select(r => (decimal?)r.BeautifulLevel!.Value)
+                        .Average() >= (decimal)filters.MinRating.Value &&
+                    s.Reviews
+                        .Where(r => r.BeautifulLevel.HasValue)
+                        .Select(r => (decimal?)r.BeautifulLevel!.Value)
+                        .Average() <= (decimal)filters.MaxRating.Value);
             }
             else if (filters.MinRating.HasValue)
             {
                 query = query.Where(s =>
-                    s.AverageBeautifulRating.HasValue &&
-                    s.AverageBeautifulRating >= (decimal)filters.MinRating.Value);
+                    s.Reviews
+                        .Where(r => r.BeautifulLevel.HasValue)
+                        .Select(r => (decimal?)r.BeautifulLevel!.Value)
+                        .Average().HasValue &&
+                    s.Reviews
+                        .Where(r => r.BeautifulLevel.HasValue)
+                        .Select(r => (decimal?)r.BeautifulLevel!.Value)
+                        .Average() >= (decimal)filters.MinRating.Value);
             }
             else if (filters.MaxRating.HasValue)
             {
                 query = query.Where(s =>
-                    s.AverageBeautifulRating.HasValue &&
-                    s.AverageBeautifulRating <= (decimal)filters.MaxRating.Value);
+                    s.Reviews
+                        .Where(r => r.BeautifulLevel.HasValue)
+                        .Select(r => (decimal?)r.BeautifulLevel!.Value)
+                        .Average().HasValue &&
+                    s.Reviews
+                        .Where(r => r.BeautifulLevel.HasValue)
+                        .Select(r => (decimal?)r.BeautifulLevel!.Value)
+                        .Average() <= (decimal)filters.MaxRating.Value);
             }
         }
 
@@ -118,6 +139,19 @@ public class SearchSongsQueryHandler : IRequestHandler<SearchSongsQuery, SongSea
             .ToListAsync(cancellationToken);
 
         var songDtos = _mapper.Map<List<SongDto>>(songs);
+        for (var i = 0; i < songs.Count; i++)
+        {
+            var currentSong = songs[i];
+            songDtos[i].AverageBeautifulRating = currentSong.Reviews
+                .Where(r => r.BeautifulLevel.HasValue)
+                .Select(r => (decimal?)r.BeautifulLevel!.Value)
+                .Average();
+            songDtos[i].AverageDifficultyRating = currentSong.Reviews
+                .Where(r => r.DifficultyLevel.HasValue)
+                .Select(r => (decimal?)r.DifficultyLevel!.Value)
+                .Average();
+            songDtos[i].ReviewCount = currentSong.Reviews.Count;
+        }
 
         return new SongSearchResultDto
         {
@@ -155,8 +189,14 @@ public class SearchSongsQueryHandler : IRequestHandler<SearchSongsQuery, SongSea
                 : query.OrderByDescending(s => s.ReviewCount),
 
             "rating" => isAscending
-                ? query.OrderBy(s => s.AverageBeautifulRating ?? 0)
-                : query.OrderByDescending(s => s.AverageBeautifulRating ?? 0),
+                ? query.OrderBy(s => s.Reviews
+                    .Where(r => r.BeautifulLevel.HasValue)
+                    .Select(r => (decimal?)r.BeautifulLevel!.Value)
+                    .Average() ?? 0)
+                : query.OrderByDescending(s => s.Reviews
+                    .Where(r => r.BeautifulLevel.HasValue)
+                    .Select(r => (decimal?)r.BeautifulLevel!.Value)
+                    .Average() ?? 0),
 
             "artist" => isAscending
                 ? query.OrderBy(s => s.Artist ?? "")

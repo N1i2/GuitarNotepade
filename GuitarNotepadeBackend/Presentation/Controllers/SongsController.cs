@@ -223,8 +223,8 @@ public class SongsController : ControllerBase
 
             var fileName = Path.GetFileName(song.CustomAudioUrl);
 
-            Response.Headers.Add("Content-Disposition", $"inline; filename=\"{fileName}\"");
-            Response.Headers.Add("Accept-Ranges", "bytes");
+            Response.Headers.Append("Content-Disposition", $"inline; filename=\"{fileName}\"");
+            Response.Headers.Append("Accept-Ranges", "bytes");
 
             return File(fileStream, mimeType, fileName);
         }

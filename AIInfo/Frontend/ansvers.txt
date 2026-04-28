@@ -1,0 +1,48 @@
+если я где то пишу "на твое усмотрение" или что то такое это значит что ты должен сопоставить "сложность реализации" и "польза/выгода" и реализовывать только если это условно несложно и полезно
+
+Frontend — вопросы (подробно)
+Главная цель UI: app-like клиент или SEO-ориентированный сайт?
+Нужен ли SSR/SSG для публичных страниц?
+Почему сейчас выбран full-fetch всех страниц с клиентской фильтрацией?
+Нужен ли переход на React Query/SWR для data-fetching/caching?
+Нужен ли единый cache policy (staleTime, refetch, invalidation)?
+Нужен ли route guard через middleware.ts/layout-level auth checks?
+Какие страницы доступны гостю, а какие — только авторизованным?
+Нужна ли формальная матрица прав Guest/User/Premium/Admin для UI?
+Нужно ли хранить JWT в httpOnly cookie вместо localStorage?
+Нужны ли дополнительные frontend security headers/CSP требования?
+Нужно ли убрать debug console.log из прод-кода?
+Нужен ли глобальный error boundary для App Router?
+Нужна ли единая схема обработки API ошибок (toast + field errors + retry)?
+Хотим ли унифицировать все формы на react-hook-form + zod?
+Нужна ли общая библиотека валидаторов для song/chord/pattern/album?
+Нужны ли маски ввода для phone/card/date полей?
+Premium-форма с card data — остаётся mock или меняем на безопасный checkout flow?
+Нужна ли i18n (RU/EN) уже сейчас?
+Какой язык по умолчанию должен быть у UI?
+Нужен ли accessibility аудит по WCAG 2.1 AA?
+Нужны ли keyboard navigation и focus states для всех интерактивных карточек?
+Нужен ли единый компонент пагинации/поиска/фильтров для library страниц?
+Нужно ли вынести “толстые” page-компоненты в container + presentational архитектуру?
+Нужна ли нормализация API-слоя (везде через apiClient, без “ручного fetch`)?
+Нужно ли унифицировать навигацию уведомлений (/home/messages vs /home/notifications)?
+Нужен ли optimistic UI для подписок/лайков/избранного?
+Нужна ли дедупликация и отмена запросов при быстрых фильтрах?
+Нужен ли debounce/throttle для поиска?
+Нужен ли infinite-scroll или оставляем пагинацию кнопками?
+Нужны ли skeletons/loading-states по единому стандарту?
+Нужен ли autosave черновиков песен на backend, а не в sessionStorage?
+Как долго должен храниться черновик редактора?
+Нужна ли история версий/откат изменений песни в UI?
+Нужны ли confirmation dialogs для всех destructive actions?
+Нужен ли централизованный upload manager с retry/progress/cancel?
+Нужны ли лимиты на клиенте по медиа до запроса на сервер?
+Нужна ли оптимизация бандла (code splitting, dynamic import, tree-shaking audits)?
+Нужны ли метрики фронта (TTI, CLS, conversion to premium)?
+Какой тестовый стек предпочитаешь: Vitest + RTL + Playwright/Cypress?
+Какой минимальный “обязательный набор” автотестов внедряем первым?
+Нужен ли CI gate для lint + typecheck + tests на frontend?
+Нужна ли design-system документация (токены, компоненты, правила UX)?
+Нужны ли пустые состояния/ошибки без тостов (inline UX) для ключевых экранов?
+Нужна ли единая стратегия работы с датами/часовыми поясами?
+Нужны ли role-specific дашборды (разные home для admin/user/premium)?
