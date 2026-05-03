@@ -1,0 +1,17 @@
+Frontend Priority 1 (сделать обязательно и в первую очередь)
+
+- ✅ Добавить i18n с переключением RU/EN и автовыбором языка. (реализовано: `I18nProvider`, `lib/i18n/messages`, переключатель в шапке, автovыбор из `navigator` + `localStorage`, см. `AIInfo/doneTasks.txt`)
+
+- Перевести хранение JWT в безопасную схему (httpOnly cookie) совместно с backend refresh token.
+
+- Внедрить autosave черновиков песен на backend (не только sessionStorage).
+
+- Нормализовать API-слой:
+убрать прямые `fetch` из страниц, оставить единый сервисный доступ.
+
+- Добавить глобальный error boundary и унифицировать обработку ошибок UI.
+
+- Включить CI gate для frontend:
+- lint
+- typecheck
+- tests

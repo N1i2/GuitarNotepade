@@ -1,16 +1,17 @@
+using Domain.Common;
 using Domain.Entities.Base;
 
 namespace Domain.Entities;
 
 public class SongComment : BaseEntityWithId
 {
-    public Guid UserId { get; set; } 
+    public Guid UserId { get; private set; }
     public Guid SongId { get; private set; }
     public Guid? SegmentId { get; private set; }
     public string Text { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
-    public virtual User User { get; set; } = null!;
+    public virtual User User { get; private set; } = null!;
     public virtual Song Song { get; private set; } = null!;
     public virtual SongSegment? Segment { get; private set; }
 
@@ -21,22 +22,11 @@ public class SongComment : BaseEntityWithId
 
     public static SongComment Create(Guid userId, Guid songId, string text, Guid? segmentId = null)
     {
-        if (userId == Guid.Empty)
-        {
-            throw new ArgumentException("UserId is required", nameof(userId));
-        }
+        Guard.AgainstEmptyGuid(userId, nameof(userId));
+        Guard.AgainstEmptyGuid(songId, nameof(songId));
+        Guard.AgainstNullOrWhiteSpace(text, nameof(text), "Text is required");
 
-        if (songId == Guid.Empty)
-        {
-            throw new ArgumentException("SongId is required", nameof(songId));
-        }
-
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            throw new ArgumentException("Text is required", nameof(text));
-        }
-
-        if (text.Length > 1000)
+        if (text.Length > Constants.Limits.MaxCommentTextLength)
         {
             throw new ArgumentException("Comment text is too long", nameof(text));
         }
@@ -54,11 +44,12 @@ public class SongComment : BaseEntityWithId
 
     public void Update(string newText)
     {
-        if (string.IsNullOrWhiteSpace(newText))
-            throw new ArgumentException("Text is required", nameof(newText));
+        Guard.AgainstNullOrWhiteSpace(newText, nameof(newText), "Text is required");
 
-        if (newText.Length > 1000)
+        if (newText.Length > Constants.Limits.MaxCommentTextLength)
+        {
             throw new ArgumentException("Comment text is too long", nameof(newText));
+        }
 
         Text = newText.Trim();
     }

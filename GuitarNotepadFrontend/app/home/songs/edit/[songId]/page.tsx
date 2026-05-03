@@ -114,41 +114,9 @@ function EditSongContent() {
   ];
 
   const fetchAudioBlob = async (songId: string): Promise<string | null> => {
-    try {
-      const token = localStorage.getItem("auth_token");
-      const baseUrl =
-        process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
-      const url = `${baseUrl}/Songs/${songId}/audio-file`;
-
-      console.log("🎵 Fetching audio file for edit from:", url);
-
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        console.error("Failed to fetch audio, status:", response.status);
-        return null;
-      }
-
-      const blob = await response.blob();
-      console.log("🎵 Audio blob received for edit:", blob.size, blob.type);
-
-      if (blob.size === 0) {
-        console.error("Audio blob is empty");
-        return null;
-      }
-
-      const blobUrl = URL.createObjectURL(blob);
-      console.log("🎵 Audio blob URL created for edit:", blobUrl);
-      return blobUrl;
-    } catch (error) {
-      console.error("Failed to fetch audio for edit:", error);
-      return null;
-    }
+    const blob = await SongsService.tryFetchAudioFileBlob(songId);
+    if (!blob) return null;
+    return URL.createObjectURL(blob);
   };
 
   useEffect(() => {
@@ -215,72 +183,22 @@ function EditSongContent() {
               customAudioType: "url",
             });
           } else {
-            try {
-              const token = localStorage.getItem("auth_token");
-              const baseUrl =
-                process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
-              const url = `${baseUrl}/Songs/${songId}/audio-file`;
+            const blob = await SongsService.tryFetchAudioFileBlob(songId);
+            if (blob && blob.size > 0) {
+              const blobUrl = URL.createObjectURL(blob);
+              const fileName =
+                songData.customAudioUrl.split("/").pop() || "audio-file";
+              const isRecording = songData.customAudioType === "audio/webm";
 
-              console.log("🎵 Fetching audio file for edit from:", url);
-
-              const response = await fetch(url, {
-                method: "GET",
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
+              setAudioData({
+                type: isRecording
+                  ? AudioInputType.RECORD
+                  : AudioInputType.FILE,
+                customAudioUrl: blobUrl,
+                customAudioType: songData.customAudioType,
+                fileName: fileName,
               });
-
-              if (response.ok) {
-                const blob = await response.blob();
-                console.log(
-                  "🎵 Audio blob received for edit:",
-                  blob.size,
-                  blob.type,
-                );
-
-                if (blob.size > 0) {
-                  const blobUrl = URL.createObjectURL(blob);
-                  const fileName =
-                    songData.customAudioUrl.split("/").pop() || "audio-file";
-                  const isRecording = songData.customAudioType === "audio/webm";
-
-                  setAudioData({
-                    type: isRecording
-                      ? AudioInputType.RECORD
-                      : AudioInputType.FILE,
-                    customAudioUrl: blobUrl,
-                    customAudioType: songData.customAudioType,
-                    fileName: fileName,
-                  });
-                  console.log("🎵 Audio data set for edit:", {
-                    type: isRecording ? "RECORD" : "FILE",
-                    url: blobUrl,
-                  });
-                } else {
-                  console.warn("🎵 Audio blob is empty");
-                  setAudioData({
-                    type: AudioInputType.FILE,
-                    customAudioUrl: songData.customAudioUrl,
-                    customAudioType: songData.customAudioType,
-                    fileName:
-                      songData.customAudioUrl.split("/").pop() || "audio-file",
-                  });
-                }
-              } else {
-                console.error(
-                  "Failed to fetch audio, status:",
-                  response.status,
-                );
-                setAudioData({
-                  type: AudioInputType.FILE,
-                  customAudioUrl: songData.customAudioUrl,
-                  customAudioType: songData.customAudioType,
-                  fileName:
-                    songData.customAudioUrl.split("/").pop() || "audio-file",
-                });
-              }
-            } catch (error) {
-              console.error("Error fetching audio:", error);
+            } else {
               setAudioData({
                 type: AudioInputType.FILE,
                 customAudioUrl: songData.customAudioUrl,
@@ -409,25 +327,12 @@ function EditSongContent() {
         }
 
         isDeleteAudio = false;
-        console.log("📤 Uploading new audio file:", {
-          type: audioType,
-          size: sourceBlob.size,
-        });
       } else if (currentAudioType === AudioInputType.URL && audioData.url) {
         customAudioUrl = audioData.url;
         customAudioType = "url";
         isDeleteAudio = false;
-        console.log("📤 Using external URL:", customAudioUrl);
       } else if (currentAudioType === AudioInputType.NONE && hadOriginalAudio) {
         isDeleteAudio = true;
-        console.log("📤 Deleting audio");
-      } else if (
-        hadOriginalAudio &&
-        audioData.customAudioUrl === originalAudioData?.url
-      ) {
-        console.log("📤 Keeping existing audio");
-      } else {
-        console.log("📤 No audio changes");
       }
 
       const segmentsDTO = convertTableToDTO(state.segments);
@@ -462,15 +367,7 @@ function EditSongContent() {
       } else if (customAudioUrl) {
         updateData.customAudioUrl = customAudioUrl;
         updateData.customAudioType = customAudioType;
-      } else if (isDeleteAudio) {
       }
-
-      console.log("📤 Updating song with audio:", {
-        hasAudioBase64: !!audioBase64,
-        audioType,
-        hasCustomAudioUrl: !!customAudioUrl,
-        isDeleteAudio,
-      });
 
       const updatedSong = await SongsService.updateSongWithSegments(updateData);
 

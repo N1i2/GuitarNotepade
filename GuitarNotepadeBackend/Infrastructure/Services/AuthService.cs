@@ -50,7 +50,7 @@ public class AuthService : IAuthService
             issuer: _jwtIssuer,
             audience: _jwtAudience,
             claims: claims,
-            expires: DateTime.Now.AddHours(24),
+            expires: DateTime.UtcNow.AddHours(24),
             signingCredentials: creds);
 
         return new JwtSecurityTokenHandler().WriteToken(token);

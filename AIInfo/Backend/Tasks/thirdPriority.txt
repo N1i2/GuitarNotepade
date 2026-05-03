@@ -1,0 +1,11 @@
+Backend Priority 3 (опционально)
+
+- Рассмотреть переход уведомлений на real-time (SignalR/WebSocket) вместо polling.
+
+- Рассмотреть PostgreSQL full-text поиск (tsvector + GIN) для больших объемов данных.
+
+- Добавить OpenTelemetry/tracing pipeline controller -> handler -> repository.
+
+- Внедрить feature flags для рискованных изменений.
+
+- Описать backup/restore регламент (RPO/RTO) как часть техдокументации.

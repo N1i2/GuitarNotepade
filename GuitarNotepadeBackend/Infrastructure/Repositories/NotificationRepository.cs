@@ -24,5 +24,12 @@ public class NotificationRepository : BaseRepository<Notification>, INotificatio
             .Take(take)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<int> DeleteReadNotificationsOlderThanAsync(DateTime cutoffUtc, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Where(n => n.IsRead && n.CreatedAt < cutoffUtc)
+            .ExecuteDeleteAsync(cancellationToken);
+    }
 }
 

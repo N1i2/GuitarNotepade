@@ -1,5 +1,6 @@
 ﻿using Application.DTOs.Alboms;
 using AutoMapper;
+using Domain.Common;
 using Domain.Interfaces.Services;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -30,7 +31,7 @@ namespace Application.Features.Commands.Alboms
 
         public async Task<AlbumDto> Handle(CreateAlbumCommand request, CancellationToken cancellationToken)
         {
-            if (request.Title != "Favorite" && !await _userService.CanCreateAlbumAsync(request.UserId, cancellationToken))
+            if (request.Title != Constants.Albums.FavoriteTitle && !await _userService.CanCreateAlbumAsync(request.UserId, cancellationToken))
             {
                 throw new InvalidOperationException(
                     "Only Premium users can create albums. Upgrade to Premium to create your own albums.");

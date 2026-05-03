@@ -33,7 +33,7 @@ public class UnsubscribeCommandHandler : IRequestHandler<UnsubscribeCommand, Uni
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation(
-            "User {UserId} unsubscribed from {Type} {SubId}",
+            "User {UserId} unsubscribed from subscription {SubId}",
             request.UserId,
             request.SubId);
 

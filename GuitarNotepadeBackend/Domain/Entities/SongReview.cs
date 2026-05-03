@@ -1,4 +1,5 @@
-﻿using Domain.Entities.Base;
+﻿using Domain.Common;
+using Domain.Entities.Base;
 using Domain.ValidationRules.ReviewRules;
 
 namespace Domain.Entities;
@@ -29,15 +30,8 @@ public class SongReview : BaseEntityWithId
         int? beautifulLevel = null,
         int? difficultyLevel = null)
     {
-        if (songId == Guid.Empty)
-        {
-            throw new ArgumentException("SongId is required", nameof(songId));
-        }
-
-        if (userId == Guid.Empty)
-        {
-            throw new ArgumentException("UserId is required", nameof(userId));
-        }
+        Guard.AgainstEmptyGuid(songId, nameof(songId));
+        Guard.AgainstEmptyGuid(userId, nameof(userId));
 
         ReviewTextRule.IsValid(reviewText);
 
@@ -103,7 +97,7 @@ public class SongReview : BaseEntityWithId
 
     private void SetBeautifulLevel(int? newBeautifulLevel)
     {
-        if(newBeautifulLevel == null)
+        if (newBeautifulLevel == null)
         {
             return;
         }

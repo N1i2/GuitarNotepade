@@ -65,6 +65,7 @@ public class Song : BaseEntityWithId
         Guid? parentSongId = null)
     {
         TitleRule.IsValid(title);
+        Guard.AgainstEmptyGuid(ownerId, nameof(ownerId));
 
         if (!string.IsNullOrWhiteSpace(artist))
         {

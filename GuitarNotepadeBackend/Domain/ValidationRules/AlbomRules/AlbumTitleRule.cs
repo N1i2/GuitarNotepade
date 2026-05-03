@@ -1,21 +1,22 @@
-﻿using Domain.Exceptions.UserExceptions;
+﻿using Domain.Exceptions.AlbumExceptions;
 
 namespace Domain.ValidationRules.AlbomRules;
 
 public static class AlbumTitleRule
 {
-    private const int maxNameLength = 50;
+    private const int MinLength = 2;
+    private const int MaxLength = 50;
 
-    public static void IsValid(string nikName)
+    public static void IsValid(string title)
     {
-
-        if (string.IsNullOrWhiteSpace(nikName))
+        if (string.IsNullOrWhiteSpace(title) || title.Trim().Length < MinLength)
         {
-            throw new NikNameException("Youe nik name id too small.");
+            throw new TitleException($"Title is too short, min length = {MinLength}.");
         }
-        if (nikName.Length >= maxNameLength)
+
+        if (title.Trim().Length > MaxLength)
         {
-            throw new NikNameException($"Youe nik name id too big, max length = {maxNameLength}.");
+            throw new TitleException($"Title is too long, max length = {MaxLength}.");
         }
     }
 }

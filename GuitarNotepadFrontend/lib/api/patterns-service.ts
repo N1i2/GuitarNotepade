@@ -92,6 +92,6 @@ export class PatternsService {
   }
 
   static async countOfCreate(): Promise<number> {
-    return await apiClient.get<number>("count-of-create");
+    return await apiClient.get<number>(`${this.BASE_PATH}/count-of-create`);
   }
 }

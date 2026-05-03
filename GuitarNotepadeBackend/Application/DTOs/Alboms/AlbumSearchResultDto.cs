@@ -1,4 +1,4 @@
-﻿namespace Application.DTOs.Alboms;
+namespace Application.DTOs.Alboms;
 
 public class AlbumSearchResultDto
 {

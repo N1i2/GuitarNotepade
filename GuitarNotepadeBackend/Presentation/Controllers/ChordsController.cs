@@ -2,7 +2,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using Application.Features.Queries.Chords;
 using Application.Features.Commands.Chords;
 using Application.DTOs.Generic;
@@ -11,7 +10,7 @@ namespace Presentation.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ChordsController : ControllerBase
+public class ChordsController : ApiControllerBase
 {
     private readonly IMediator _mediator;
 
@@ -199,9 +198,8 @@ public class ChordsController : ControllerBase
         {
             return NotFound(new { error = ex.Message });
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            Console.WriteLine(ex.Message);
             return Forbid();
         }
         catch (InvalidOperationException ex)
@@ -232,9 +230,8 @@ public class ChordsController : ControllerBase
         {
             return NotFound(new { error = ex.Message });
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            Console.WriteLine(ex.Message);
             return Forbid();
         }
         catch (Exception ex)
@@ -252,32 +249,5 @@ public class ChordsController : ControllerBase
         var command = new CountOfCreateChordCommand(userId);
 
         return await _mediator.Send(command);
-    }
-
-    private bool IsUserAuthenticated()
-    {
-        return User.Identity?.IsAuthenticated == true;
-    }
-
-    private Guid GetCurrentUserId()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)
-                         ?? User.FindFirst("sub")
-                         ?? User.FindFirst("userId");
-
-        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-        {
-            throw new UnauthorizedAccessException("Invalid user ID in token");
-        }
-
-        return userId;
-    }
-
-    private string GetCurrentUserRole()
-    {
-        var roleClaim = User.FindFirst(ClaimTypes.Role)
-                       ?? User.FindFirst("role");
-
-        return roleClaim?.Value ?? "User";
     }
 }

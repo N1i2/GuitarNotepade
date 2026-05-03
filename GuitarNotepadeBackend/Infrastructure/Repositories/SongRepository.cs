@@ -29,20 +29,10 @@ public class SongRepository : BaseRepository<Song>, ISongRepository
     public async Task<List<Song>> GetPublicSongsAsync(int page, int pageSize, string? searchTerm = null,
         string? sortBy = null, bool descending = false, CancellationToken cancellationToken = default)
     {
-        var query = _dbSet
-            .Where(s => s.IsPublic)
+        IQueryable<Song> query = ApplyPublicTextSearch(_dbSet.Where(s => s.IsPublic), searchTerm);
+        query = query
             .Include(s => s.Owner)
-            .Include(s => s.Structure)
-            .AsQueryable();
-
-        if (!string.IsNullOrEmpty(searchTerm))
-        {
-            searchTerm = searchTerm.ToLower();
-            query = query.Where(s =>
-                s.FullText.ToLower().Contains(searchTerm) ||
-                s.Title.ToLower().Contains(searchTerm) ||
-                (s.Artist != null && s.Artist.ToLower().Contains(searchTerm)));
-        }
+            .Include(s => s.Structure);
 
         query = ApplySorting(query, sortBy, descending);
 
@@ -105,17 +95,7 @@ public class SongRepository : BaseRepository<Song>, ISongRepository
     public async Task<int> CountPublicSongsAsync(string? searchTerm = null,
         CancellationToken cancellationToken = default)
     {
-        var query = _dbSet.Where(s => s.IsPublic);
-
-        if (!string.IsNullOrEmpty(searchTerm))
-        {
-            searchTerm = searchTerm.ToLower();
-            query = query.Where(s =>
-                s.FullText.ToLower().Contains(searchTerm) ||
-                s.Title.ToLower().Contains(searchTerm) ||
-                (s.Artist != null && s.Artist.ToLower().Contains(searchTerm)));
-        }
-
+        var query = ApplyPublicTextSearch(_dbSet.Where(s => s.IsPublic), searchTerm);
         return await query.CountAsync(cancellationToken);
     }
 
@@ -124,6 +104,20 @@ public class SongRepository : BaseRepository<Song>, ISongRepository
         return await _dbSet
             .Where(s => s.OwnerId == userId)
             .CountAsync(cancellationToken);
+    }
+
+    private static IQueryable<Song> ApplyPublicTextSearch(IQueryable<Song> query, string? searchTerm)
+    {
+        if (string.IsNullOrEmpty(searchTerm))
+        {
+            return query;
+        }
+
+        var term = searchTerm.ToLower();
+        return query.Where(s =>
+            s.FullText.ToLower().Contains(term) ||
+            s.Title.ToLower().Contains(term) ||
+            (s.Artist != null && s.Artist.ToLower().Contains(term)));
     }
 
     private IQueryable<Song> ApplySorting(IQueryable<Song> query, string? sortBy, bool descending)

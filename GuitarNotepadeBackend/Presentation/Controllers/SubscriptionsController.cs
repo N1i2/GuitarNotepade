@@ -6,14 +6,13 @@ using Domain.Interfaces.Services;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace Presentation.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class SubscriptionsController : ControllerBase
+public class SubscriptionsController : ApiControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IUserService _userService;
@@ -89,7 +88,7 @@ public class SubscriptionsController : ControllerBase
     }
 
     /// <summary>
-    /// Unsubscribe to aldum
+    /// Unsubscribe from album
     /// </summary>
     /// <param name="albumId"></param>
     /// <returns></returns>
@@ -143,19 +142,5 @@ public class SubscriptionsController : ControllerBase
         var command = new CountOfCreateSubscriptionCommand(userId);
 
         return await _mediator.Send(command);
-    }
-
-    private Guid GetCurrentUserId()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)
-                         ?? User.FindFirst("sub")
-                         ?? User.FindFirst("userId");
-
-        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-        {
-            throw new UnauthorizedAccessException("Invalid user ID in token");
-        }
-
-        return userId;
     }
 }

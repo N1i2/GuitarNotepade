@@ -54,7 +54,7 @@ public class SongSegment : BaseEntityWithId
             BackgroundColor = backgroundColor
         };
 
-        segment.CalculateHash();
+        segment.ContentHash = ComputeContentHash(segment.Lyric, segment.ChordId, segment.PatternId);
         return segment;
     }
 
@@ -75,39 +75,10 @@ public class SongSegment : BaseEntityWithId
         if (color != null) Color = color;
         if (backgroundColor != null) BackgroundColor = backgroundColor;
 
-        CalculateHash();
+        ContentHash = ComputeContentHash(Lyric, ChordId, PatternId);
     }
 
-    private void CalculateHash()
-    {
-        var hashBuilder = new StringBuilder();
-        hashBuilder.Append(Lyric ?? string.Empty);
-        hashBuilder.Append('|');
-        hashBuilder.Append(ChordId?.ToString() ?? string.Empty);
-        hashBuilder.Append('|');
-        hashBuilder.Append(PatternId?.ToString() ?? string.Empty);
-
-        ContentHash = hashBuilder.ToString().GetHashCode().ToString("X");
-    }
-
-    public static SongSegment? FindDuplicate(
-        IEnumerable<SongSegment> existingSegments,
-        string? lyric,
-        Guid? chordId,
-        Guid? patternId)
-    {
-        var tempSegment = new SongSegment
-        {
-            Lyric = lyric,
-            ChordId = chordId,
-            PatternId = patternId
-        };
-        tempSegment.CalculateHash();
-
-        return existingSegments.FirstOrDefault(s => s.ContentHash == tempSegment.ContentHash);
-    }
-
-    public static string CalculateContentHash(string? lyric, Guid? chordId, Guid? patternId)
+    private static string ComputeContentHash(string? lyric, Guid? chordId, Guid? patternId)
     {
         var hashBuilder = new StringBuilder();
         hashBuilder.Append(lyric ?? string.Empty);
@@ -117,5 +88,20 @@ public class SongSegment : BaseEntityWithId
         hashBuilder.Append(patternId?.ToString() ?? string.Empty);
 
         return hashBuilder.ToString().GetHashCode().ToString("X");
+    }
+
+    public static SongSegment? FindDuplicate(
+        IEnumerable<SongSegment> existingSegments,
+        string? lyric,
+        Guid? chordId,
+        Guid? patternId)
+    {
+        var targetHash = CalculateContentHash(lyric, chordId, patternId);
+        return existingSegments.FirstOrDefault(s => s.ContentHash == targetHash);
+    }
+
+    public static string CalculateContentHash(string? lyric, Guid? chordId, Guid? patternId)
+    {
+        return ComputeContentHash(lyric, chordId, patternId);
     }
 }

@@ -17,9 +17,7 @@ public class RemoveSongFromFavoriteCommandHandler : IRequestHandler<RemoveSongFr
 
     public async Task<bool> Handle(RemoveSongFromFavoriteCommand request, CancellationToken cancellationToken)
     {
-        var favoriteAlbum = await _unitOfWork.Alboms.FindAsync(
-            a => a.OwnerId == request.UserId && a.Title.ToLower() == "favorite",
-            cancellationToken);
+        var favoriteAlbum = await _unitOfWork.Alboms.GetFavoriteAlbumByOwnerAsync(request.UserId, cancellationToken);
 
         if (favoriteAlbum == null)
             throw new KeyNotFoundException("Favorite album not found");

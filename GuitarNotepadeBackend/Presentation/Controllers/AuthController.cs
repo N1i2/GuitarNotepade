@@ -21,7 +21,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Registr new user
+    /// Register new user
     /// </summary>
     /// <param name="dto"></param>
     /// <returns></returns>

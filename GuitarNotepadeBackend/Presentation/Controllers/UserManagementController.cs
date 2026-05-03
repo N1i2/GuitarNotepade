@@ -1,7 +1,6 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using Application.DTOs.Users;
 using Application.Features.Commands.Users;
 
@@ -13,7 +12,7 @@ namespace Presentation.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Policy = "Admin")]
-public class UserManagementController : ControllerBase
+public class UserManagementController : ApiControllerBase
 {
     private readonly IMediator _mediator;
 
@@ -130,18 +129,5 @@ public class UserManagementController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
-    }
-
-    private Guid GetCurrentUserId()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)
-                         ?? User.FindFirst("sub");
-
-        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-        {
-            throw new UnauthorizedAccessException("Invalid user ID in token");
-        }
-
-        return userId;
     }
 }

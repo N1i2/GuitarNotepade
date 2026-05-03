@@ -1,5 +1,4 @@
 ﻿using Domain.Interfaces;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -57,28 +56,14 @@ public class NotificationCleanupService : BackgroundService
 
         _logger.LogInformation("Cleaning up read notifications older than {CutoffDate}", cutoffDate);
 
-        var oldNotifications = await unitOfWork.Notifications
-            .GetQueryable()
-            .Where(n => n.IsRead && n.CreatedAt < cutoffDate)
-            .ToListAsync(cancellationToken);
+        var deleted = await unitOfWork.Notifications.DeleteReadNotificationsOlderThanAsync(cutoffDate, cancellationToken);
 
-        if (!oldNotifications.Any())
+        if (deleted == 0)
         {
             _logger.LogInformation("No old notifications to clean up");
             return;
         }
 
-        _logger.LogInformation("Found {Count} old notifications to delete", oldNotifications.Count);
-
-        foreach (var notification in oldNotifications)
-        {
-            await unitOfWork.Notifications.DeleteAsync(notification.Id, cancellationToken);
-        }
-
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
-        _logger.LogInformation(
-            "Successfully deleted {Count} old read notifications",
-            oldNotifications.Count);
+        _logger.LogInformation("Successfully deleted {Count} old read notifications", deleted);
     }
 }

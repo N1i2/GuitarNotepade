@@ -1,4 +1,5 @@
-﻿using Domain.Entities;
+﻿using Domain.Common;
+using Domain.Entities;
 using Domain.Interfaces.Repositories;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -29,14 +30,13 @@ public class AlbomRepository : BaseRepository<Album>, IAlbomRepository
             .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
     }
 
-    public async Task<Album?> FindAsync(Func<Album, bool> predicate, CancellationToken cancellationToken = default)
+    public async Task<Album?> GetFavoriteAlbumByOwnerAsync(Guid ownerId, CancellationToken cancellationToken = default)
     {
-        return await Task.Run(() =>
-            _context.Albums
-                .Include(a => a.SongAlbums)
-                .AsEnumerable()
-                .FirstOrDefault(predicate),
-            cancellationToken);
+        return await _context.Albums
+            .Include(a => a.SongAlbums)
+            .FirstOrDefaultAsync(
+                a => a.OwnerId == ownerId && a.Title == Constants.Albums.FavoriteTitle,
+                cancellationToken);
     }
 
     public async Task<bool> IsSongInAlbumAsync(Guid albumId, Guid songId, CancellationToken cancellationToken = default)

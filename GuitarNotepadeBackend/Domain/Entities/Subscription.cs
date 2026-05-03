@@ -1,4 +1,5 @@
 ﻿using Domain.Entities.Base;
+using Domain.Common;
 
 namespace Domain.Entities;
 
@@ -15,14 +16,8 @@ public class Subscription : BaseEntityWithId
 
     public static Subscription Create(Guid userId, Guid targetAlbumId)
     {
-        if (userId == Guid.Empty)
-        {
-            throw new ArgumentException("UserId is required", nameof(userId));
-        }
-        if (targetAlbumId == Guid.Empty)
-        {
-            throw new ArgumentException("TargetAlbumId is required", nameof(targetAlbumId));
-        }
+        Guard.AgainstEmptyGuid(userId, nameof(userId));
+        Guard.AgainstEmptyGuid(targetAlbumId, nameof(targetAlbumId));
 
         return new Subscription
         {

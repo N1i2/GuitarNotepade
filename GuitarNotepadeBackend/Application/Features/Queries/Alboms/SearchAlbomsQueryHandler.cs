@@ -38,14 +38,18 @@ public class SearchAlbumsQueryHandler : IRequestHandler<SearchAlbumsQuery, Album
         if (filters.UserId != Guid.Empty)
         {
             var user = await _unitOfWork.Users.GetByIdAsync(filters.UserId, cancellationToken);
-            if (user?.Role != Constants.Roles.Admin)
+            if (user == null)
             {
-                query = query.Where(q => q.OwnerId != user!.Id ? q.IsPublic == true : true);
+                query = query.Where(q => q.IsPublic);
+            }
+            else if (user.Role != Constants.Roles.Admin)
+            {
+                query = query.Where(q => q.OwnerId == user.Id || q.IsPublic);
             }
         }
         else
         {
-            query = query.Where(q => q.IsPublic == true);
+            query = query.Where(q => q.IsPublic);
         }
 
         if (filters.IsPublic.HasValue)
@@ -83,7 +87,7 @@ public class SearchAlbumsQueryHandler : IRequestHandler<SearchAlbumsQuery, Album
         var totalCount = await query.CountAsync(cancellationToken);
 
         var albums = await query
-            .Skip((filters.Page - 1) * request.Filters.PageSize)
+            .Skip((filters.Page - 1) * filters.PageSize)
             .Take(filters.PageSize)
             .ToListAsync(cancellationToken);
 
@@ -95,8 +99,9 @@ public class SearchAlbumsQueryHandler : IRequestHandler<SearchAlbumsQuery, Album
         {
             var subscriptionsData = await _unitOfWork.Subscriptions
                 .GetQueryable()
-                .Where(s => s.TargetAlbumId.HasValue && albumIds.Contains(s.TargetAlbumId.Value))
-                .GroupBy(s => s.TargetAlbumId.Value)
+                .Where(s => s.TargetAlbumId.HasValue)
+                .GroupBy(s => s.TargetAlbumId!.Value)
+                .Where(g => albumIds.Contains(g.Key))
                 .Select(g => new { AlbumId = g.Key, Count = g.Count() })
                 .ToListAsync(cancellationToken);
 

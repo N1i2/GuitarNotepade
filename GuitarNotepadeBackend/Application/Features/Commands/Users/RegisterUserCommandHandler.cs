@@ -1,4 +1,5 @@
-﻿using Domain.Entities;
+﻿using Domain.Common;
+using Domain.Entities;
 using Domain.Interfaces.Services;
 using Domain.Interfaces;
 using MediatR;
@@ -72,7 +73,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, A
         {
             var createAlbumCommand = new CreateAlbumCommand(
                 userId: userId,
-                title: "Favorite");
+                title: Constants.Albums.FavoriteTitle);
 
             await _mediator.Send(createAlbumCommand, cancellationToken);
         }

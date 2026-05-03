@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
+import { LocaleToggle } from "./locale-toggle";
+import { useTranslation } from "@/hooks/use-translation";
 import { usePathname } from "next/navigation";
 import {
   Home,
@@ -34,6 +36,7 @@ import { NotificationsDropdown } from "../notifications/notifications-dropdown";
 export function Header() {
   const { user, isGuest, isAdmin, logout, isLoading } = useAuth();
   const pathname = usePathname();
+  const { t } = useTranslation();
 
   const getInitials = (name: string) => {
     return name
@@ -52,6 +55,7 @@ export function Header() {
             <span className="text-xl font-bold">GuitarNotepad</span>
             <span className="text-2xl">🎸</span>
           </div>
+          <LocaleToggle />
           <ThemeToggle />
         </div>
       </header>
@@ -78,7 +82,7 @@ export function Header() {
             >
               <Link href="/home">
                 <Home className="h-4 w-4" />
-                Home
+                {t("nav.home")}
               </Link>
             </Button>
 
@@ -90,7 +94,7 @@ export function Header() {
             >
               <Link href="/home/chords">
                 <Hand className="h-4 w-4" />
-                Chords
+                {t("nav.chords")}
               </Link>
             </Button>
 
@@ -102,7 +106,7 @@ export function Header() {
             >
               <Link href="/home/patterns">
                 <ListMusic className="h-4 w-4" />
-                Patterns
+                {t("nav.patterns")}
               </Link>
             </Button>
 
@@ -114,7 +118,7 @@ export function Header() {
             >
               <Link href="/home/songs">
                 <FileMusic className="h-4 w-4" />
-                Songs
+                {t("nav.songs")}
               </Link>
             </Button>
 
@@ -128,7 +132,7 @@ export function Header() {
                 >
                   <Link href="/home/albums">
                     <FileText className="h-4 w-4" />
-                    Albums
+                    {t("nav.albums")}
                   </Link>
                 </Button>
 
@@ -140,7 +144,7 @@ export function Header() {
                 >
                   <Link href="/home/users">
                     <Users className="h-4 w-4" />
-                    Users
+                    {t("nav.users")}
                   </Link>
                 </Button>
 
@@ -154,7 +158,7 @@ export function Header() {
                 >
                   <Link href="/home/subscriptions">
                     <BookOpen className="h-4 w-4" />
-                    Subscriptions
+                    {t("nav.subscriptions")}
                   </Link>
                 </Button>
 
@@ -166,7 +170,7 @@ export function Header() {
                 >
                   <Link href="/home/premium">
                     <Star className="h-4 w-4" />
-                    Premium
+                    {t("nav.premium")}
                   </Link>
                 </Button>
               </>
@@ -183,12 +187,12 @@ export function Header() {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem asChild>
                   <Link href="/home" className="flex items-center gap-2">
-                    <Home className="h-4 w-4" /> Home
+                    <Home className="h-4 w-4" /> {t("nav.home")}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/home/chords" className="flex items-center gap-2">
-                    <Hand className="h-4 w-4" /> Chords
+                    <Hand className="h-4 w-4" /> {t("nav.chords")}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
@@ -196,12 +200,12 @@ export function Header() {
                     href="/home/patterns"
                     className="flex items-center gap-2"
                   >
-                    <ListMusic className="h-4 w-4" /> Patterns
+                    <ListMusic className="h-4 w-4" /> {t("nav.patterns")}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/home/songs" className="flex items-center gap-2">
-                    <FileMusic className="h-4 w-4" /> Songs
+                    <FileMusic className="h-4 w-4" /> {t("nav.songs")}
                   </Link>
                 </DropdownMenuItem>
                 {!isGuest && (
@@ -212,7 +216,7 @@ export function Header() {
                         href="/home/albums"
                         className="flex items-center gap-2"
                       >
-                        <FileText className="h-4 w-4" /> Albums
+                        <FileText className="h-4 w-4" /> {t("nav.albums")}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
@@ -220,7 +224,7 @@ export function Header() {
                         href="/home/users"
                         className="flex items-center gap-2"
                       >
-                        <Users className="h-4 w-4" /> Users
+                        <Users className="h-4 w-4" /> {t("nav.users")}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
@@ -228,7 +232,8 @@ export function Header() {
                         href="/home/subscriptions"
                         className="flex items-center gap-2"
                       >
-                        <BookOpen className="h-4 w-4" /> Subscriptions
+                        <BookOpen className="h-4 w-4" />{" "}
+                        {t("nav.subscriptions")}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
@@ -236,7 +241,7 @@ export function Header() {
                         href="/home/premium"
                         className="flex items-center gap-2"
                       >
-                        <Star className="h-4 w-4" /> Premium
+                        <Star className="h-4 w-4" /> {t("nav.premium")}
                       </Link>
                     </DropdownMenuItem>
                   </>
@@ -252,16 +257,16 @@ export function Header() {
               {pathname === "/login" || pathname === "/register" ? (
                 <Button asChild variant="outline" size="sm">
                   <Link href={pathname === "/login" ? "/register" : "/login"}>
-                    {pathname === "/login" ? "Sign Up" : "Sign In"}
+                    {pathname === "/login" ? t("auth.signUp") : t("auth.signIn")}
                   </Link>
                 </Button>
               ) : (
                 <>
                   <Button asChild variant="ghost" size="sm">
-                    <Link href="/login">Sign In</Link>
+                    <Link href="/login">{t("auth.signIn")}</Link>
                   </Button>
                   <Button asChild size="sm">
-                    <Link href="/register">Get Started</Link>
+                    <Link href="/register">{t("auth.getStarted")}</Link>
                   </Button>
                 </>
               )}
@@ -319,7 +324,7 @@ export function Header() {
                   <DropdownMenuItem asChild>
                     <Link href="/home/profile" className="cursor-pointer">
                       <User className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
+                      <span>{t("auth.profile")}</span>
                     </Link>
                   </DropdownMenuItem>
 
@@ -329,7 +334,7 @@ export function Header() {
                     className="cursor-pointer text-red-600"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>Logout</span>
+                    <span>{t("auth.logout")}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -344,6 +349,7 @@ export function Header() {
               </div>
             </>
           )}
+          <LocaleToggle />
           <ThemeToggle />
         </div>
       </div>

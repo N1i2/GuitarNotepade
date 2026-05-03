@@ -18,7 +18,7 @@ public static class DependencyInjection
     {
         services.AddDbContext<AppDbContext>(options =>
         {
-            var connectionString = GetConnectionString();
+            var connectionString = GetConnectionString(configuration);
             options.UseNpgsql(connectionString,
                 b =>
                 {
@@ -89,8 +89,14 @@ public static class DependencyInjection
         return services;
     }
 
-    private static string GetConnectionString()
+    private static string GetConnectionString(IConfiguration configuration)
     {
+        var configured = configuration.GetConnectionString("DefaultConnection");
+        if (!string.IsNullOrWhiteSpace(configured))
+        {
+            return configured;
+        }
+
         try
         {
             var host = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost";
@@ -113,7 +119,7 @@ public static class DependencyInjection
         }
         catch (Exception ex)
         {
-            throw new Exception($"Infrastructure - Connection String: {ex.Message}");
+            throw new InvalidOperationException($"Infrastructure - connection string: {ex.Message}", ex);
         }
     }
 }

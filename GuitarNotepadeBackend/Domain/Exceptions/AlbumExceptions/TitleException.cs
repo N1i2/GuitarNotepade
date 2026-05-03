@@ -2,4 +2,4 @@
 
 namespace Domain.Exceptions.AlbumExceptions;
 
-public class NameException(string message) : BaseException($"Album Title: {message}") { }
+public class TitleException(string message) : BaseException($"Album Title: {message}") { }

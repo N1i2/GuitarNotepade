@@ -17,8 +17,7 @@ public class SongStructure : BaseEntityWithId
 
     public static SongStructure Create(Guid songId)
     {
-        if (songId == Guid.Empty)
-            throw new ArgumentException("SongId is required", nameof(songId));
+        Guard.AgainstEmptyGuid(songId, nameof(songId));
 
         return new SongStructure
         {

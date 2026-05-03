@@ -77,6 +77,11 @@ public class CustomExceptionFilter : IExceptionFilter
                 message: notFoundEx.Message,
                 statusCode: StatusCodes.Status404NotFound),
 
+            Domain.Exceptions.Base.BaseException domainEx => new ApiErrorResponse(
+                exceptionType: domainEx.GetType().Name,
+                message: domainEx.Message,
+                statusCode: StatusCodes.Status400BadRequest),
+
             ArgumentException argEx => new ApiErrorResponse(
                 exceptionType: nameof(ArgumentException),
                 message: argEx.Message,

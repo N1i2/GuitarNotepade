@@ -1,0 +1,16 @@
+Backend Priority 1 (сделать обязательно и в первую очередь)
+
+- Auth security baseline:
+- внедрить refresh tokens (DB-backed),
+- revoke/logout all sessions,
+- blacklist/revocation проверка.
+
+- Перевести хеширование паролей на современный алгоритм (BCrypt/Argon2) с безопасной миграцией старых хешей.
+
+- Привести к единому error format API:
+`code/message/details/requestId`.
+
+- Добавить rate limiting для auth/upload endpoint и базовую защиту brute-force входа.
+
+- Исправить и унифицировать нейминг сущностей:
+`Album/Albom`, `Notepad/Notepade` (аккуратно, без поломки контрактов).

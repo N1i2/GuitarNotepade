@@ -1,5 +1,4 @@
 ﻿using Domain.Exceptions.UserExceptions;
-using System.Text;
 
 namespace Domain.ValidationRules.UserRules;
 

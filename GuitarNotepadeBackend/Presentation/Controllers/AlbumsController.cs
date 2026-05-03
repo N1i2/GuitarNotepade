@@ -6,14 +6,13 @@ using Domain.Common;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace Presentation.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class AlbumsController : ControllerBase
+public class AlbumsController : ApiControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IUserService _userService;
@@ -415,7 +414,6 @@ public class AlbumsController : ControllerBase
 
 
     [HttpGet("count-of-create")]
-    [Authorize]
     public async Task<int> CountOfCreateAlbum()
     {
         var userId = GetCurrentUserId();
@@ -423,18 +421,5 @@ public class AlbumsController : ControllerBase
         var command = new CountOfCreateAlbumCommand(userId);
 
         return await _mediator.Send(command);
-    }
-    private Guid GetCurrentUserId()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)
-                         ?? User.FindFirst("sub")
-                         ?? User.FindFirst("userId");
-
-        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-        {
-            throw new UnauthorizedAccessException("Invalid user ID in token");
-        }
-
-        return userId;
     }
 }

@@ -1,0 +1,22 @@
+---
+description: Workflow rule for AIInfo planning, priorities, and rule persistence
+alwaysApply: true
+---
+
+# AIInfo Workflow Rule
+
+- Always check `AIInfo` question and task files before implementation.
+- Always check `AIInfo/Backend/DebugResult.txt` and `AIInfo/Frontend/DebugResult.txt` before implementation.
+- Respect priorities: first -> second -> third.
+- Keep `ansvers.txt` files focused on unresolved questions only.
+- Update `AIInfo/doneTasks.txt` right after task completion.
+- Never edit `DebugResult.txt` files (user-managed).
+- Do not implement while any of these is true:
+  - unanswered questions for current task exist,
+  - another active task is unfinished,
+  - `DebugResult.txt` has unresolved items.
+- Backend tasks go first, then frontend tasks.
+- Do not add comments unless user explicitly asks; if requested, use `TODO:` markers.
+
+## VERY IMPORTANT
+- Any new persistent rule must be added to `AGENT.md` and/or `./.cursor/skills/kursach-project-workflow/SKILL.md` in the same work cycle.

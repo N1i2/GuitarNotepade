@@ -27,7 +27,7 @@ public class User : BaseEntityWithId
     public virtual ICollection<Chord> Chords { get; private set; } = new List<Chord>();
     public virtual ICollection<StrummingPattern> StrummingPatterns { get; private set; } = new List<StrummingPattern>();
     public virtual ICollection<SongReview> Reviews { get; private set; } = new List<SongReview>();
-    public virtual ICollection<SongComment> Comments { get; private set; } = new LinkedList<SongComment>();
+    public virtual ICollection<SongComment> Comments { get; private set; } = new List<SongComment>();
     public virtual ICollection<Notification> Notifications { get; private set; } = new List<Notification>();
     public virtual ICollection<Notification> CreatedNotifications { get; private set; } = new List<Notification>();
 
@@ -46,7 +46,7 @@ public class User : BaseEntityWithId
 
     public bool CanCreateMoreSongs(int currentSongCount)
     {
-        if (HasPremium || IsAdmin)
+        if (HasUnrestrictedCreationQuota())
         {
             return true;
         }
@@ -56,7 +56,7 @@ public class User : BaseEntityWithId
 
     public bool CanCreateMoreChords(int currentChordCount)
     {
-        if (HasPremium || IsAdmin)
+        if (HasUnrestrictedCreationQuota())
         {
             return true;
         }
@@ -66,7 +66,7 @@ public class User : BaseEntityWithId
 
     public bool CanCreateMorePatterns(int currentPatternCount)
     {
-        if (HasPremium || IsAdmin)
+        if (HasUnrestrictedCreationQuota())
         {
             return true;
         }
@@ -144,10 +144,7 @@ public class User : BaseEntityWithId
             throw new InvalidOperationException("Cannot block administrators");
         }
 
-        if (string.IsNullOrWhiteSpace(reason))
-        {
-            throw new ArgumentException("Block reason cannot be empty", nameof(reason));
-        }
+        Guard.AgainstNullOrWhiteSpace(reason, nameof(reason), "Block reason cannot be empty");
 
         if (blockedUntil <= DateTime.UtcNow)
         {
@@ -206,4 +203,6 @@ public class User : BaseEntityWithId
             Unblock();
         }
     }
+
+    private bool HasUnrestrictedCreationQuota() => HasPremium || IsAdmin;
 }

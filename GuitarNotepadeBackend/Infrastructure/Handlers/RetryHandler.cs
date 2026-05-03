@@ -30,7 +30,6 @@ public class RetryHandler : DelegatingHandler
                 }
 
                 if (response.StatusCode == HttpStatusCode.RequestTimeout ||
-                    response.StatusCode == (HttpStatusCode)408 ||
                     response.StatusCode == HttpStatusCode.GatewayTimeout ||
                     response.StatusCode == HttpStatusCode.ServiceUnavailable)
                 {
@@ -64,6 +63,6 @@ public class RetryHandler : DelegatingHandler
             }
         }
 
-        return response ?? throw new Exception("Max retries exceeded");
+        return response ?? throw new InvalidOperationException("Max retries exceeded without a response.");
     }
 }

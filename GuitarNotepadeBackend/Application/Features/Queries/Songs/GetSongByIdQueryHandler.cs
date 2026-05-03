@@ -23,22 +23,19 @@ public class GetSongByIdQueryHandler : IRequestHandler<GetSongByIdQuery, FullSon
         var query = _unitOfWork.Songs.GetQueryable()
             .Where(s => s.Id == request.SongId);
 
-        query = query.Include(s => s.Owner);
-
-        if (request.IncludeStructure || true)
-        {
-            query = query.Include(s => s.ParentSong);
-        }
+        query = query
+            .Include(s => s.Owner)
+            .Include(s => s.ParentSong);
 
         if (request.IncludeStructure)
         {
             query = query
                 .Include(s => s.Structure)
-                    .ThenInclude(st => st.SegmentPositions)
+                    .ThenInclude(st => st!.SegmentPositions)
                         .ThenInclude(sp => sp.Segment)
                             .ThenInclude(seg => seg.Chord)
                 .Include(s => s.Structure)
-                    .ThenInclude(st => st.SegmentPositions)
+                    .ThenInclude(st => st!.SegmentPositions)
                         .ThenInclude(sp => sp.Segment)
                             .ThenInclude(seg => seg.Pattern);
         }

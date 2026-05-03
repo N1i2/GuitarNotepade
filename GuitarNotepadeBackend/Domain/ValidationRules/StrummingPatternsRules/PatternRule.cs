@@ -4,17 +4,18 @@ namespace Domain.ValidationRules.StrummingPatternsRules;
 
 public static class PatternRule
 {
-    private const int maxPatternLength = 255;
+    private const int MaxPatternLength = 255;
 
     public static void IsValid(string pattern)
     {
         if (string.IsNullOrWhiteSpace(pattern))
         {
-            throw new NameException("Strumming Patterns cannot be empty.");
+            throw new PatternException("Strumming pattern cannot be empty.");
         }
-        if (pattern.Length > maxPatternLength)
+
+        if (pattern.Length > MaxPatternLength)
         {
-            throw new NameException($"Strumming Patterns is too big, max length = {maxPatternLength}.");
+            throw new PatternException($"Strumming pattern is too long, max length = {MaxPatternLength}.");
         }
     }
 }

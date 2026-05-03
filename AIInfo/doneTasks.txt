@@ -1,0 +1,65 @@
+Completed tasks log (common for Backend + Frontend + Docs)
+
+2026-04-29
+1) Создан `AGENT.md` с общими настройками проекта и workflow по `AIInfo`.
+2) Создан project rule `.cursor/rules/aiinfo-workflow.mdc`.
+3) Создан project skill `./.cursor/skills/kursach-project-workflow/SKILL.md`.
+4) Добавлено ОЧЕНЬ ВАЖНОЕ правило:
+   все новые постоянные правила фиксировать в `AGENT.md` и/или skill.
+5) Переписаны файлы вопросов:
+   - `AIInfo/Backend/ansvers.txt`
+   - `AIInfo/Frontend/ansvers.txt`
+   - `AIInfo/Docks/ansvers.txt`
+   Оставлены только открытые вопросы.
+6) Заполнены файлы задач 3 приоритетов:
+   - `AIInfo/Backend/Tasks/*`
+   - `AIInfo/Frontend/Tasks/*`
+7) Созданы подробные обзорные файлы для будущей документации:
+   - `AIInfo/Backend/Details.md`
+   - `AIInfo/Frontend/Details.md`
+
+2026-05-01
+1) Обновлены обязательные workflow-правила по новому процессу пользователя:
+   - порядок приоритетов,
+   - Backend -> Frontend,
+   - блокировка реализации при незакрытых вопросах/тасках.
+2) Добавлено правило по `DebugResult`:
+   - обязательная проверка перед реализацией,
+   - файлы редактирует только пользователь.
+3) Добавлено важное правило по комментариям:
+   - комментарии не добавлять без явного запроса,
+   - при запросе использовать `TODO:`.
+4) Обновлены:
+   - `AGENT.md`
+   - `.cursor/rules/aiinfo-workflow.mdc`
+   - `.cursor/skills/kursach-project-workflow/SKILL.md`
+5) Обновлен `AIInfo/Frontend/Tasks/firstPriority.txt` (добавлен frontend CI gate).
+6) Обновлен `AIInfo/Backend/ansvers.txt`:
+   - очищен список,
+   - добавлены новые вопросы по текущей задаче "рефакторинг кода".
+
+2026-05-03
+1) Рефакторинг слоя `GuitarNotepadeBackend/Domain`: `Guard` (в т.ч. `AgainstNullOrWhiteSpace`), константа `MaxCommentTextLength`, исправление ошибочных правил (`AlbumTitleRule`, `LyricsRule`, `NikNameRule`, `OriginalArtistRule`), унификация доменных исключений в правилах (аккорды, отзывы, паттерн), `AlbumExceptions.TitleException`, инкапсуляция `SongComment`, `User` (`List` вместо `LinkedList` для комментариев, `HasUnrestrictedCreationQuota`), прочие правки сущностей и `TitleRule` (trim).
+2) `Presentation/Filters/CustomExceptionFilter`: ответ 400 для `Domain.Exceptions.Base.BaseException`, чтобы новые доменные исключения из правил не превращались в 500.
+3) `Application`: исправлен лог в `UnsubscribeCommandHandler` (удалена несуществующая `SubType` у команды) для успешной сборки solution.
+
+2026-05-03 (продолжение)
+4) Рефакторинг `Infrastructure`: `UnitOfWork` — единый `RunInTransactionAsync`; `SongRepository` — общий фильтр публичного поиска; `AlbomRepository` — `GetFavoriteAlbumByOwnerAsync` вместо `FindAsync`+`Task.Run`; `NotificationRepository` + cleanup — пакетное `ExecuteDeleteAsync`; `UserService` — `KeyNotFound` при отсутствии пользователя, константа избранного альбома; `DependencyInjection` — `ConnectionStrings:DefaultConnection` при наличии; `AuthService` — `UtcNow` для JWT; `RetryHandler` — мелкая чистка; синхронизация с `Constants.Albums.FavoriteTitle` в Application/Infrastructure; расширение `INotificationRepository` / `IAlbomRepository` в Domain.
+
+2026-05-03 (NuGet / миграции)
+5) Обновлены пакеты: Microsoft.* / EF Core / Npgsql / Extensions — **10.0.7**, `System.IdentityModel.Tokens.Jwt` **8.18.0**, `DotNetEnv` **3.2.0**, явная **`System.Security.Cryptography.Xml` 10.0.7** (устраняет NU1903). `Swashbuckle` оставлен **9.0.6** (10.x требует OpenAPI.NET 2 и смену `using`/типов в `Program.cs`). Добавлен локальный tool **`dotnet-ef` 10.0.7** в `GuitarNotepadeBackend/.config/dotnet-tools.json`.
+
+2026-05-03 (Application / DTO)
+6) `Application`: удалены неиспользуемые DTO (`AlbomsSearchFilters`, `AlbumGridItemDto`, `NotificationDataDto`, `NotificationOperationResponseDto`); файлы `AlbomDto.cs` / `AlbomSearchResultDto.cs` переименованы в `AlbumDto.cs` / `AlbumSearchResultDto.cs` (типы без изменений, JSON без изменений). `MappingProfile`: сегменты `FullSongDto` строятся через AutoMapper (`ctx.Mapper.Map<SegmentDataWithPositionDto>`), убрано дублирование с ручным `MapSegmentToDto`.
+
+2026-05-03 (Presentation)
+7) `Presentation`: общий `ApiControllerBase` с `GetCurrentUserId`, `TryGetCurrentUserId`, `GetCurrentUserRole`, `IsUserAuthenticated`; переведены на него контроллеры (кроме `Auth`, `Files`). Убраны дублирующие приватные методы и лишние `using`; `StrummingPatternsController` — удалены неиспользуемые `Chords`/`AutoMapper`; `Console.WriteLine` в catch; дублирующий `[Authorize]` у `Albums`/`Subscriptions` count; `FilesController` — лишний `using Infrastructure.Services`; правка summary у подписок.
+
+2026-05-03 (Frontend API ↔ Backend)
+8) Фронт: `getApiBaseUrl()` в `lib/api/client.ts`; исправлены `ChordsService`/`PatternsService` `count-of-create` (полный путь); `ProfileService.getAllUsers` → тот же endpoint что и `getUsers` (`/user/users`), admin PUT пути `/UserManagement/...`; `SongsService` — базовый путь `/songs`, `getSongComments` как `SongCommentDto[]`, загрузка/URL аудио и ошибки ответа через `message`; прямые `fetch` на аудио — `getApiBaseUrl()` + `/songs/...` в `audio-player-panel`, `use-audio-upload`, `songs/edit/[songId]`. Бэк: `SongsController` query `segmentId` вместо опечатки `segmetId`.
+
+2026-05-03 (Frontend рефакторинг)
+9) `lib/api/client.ts`: `authHeaders()`, единый Authorization в JSON-запросах, убраны отладочные `console.*` в цикле запросов. `SongsService`: URL и загрузка аудио (`getAudioFileUrl`, `getAudioUploadUrl`, `fetchAudioFileBlob`, `tryFetchAudioFileBlob`), `mapFullSongToSongDto`, типизированный `searchSongs`, меньше шума в логах; `createSong`/`updateSongWithSegments` упрощены. `AlbumService.createAlbum` без лишних логов. Аудио UI: `audio-player-panel`, `songs/edit/[songId]`, `use-audio-upload` — через `SongsService` вместо дублирования `fetch`/URL; убраны отладочные `console.log` в этих местах.
+
+2026-05-03 (Frontend i18n — Priority 1)
+10) Локализация RU/EN: `lib/i18n/storage` (`guitar-notepad-locale`, автovыбор из `navigator.language`, иначе EN), `lib/i18n/messages/en.ts` + `ru.ts`, `I18nProvider` / `useTranslation`, `LocaleToggle` в шапке; `Header` и `app/home/page.tsx` на ключах перевода. Правила зафиксированы в `AGENT.md` и skill.

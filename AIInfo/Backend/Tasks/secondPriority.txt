@@ -1,0 +1,15 @@
+Backend Priority 2 (обязательно, но может подождать)
+
+- Вынести ownership/admin authorization проверки в единый policy/service слой.
+
+- Добавить аудит-дневник действий админа:
+block/unblock, role change, критичные операции.
+
+- Внедрить soft-delete для `Songs/Albums/Comments` + корректные фильтры в запросах.
+
+- Добавить healthchecks:
+DB + WebDAV + базовые внешние зависимости.
+
+- Написать минимальный набор тестов:
+- unit tests (домен: лимиты/роли),
+- integration tests (auth + songs + subscriptions).

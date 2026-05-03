@@ -1,5 +1,6 @@
 "use client";
 
+import { SongsService } from "@/lib/api/song-service";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   Card,
@@ -136,36 +137,11 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
         setIsLoading(true);
         setAudioError(false);
 
-        const token = localStorage.getItem("auth_token");
-        const baseUrl =
-          process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
-        const url = `${baseUrl}/Songs/${songId}/audio-file`;
-
-        console.log("🎵 Fetching audio file from:", url);
-
-        const response = await fetch(url, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch audio");
-        }
-
-        const blob = await response.blob();
-        console.log("🎵 Audio blob received:", blob.size, blob.type);
-
-        if (blob.size === 0) {
-          throw new Error("Audio file is empty");
-        }
-
+        const blob = await SongsService.fetchAudioFileBlob(songId);
         const blobUrl = URL.createObjectURL(blob);
         setAudioBlobUrl(blobUrl);
-        console.log("🎵 Audio blob URL created");
       } catch (error) {
-        console.error("🎵 Error fetching audio:", error);
+        console.error("Error fetching audio:", error);
         setAudioError(true);
       } finally {
         setIsLoading(false);
@@ -190,7 +166,6 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
     if (!audio) return;
 
     if (audioUrl && !audioInitializedRef.current && !audioError) {
-      console.log("🎵 Initializing audio with URL:", audioUrl);
       audioInitializedRef.current = true;
 
       audio.src = audioUrl;
@@ -198,9 +173,7 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
       audio.volume = volume / 100;
 
       const handleLoadedMetadata = () => {
-        console.log("🎵 Loaded metadata event");
         if (audio.duration && isFinite(audio.duration) && audio.duration > 0) {
-          console.log("🎵 Duration from metadata:", audio.duration);
           setDuration(audio.duration);
           setAudioLoaded(true);
         }
@@ -220,10 +193,6 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
       if (audio) {
         const isCurrentlyPlaying = !audio.paused && !audio.ended;
         if (isCurrentlyPlaying !== isPlaying) {
-          console.log(
-            "🎵 Playback state changed via interval:",
-            isCurrentlyPlaying,
-          );
           setIsPlaying(isCurrentlyPlaying);
         }
       }
@@ -252,11 +221,6 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
       !isLoading &&
       !audioError
     ) {
-      console.log(
-        "🎵 Audio URL changed, reloading:",
-        audioUrl.substring(0, 100),
-      );
-
       const wasPlaying = isPlaying;
 
       audio.pause();
@@ -264,7 +228,6 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
       audio.load();
 
       const handleCanPlay = () => {
-        console.log("🎵 Audio reloaded successfully");
         setAudioLoaded(true);
         setIsAudioReady(true);
         if (audio.duration && isFinite(audio.duration)) {
@@ -289,15 +252,13 @@ export const AudioPlayerPanel: React.FC<AudioPlayerPanelProps> = ({
     try {
       if (!audio.paused) {
         audio.pause();
-        console.log("🎵 Paused manually");
       } else {
         audio.muted = false;
         audio.volume = volume / 100;
         await audio.play();
-        console.log("🎵 Playing manually");
       }
     } catch (error) {
-      console.error("🎵 Play/pause error:", error);
+      console.error("Play/pause error:", error);
       setAudioError(true);
     }
   }, [audioLoaded, audioError, volume]);

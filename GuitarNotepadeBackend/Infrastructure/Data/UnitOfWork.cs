@@ -11,7 +11,6 @@ public class UnitOfWork : IUnitOfWork
     private readonly AppDbContext _context;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<UnitOfWork> _logger;
-    public AppDbContext Context => _context;
 
     public UnitOfWork(
         AppDbContext context,
@@ -62,13 +61,31 @@ public class UnitOfWork : IUnitOfWork
         return await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<TResult> ExecuteInTransactionAsync<TResult>(
-    Func<Task<TResult>> operation,
-    CancellationToken cancellationToken = default)
+    public Task<TResult> ExecuteInTransactionAsync<TResult>(
+        Func<Task<TResult>> operation,
+        CancellationToken cancellationToken = default)
+    {
+        return RunInTransactionAsync(operation, cancellationToken);
+    }
+
+    public async Task ExecuteInTransactionAsync(
+        Func<Task> operation,
+        CancellationToken cancellationToken = default)
+    {
+        _ = await RunInTransactionAsync(async () =>
+        {
+            await operation();
+            return false;
+        }, cancellationToken);
+    }
+
+    private async Task<TResult> RunInTransactionAsync<TResult>(
+        Func<Task<TResult>> operation,
+        CancellationToken cancellationToken)
     {
         var strategy = _context.Database.CreateExecutionStrategy();
 
-        return await strategy.ExecuteAsync(async (ct) =>
+        return await strategy.ExecuteAsync(async ct =>
         {
             await using var transaction = await _context.Database.BeginTransactionAsync(ct);
 
@@ -77,30 +94,6 @@ public class UnitOfWork : IUnitOfWork
                 var result = await operation();
                 await transaction.CommitAsync(ct);
                 return result;
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync(ct);
-                _logger.LogError(ex, "Transaction failed");
-                throw;
-            }
-        }, cancellationToken);
-    }
-
-    public async Task ExecuteInTransactionAsync(
-    Func<Task> operation,
-    CancellationToken cancellationToken = default)
-    {
-        var strategy = _context.Database.CreateExecutionStrategy();
-
-        await strategy.ExecuteAsync(async (ct) =>
-        {
-            await using var transaction = await _context.Database.BeginTransactionAsync(ct);
-
-            try
-            {
-                await operation();
-                await transaction.CommitAsync(ct);
             }
             catch (Exception ex)
             {

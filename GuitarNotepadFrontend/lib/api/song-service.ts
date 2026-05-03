@@ -1,5 +1,5 @@
 import { CreateCommentDto } from "@/types/comments";
-import { apiClient } from "./client";
+import { apiClient, authHeaders, getApiBaseUrl } from "./client";
 import {
   SongDto,
   FullSongDto,
@@ -17,7 +17,63 @@ import {
 import { AuthService } from "./auth-service";
 
 export class SongsService {
-  private static readonly BASE_PATH = "/Songs";
+  private static readonly BASE_PATH = "/songs";
+
+  static getAudioFileUrl(songId: string): string {
+    return `${getApiBaseUrl()}${this.BASE_PATH}/${songId}/audio-file`;
+  }
+
+  static getAudioUploadUrl(songId: string): string {
+    return `${getApiBaseUrl()}${this.BASE_PATH}/${songId}/audio`;
+  }
+
+  static async fetchAudioFileBlob(songId: string): Promise<Blob> {
+    const token = AuthService.getToken();
+    const response = await fetch(this.getAudioFileUrl(songId), {
+      method: "GET",
+      headers: authHeaders(token),
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Failed to fetch audio");
+    const blob = await response.blob();
+    if (blob.size === 0) throw new Error("Audio file is empty");
+    return blob;
+  }
+
+  static async tryFetchAudioFileBlob(songId: string): Promise<Blob | null> {
+    try {
+      return await this.fetchAudioFileBlob(songId);
+    } catch {
+      return null;
+    }
+  }
+
+  private static mapFullSongToSongDto(fullSong: FullSongDto): SongDto {
+    return {
+      id: fullSong.id,
+      title: fullSong.title,
+      artist: fullSong.artist,
+      genre: fullSong.genre,
+      theme: fullSong.theme,
+      description: fullSong.description,
+      ownerId: fullSong.ownerId,
+      ownerName: fullSong.ownerName,
+      isPublic: fullSong.isPublic,
+      parentSongId: fullSong.parentSongId,
+      parentSongTitle: fullSong.parentSongTitle,
+      customAudioUrl: fullSong.customAudioUrl,
+      customAudioType: fullSong.customAudioType,
+      createdAt: fullSong.createdAt,
+      updatedAt: fullSong.updatedAt,
+      reviewCount: fullSong.reviewCount,
+      averageBeautifulRating: fullSong.averageBeautifulRating,
+      averageDifficultyRating: fullSong.averageDifficultyRating,
+      chords: fullSong.chords,
+      patterns: fullSong.patterns,
+      commentsCount: fullSong.comments?.length ?? 0,
+      segmentsCount: fullSong.segments?.length ?? 0,
+    };
+  }
 
   static async searchSongs(
     filters: SongSearchFilters,
@@ -47,17 +103,26 @@ export class SongsService {
     params.append("pageSize", (filters.pageSize || 20).toString());
 
     const url = `${this.BASE_PATH}?${params.toString()}`;
-    console.log("🔍 Searching songs with URL:", url);
-
-    const response = await apiClient.get<any>(url);
+    const response = await apiClient.get<{
+      songs?: SongDto[];
+      Songs?: SongDto[];
+      totalCount?: number;
+      TotalCount?: number;
+      page?: number;
+      Page?: number;
+      pageSize?: number;
+      PageSize?: number;
+      totalPages?: number;
+      TotalPages?: number;
+    }>(url);
 
     return {
-      songs: response.songs || response.Songs || [],
-      totalCount: response.totalCount || response.TotalCount || 0,
-      page: response.page || response.Page || filters.page || 1,
+      songs: response.songs ?? response.Songs ?? [],
+      totalCount: response.totalCount ?? response.TotalCount ?? 0,
+      page: response.page ?? response.Page ?? filters.page ?? 1,
       pageSize:
-        response.pageSize || response.PageSize || filters.pageSize || 20,
-      totalPages: response.totalPages || response.TotalPages || 0,
+        response.pageSize ?? response.PageSize ?? filters.pageSize ?? 20,
+      totalPages: response.totalPages ?? response.TotalPages ?? 0,
     };
   }
 
@@ -121,14 +186,7 @@ export class SongsService {
     formData.append("audioFile", audioFile);
 
     const token = AuthService.getToken();
-    const url = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api"}${this.BASE_PATH}/${songId}/audio`;
-
-    console.log("📤 Uploading audio to:", url);
-    console.log(
-      "📁 File size:",
-      (audioFile.size / 1024 / 1024).toFixed(2),
-      "MB",
-    );
+    const url = this.getAudioUploadUrl(songId);
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 300000);
@@ -136,18 +194,24 @@ export class SongsService {
     try {
       const response = await fetch(url, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: authHeaders(token),
         body: formData,
         signal: controller.signal,
+        credentials: "include",
       });
 
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to upload audio");
+        let message = "Failed to upload audio";
+        try {
+          const error = await response.json();
+          message =
+            error?.message ?? error?.error ?? error?.title ?? message;
+        } catch {
+          /* non-JSON body */
+        }
+        throw new Error(message);
       }
 
       return await response.json();
@@ -185,16 +249,14 @@ export class SongsService {
       customAudioType: data.customAudioType,
     };
 
-    console.log("📤 Creating song...");
     const createdSong = await apiClient.post<CreateSongDto, SongDto>(
       this.BASE_PATH,
       songData,
     );
-    console.log("✅ Song created:", createdSong.id);
 
     if (data.segments && data.segments.length > 0) {
       try {
-        const structurePayload: any = {
+        const structurePayload: Record<string, unknown> = {
           segments: data.segments,
         };
 
@@ -203,32 +265,23 @@ export class SongsService {
           Object.keys(data.segmentComments).length > 0
         ) {
           structurePayload.segmentComments = data.segmentComments;
-          console.log(
-            "📝 Including comments in structure payload:",
-            data.segmentComments,
-          );
         }
 
         await this.buildSongStructure(createdSong.id, structurePayload);
-        console.log("✅ Song structure built successfully");
-      } catch (error) {
-        console.error("Failed to build song structure:", error);
+      } catch {
         throw new Error("Failed to save song segments");
       }
     }
 
     if (data.audioFile) {
-      console.log("📁 Uploading audio file...");
       try {
         const uploadResult = await this.uploadAudio(
           createdSong.id,
           data.audioFile,
         );
-        console.log("✅ Audio uploaded:", uploadResult);
         createdSong.customAudioUrl = uploadResult.fileName;
         createdSong.customAudioType = uploadResult.audioType;
       } catch (error) {
-        console.error("Failed to upload audio:", error);
         throw new Error(
           "Song created but audio upload failed: " + (error as Error).message,
         );
@@ -239,8 +292,7 @@ export class SongsService {
       for (const chordId of data.chordIds) {
         try {
           await this.addChordToSong(createdSong.id, chordId);
-        } catch (error) {
-          console.error(`Failed to add chord ${chordId}:`, error);
+        } catch {
         }
       }
     }
@@ -249,8 +301,7 @@ export class SongsService {
       for (const patternId of data.patternIds) {
         try {
           await this.addPatternToSong(createdSong.id, patternId);
-        } catch (error) {
-          console.error(`Failed to add pattern ${patternId}:`, error);
+        } catch {
         }
       }
     }
@@ -280,7 +331,6 @@ export class SongsService {
     if (data.audioBase64 && data.audioType) {
       songUpdatePayload.audioBase64 = data.audioBase64;
       songUpdatePayload.audioType = data.audioType;
-      console.log("🎵 Sending audioBase64 to backend for processing");
     } else if (data.customAudioUrl) {
       songUpdatePayload.customAudioUrl = data.customAudioUrl;
       songUpdatePayload.customAudioType = data.customAudioType;
@@ -288,18 +338,7 @@ export class SongsService {
       songUpdatePayload.isDeleteAudio = true;
     }
 
-    console.log("📤 Updating song with payload:", {
-      hasAudioBase64: !!data.audioBase64,
-      hasCustomAudioUrl: !!data.customAudioUrl,
-      isDeleteAudio: data.isDeleteAudio,
-    });
-
-    const updatedSong = await this.updateSong(data.id, songUpdatePayload);
-    console.log("📥 Song metadata updated:", {
-      id: updatedSong.id,
-      customAudioUrl: updatedSong.customAudioUrl,
-      customAudioType: updatedSong.customAudioType,
-    });
+    await this.updateSong(data.id, songUpdatePayload);
 
     if (data.segments || data.segmentComments) {
       const structurePayload: any = {};
@@ -320,40 +359,7 @@ export class SongsService {
       false,
     );
 
-    const finalSong: SongDto = {
-      id: fullSong.id,
-      title: fullSong.title,
-      artist: fullSong.artist,
-      genre: fullSong.genre,
-      theme: fullSong.theme,
-      description: fullSong.description,
-      ownerId: fullSong.ownerId,
-      ownerName: fullSong.ownerName,
-      isPublic: fullSong.isPublic,
-      parentSongId: fullSong.parentSongId,
-      parentSongTitle: fullSong.parentSongTitle,
-      customAudioUrl: fullSong.customAudioUrl,
-      customAudioType: fullSong.customAudioType,
-      createdAt: fullSong.createdAt,
-      updatedAt: fullSong.updatedAt,
-      reviewCount: fullSong.reviewCount,
-      averageBeautifulRating: fullSong.averageBeautifulRating,
-      averageDifficultyRating: fullSong.averageDifficultyRating,
-      chords: fullSong.chords,
-      patterns: fullSong.patterns,
-      commentsCount: fullSong.comments?.length || 0,
-      segmentsCount: fullSong.segments?.length || 0,
-    };
-
-    console.log("✅ Final song:", {
-      id: finalSong.id,
-      customAudioUrl: finalSong.customAudioUrl,
-      customAudioType: finalSong.customAudioType,
-      commentsCount: finalSong.commentsCount,
-      segmentsCount: finalSong.segmentsCount,
-    });
-
-    return finalSong;
+    return this.mapFullSongToSongDto(fullSong);
   }
 
   static async deleteSong(id: string): Promise<void> {
@@ -449,12 +455,12 @@ export class SongsService {
     songId: string,
     page: number = 1,
     pageSize: number = 50,
-  ): Promise<PaginatedDto<SongCommentDto>> {
+  ): Promise<SongCommentDto[]> {
     const params = new URLSearchParams();
     params.append("page", page.toString());
     params.append("pageSize", pageSize.toString());
 
-    return await apiClient.get<PaginatedDto<SongCommentDto>>(
+    return await apiClient.get<SongCommentDto[]>(
       `${this.BASE_PATH}/${songId}/comments?${params.toString()}`,
     );
   }
@@ -473,15 +479,12 @@ export class SongsService {
     }
 
     const token = AuthService.getToken();
-    const baseUrl =
-      process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
-    const url = `${baseUrl}/Songs/${songId}/audio-url?fileName=${encodeURIComponent(fileName)}`;
+    const url = `${getApiBaseUrl()}${this.BASE_PATH}/${songId}/audio-url?fileName=${encodeURIComponent(fileName)}`;
 
     const response = await fetch(url, {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: authHeaders(token),
+      credentials: "include",
     });
 
     if (!response.ok) {

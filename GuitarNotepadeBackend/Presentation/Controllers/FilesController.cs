@@ -1,5 +1,4 @@
 ﻿using Domain.Interfaces.Services;
-using Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

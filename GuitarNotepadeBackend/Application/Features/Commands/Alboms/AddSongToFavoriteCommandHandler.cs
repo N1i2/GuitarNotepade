@@ -1,3 +1,4 @@
+using Domain.Common;
 using Domain.Entities;
 using Domain.Interfaces;
 using MediatR;
@@ -22,15 +23,13 @@ public class AddSongToFavoriteCommandHandler : IRequestHandler<AddSongToFavorite
         if (song == null)
             throw new KeyNotFoundException($"Song with id {request.SongId} not found");
 
-        var favoriteAlbum = await _unitOfWork.Alboms.FindAsync(
-            a => a.OwnerId == request.UserId && a.Title.ToLower() == "favorite",
-            cancellationToken);
+        var favoriteAlbum = await _unitOfWork.Alboms.GetFavoriteAlbumByOwnerAsync(request.UserId, cancellationToken);
 
         if (favoriteAlbum == null)
         {
             favoriteAlbum = Album.Create(
                 ownerId: request.UserId,
-                title: "Favorite",
+                title: Constants.Albums.FavoriteTitle,
                 isPublic: false,
                 description: "My favorite songs");
 

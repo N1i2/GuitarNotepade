@@ -39,6 +39,7 @@ public class Album : BaseEntityWithId
         string? description = null)
     {
         AlbumTitleRule.IsValid(title);
+        Guard.AgainstEmptyGuid(ownerId, nameof(ownerId));
 
         var album = new Album
         {
@@ -100,6 +101,8 @@ public class Album : BaseEntityWithId
 
     public void AddSong(Guid songId)
     {
+        Guard.AgainstEmptyGuid(songId, nameof(songId));
+
         if (!SongAlbums.Any(sa => sa.SongId == songId))
         {
             var songAlbum = SongAlbum.Create(Id, songId);

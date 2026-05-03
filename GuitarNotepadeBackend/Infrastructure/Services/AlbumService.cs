@@ -111,7 +111,7 @@ public class AlbumService : IAlbumService
                 throw new UnauthorizedAccessException("Only owner or admin can update this album");
         }
 
-        if (album.Title == "Favorite")
+        if (album.Title == Constants.Albums.FavoriteTitle)
             throw new InvalidOperationException("Cannot modify the Favorite album");
 
         if (title != null && title != album.Title)
@@ -204,7 +204,7 @@ public class AlbumService : IAlbumService
                 throw new UnauthorizedAccessException("Only owner or admin can delete this album");
         }
 
-        if (album.Title == "Favorite")
+        if (album.Title == Constants.Albums.FavoriteTitle)
             throw new InvalidOperationException("Cannot delete the Favorite album");
 
         await _notificationService.NotifyAlbumChangedAsync(
@@ -241,13 +241,11 @@ public class AlbumService : IAlbumService
 
     public async Task<Album> GetFavoriteAlbumAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        var album = await _unitOfWork.Alboms.FindAsync(
-            a => a.OwnerId == userId && a.Title == "Favorite",
-            cancellationToken);
+        var album = await _unitOfWork.Alboms.GetFavoriteAlbumByOwnerAsync(userId, cancellationToken);
 
         if (album == null)
         {
-            album = Album.Create(userId, "Favorite", isPublic: false);
+            album = Album.Create(userId, Constants.Albums.FavoriteTitle, isPublic: false);
             album = await _unitOfWork.Alboms.CreateAsync(album, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -290,7 +288,7 @@ public class AlbumService : IAlbumService
                 throw new UnauthorizedAccessException("Only owner or admin can add songs to this album");
         }
 
-        if (album.Title == "Favorite")
+        if (album.Title == Constants.Albums.FavoriteTitle)
             throw new InvalidOperationException("Use AddSongToFavoriteAsync for Favorite album");
 
         var song = await _unitOfWork.Songs.GetByIdAsync(songId, cancellationToken);
@@ -333,7 +331,7 @@ public class AlbumService : IAlbumService
                 throw new UnauthorizedAccessException("Only owner or admin can remove songs from this album");
         }
 
-        if (album.Title == "Favorite")
+        if (album.Title == Constants.Albums.FavoriteTitle)
             throw new InvalidOperationException("Use RemoveSongFromFavoriteAsync for Favorite album");
 
         var song = await _unitOfWork.Songs.GetByIdAsync(songId, cancellationToken);

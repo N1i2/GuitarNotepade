@@ -9,13 +9,20 @@ public static class TitleRule
 
     public static void IsValid(string title)
     {
-        if (string.IsNullOrWhiteSpace(title) || title.Length < minLength)
+        if (string.IsNullOrWhiteSpace(title))
         {
             throw new TitleException($"Title is too short, min length = {minLength}.");
         }
-        if (title.Length > maxLength)
+
+        var trimmed = title.Trim();
+        if (trimmed.Length < minLength)
         {
-            throw new TitleException($"Title is too short, max length = {maxLength}.");
+            throw new TitleException($"Title is too short, min length = {minLength}.");
+        }
+
+        if (trimmed.Length > maxLength)
+        {
+            throw new TitleException($"Title is too long, max length = {maxLength}.");
         }
     }
 }

@@ -1,3 +1,4 @@
+using Domain.Common;
 using Domain.Entities.Base;
 
 namespace Domain.Entities;
@@ -37,11 +38,8 @@ public class Notification : BaseEntityWithId
         Guid? songId = null,
         Guid? albumId = null)
     {
-        if (userId == Guid.Empty)
-            throw new ArgumentException("UserId is required", nameof(userId));
-
-        if (string.IsNullOrWhiteSpace(message))
-            throw new ArgumentException("Message is required", nameof(message));
+        Guard.AgainstEmptyGuid(userId, nameof(userId));
+        Guard.AgainstNullOrWhiteSpace(message, nameof(message), "Message is required");
 
         return new Notification
         {

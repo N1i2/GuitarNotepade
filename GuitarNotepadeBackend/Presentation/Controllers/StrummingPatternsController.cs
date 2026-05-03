@@ -1,19 +1,16 @@
 ﻿using Application.DTOs.Generic;
 using Application.DTOs.StrummingPatterns;
-using Application.Features.Commands.Chords;
 using Application.Features.Commands.StrummingPatterns;
 using Application.Features.Queries.StrummingPatterns;
-using AutoMapper;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace Presentation.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class StrummingPatternsController : ControllerBase
+public class StrummingPatternsController : ApiControllerBase
 {
     private readonly IMediator _mediator;
 
@@ -198,9 +195,8 @@ public class StrummingPatternsController : ControllerBase
         {
             return NotFound(new { error = ex.Message });
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            Console.WriteLine(ex.Message);
             return Forbid();
         }
         catch (InvalidOperationException ex)
@@ -231,9 +227,8 @@ public class StrummingPatternsController : ControllerBase
         {
             return NotFound(new { error = ex.Message });
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            Console.WriteLine(ex.Message);
             return Forbid();
         }
         catch (Exception ex)
@@ -251,32 +246,5 @@ public class StrummingPatternsController : ControllerBase
         var command = new CountOfCreatePatternCommand(userId);
 
         return await _mediator.Send(command);
-    }
-
-    private bool IsUserAuthenticated()
-    {
-        return User.Identity?.IsAuthenticated == true;
-    }
-
-    private Guid GetCurrentUserId()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)
-                         ?? User.FindFirst("sub")
-                         ?? User.FindFirst("userId");
-
-        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-        {
-            throw new UnauthorizedAccessException("Invalid user ID in token");
-        }
-
-        return userId;
-    }
-
-    private string GetCurrentUserRole()
-    {
-        var roleClaim = User.FindFirst(ClaimTypes.Role)
-                       ?? User.FindFirst("role");
-
-        return roleClaim?.Value ?? "User";
     }
 }

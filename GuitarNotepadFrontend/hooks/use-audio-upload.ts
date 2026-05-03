@@ -1,5 +1,6 @@
 "use client";
 
+import { SongsService } from "@/lib/api/song-service";
 import { useState, useCallback, useRef } from "react";
 
 interface UploadTask {
@@ -34,20 +35,7 @@ export function useAudioUpload() {
         formData.append("audioFile", task.file);
 
         const token = localStorage.getItem("auth_token");
-        const baseUrl =
-          process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
-        const url = `${baseUrl}/Songs/${task.songId}/audio`;
-
-        console.log("📤 Upload URL:", url);
-        console.log(
-          "📁 File:",
-          task.file.name,
-          "Size:",
-          task.file.size,
-          "Type:",
-          task.file.type,
-        );
-        console.log("🔑 Has token:", !!token);
+        const url = SongsService.getAudioUploadUrl(task.songId);
 
         setActiveUpload({
           songId: task.songId,
@@ -72,8 +60,6 @@ export function useAudioUpload() {
 
         xhr.onload = () => {
           currentXhr.current = null;
-          console.log("📡 Upload response status:", xhr.status);
-          console.log("📡 Upload response text:", xhr.responseText);
 
           if (xhr.status === 200) {
             try {
@@ -83,8 +69,7 @@ export function useAudioUpload() {
               );
               if (task.onSuccess) task.onSuccess();
               resolve(response);
-            } catch (e) {
-              console.error("Failed to parse response:", e);
+            } catch {
               const error = new Error("Failed to parse response");
               setActiveUpload((prev) =>
                 prev
@@ -100,8 +85,8 @@ export function useAudioUpload() {
               const errorResponse = JSON.parse(xhr.responseText);
               errorMessage =
                 errorResponse.error || errorResponse.message || errorMessage;
-              console.error("Server error:", errorResponse);
-            } catch (e) {}
+            } catch {
+            }
             const error = new Error(errorMessage);
             setActiveUpload((prev) =>
               prev ? { ...prev, status: "failed", error: error.message } : null,

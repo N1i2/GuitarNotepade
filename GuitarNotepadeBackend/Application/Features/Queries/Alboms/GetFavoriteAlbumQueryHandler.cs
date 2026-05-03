@@ -18,8 +18,7 @@ public class GetFavoriteAlbumQueryHandler : IRequestHandler<GetFavoriteAlbumQuer
 
     public async Task<AlbumWithSongsDto> Handle(GetFavoriteAlbumQuery request, CancellationToken cancellationToken)
     {
-        var favoriteAlbum = await _unitOfWork.Alboms.FindAsync(
-            a => a.OwnerId == request.UserId && a.Title.ToLower() == "favorite");
+        var favoriteAlbum = await _unitOfWork.Alboms.GetFavoriteAlbumByOwnerAsync(request.UserId, cancellationToken);
 
         if (favoriteAlbum == null)
         {

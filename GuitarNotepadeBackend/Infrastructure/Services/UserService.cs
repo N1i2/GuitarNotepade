@@ -17,12 +17,14 @@ public class UserService : IUserService
 
     public async Task<User> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _unitOfWork.Users.GetByIdAsync(id, cancellationToken);
+        var user = await _unitOfWork.Users.GetByIdAsync(id, cancellationToken);
+        return user ?? throw new KeyNotFoundException($"User with ID {id} not found");
     }
 
     public async Task<User> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
-        return await _unitOfWork.Users.GetByEmailAsync(email, cancellationToken);
+        var user = await _unitOfWork.Users.GetByEmailAsync(email, cancellationToken);
+        return user ?? throw new KeyNotFoundException($"User with email {email} not found");
     }
 
     public async Task<bool> CanCreateMoreSongsAsync(Guid userId, CancellationToken cancellationToken = default)
@@ -93,7 +95,7 @@ public class UserService : IUserService
     public async Task<int> GetUserAlbumsCountAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return await _unitOfWork.Alboms.GetQueryable()
-            .Where(a => a.OwnerId == userId && a.Title != "Favorite")
+            .Where(a => a.OwnerId == userId && a.Title != Constants.Albums.FavoriteTitle)
             .CountAsync(cancellationToken);
     }
 

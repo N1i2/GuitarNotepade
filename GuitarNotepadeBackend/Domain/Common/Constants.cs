@@ -15,6 +15,7 @@ public static class Constants
         public const int MaxSegmentsPerSong = 255;
         public const int MaxSegmentPositionsPerSong = 1000;
         public const int MaxCommentsPerSong = 1000;
+        public const int MaxCommentTextLength = 1000;
 
         public const int FreeUserMaxSongs = 5;
         public const int FreeUserMaxChords = 3;
@@ -35,6 +36,11 @@ public static class Constants
         public const string Admin = "Admin";
         public const string User = "User";
         public const string Guest = "Guest";
+    }
+
+    public static class Albums
+    {
+        public const string FavoriteTitle = "Favorite";
     }
 
     public static class Sorting

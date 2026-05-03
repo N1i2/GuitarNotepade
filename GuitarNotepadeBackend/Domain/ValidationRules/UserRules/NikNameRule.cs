@@ -4,18 +4,18 @@ namespace Domain.ValidationRules.UserRules;
 
 public static class NikNameRule
 {
-    private const int maxNikNameLength = 50;
+    private const int MaxNikNameLength = 50;
 
     public static void IsValid(string nikName)
     {
-
         if (string.IsNullOrWhiteSpace(nikName))
         {
-            throw new NikNameException("Youe nik name id too small.");
+            throw new NikNameException($"Nickname is too short, min length = 1.");
         }
-        if (nikName.Length >= maxNikNameLength)
+
+        if (nikName.Length > MaxNikNameLength)
         {
-            throw new NikNameException($"Youe nik name id too big, max length = {maxNikNameLength}.");
+            throw new NikNameException($"Nickname is too long, max length = {MaxNikNameLength}.");
         }
     }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/components/providers/auth-provider";
+import { useTranslation } from "@/hooks/use-translation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,11 +12,11 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowRight, FileMusic, FileText, Hand, ListMusic } from "lucide-react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function HomePage() {
   const { user, isLoading } = useAuth();
+  const { t } = useTranslation();
 
   const isGuest = user?.role === "Guest";
 
@@ -51,8 +52,8 @@ export default function HomePage() {
       <div className="min-h-screen flex items-center justify-center">
         <Card>
           <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>Please log in to access this page</CardDescription>
+            <CardTitle>{t("dashboard.accessDenied")}</CardTitle>
+            <CardDescription>{t("dashboard.accessDeniedDesc")}</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -63,10 +64,8 @@ export default function HomePage() {
     <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Manage your guitar tabs and songs
-          </p>
+          <h1 className="text-3xl font-bold">{t("dashboard.title")}</h1>
+          <p className="text-muted-foreground">{t("dashboard.subtitle")}</p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -74,21 +73,18 @@ export default function HomePage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Hand className="h-5 w-5" />
-                Chords Library
+                {t("dashboard.chordsTitle")}
               </CardTitle>
-              <CardDescription>
-                Browse and create guitar chord diagrams
-              </CardDescription>
+              <CardDescription>{t("dashboard.chordsDesc")}</CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                Access a comprehensive library of guitar chords with multiple
-                fingerings
+                {t("dashboard.chordsBody")}
               </p>
               <Button asChild className="w-full">
                 <Link href="/home/chords">
                   <ArrowRight className="h-4 w-4 mr-2" />
-                  Go to Chords
+                  {t("dashboard.chordsCta")}
                 </Link>
               </Button>
             </CardContent>
@@ -98,21 +94,18 @@ export default function HomePage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ListMusic className="h-5 w-5" />
-                Strumming Patterns Library
+                {t("dashboard.patternsTitle")}
               </CardTitle>
-              <CardDescription>
-                Browse and create patterns diagrams
-              </CardDescription>
+              <CardDescription>{t("dashboard.patternsDesc")}</CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                Access a comprehensive library of strumming pattern like finger
-                style and other
+                {t("dashboard.patternsBody")}
               </p>
               <Button asChild className="w-full">
                 <Link href="/home/patterns">
                   <ArrowRight className="h-4 w-4 mr-2" />
-                  Go to Patterns
+                  {t("dashboard.patternsCta")}
                 </Link>
               </Button>
             </CardContent>
@@ -121,18 +114,18 @@ export default function HomePage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileMusic className="h-5 w-5" />
-                Song Library
+                {t("dashboard.songsTitle")}
               </CardTitle>
-              <CardDescription>Browse and create songs</CardDescription>
+              <CardDescription>{t("dashboard.songsDesc")}</CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                Access a comprehensive library of songs
+                {t("dashboard.songsBody")}
               </p>
               <Button asChild className="w-full">
                 <Link href="/home/songs">
                   <ArrowRight className="h-4 w-4 mr-2" />
-                  Go to Songs
+                  {t("dashboard.songsCta")}
                 </Link>
               </Button>
             </CardContent>
@@ -142,18 +135,18 @@ export default function HomePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Albums
+                  {t("dashboard.albumsTitle")}
                 </CardTitle>
-                <CardDescription>Browse and create albums</CardDescription>
+                <CardDescription>{t("dashboard.albumsDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Access a comprehensive library of albums
+                  {t("dashboard.albumsBody")}
                 </p>
                 <Button asChild className="w-full">
                   <Link href="/home/albums">
                     <ArrowRight className="h-4 w-4 mr-2" />
-                    Go to Albums
+                    {t("dashboard.albumsCta")}
                   </Link>
                 </Button>
               </CardContent>
@@ -164,18 +157,18 @@ export default function HomePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Users
+                  {t("dashboard.usersTitle")}
                 </CardTitle>
-                <CardDescription>Browse users</CardDescription>
+                <CardDescription>{t("dashboard.usersDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Get access to other users' accounts.
+                  {t("dashboard.usersBody")}
                 </p>
                 <Button asChild className="w-full">
                   <Link href="/home/users">
                     <ArrowRight className="h-4 w-4 mr-2" />
-                    Go to Users
+                    {t("dashboard.usersCta")}
                   </Link>
                 </Button>
               </CardContent>
@@ -186,18 +179,20 @@ export default function HomePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Subscriptions
+                  {t("dashboard.subscriptionsTitle")}
                 </CardTitle>
-                <CardDescription>Your Subscriptions</CardDescription>
+                <CardDescription>
+                  {t("dashboard.subscriptionsDesc")}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
-                  You can view your subscriptions to users and albums.
+                  {t("dashboard.subscriptionsBody")}
                 </p>
                 <Button asChild className="w-full">
                   <Link href="/home/subscriptions">
                     <ArrowRight className="h-4 w-4 mr-2" />
-                    Go to Subscriptions
+                    {t("dashboard.subscriptionsCta")}
                   </Link>
                 </Button>
               </CardContent>
@@ -208,18 +203,18 @@ export default function HomePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Premium
+                  {t("dashboard.premiumTitle")}
                 </CardTitle>
-                <CardDescription>My premium</CardDescription>
+                <CardDescription>{t("dashboard.premiumDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
-                  You can buy premium here.
+                  {t("dashboard.premiumBody")}
                 </p>
                 <Button asChild className="w-full">
                   <Link href="/home/premium">
                     <ArrowRight className="h-4 w-4 mr-2" />
-                    Go to Premium
+                    {t("dashboard.premiumCta")}
                   </Link>
                 </Button>
               </CardContent>
@@ -230,19 +225,18 @@ export default function HomePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Messages
+                  {t("dashboard.messagesTitle")}
                 </CardTitle>
-                <CardDescription>Your Messages</CardDescription>
+                <CardDescription>{t("dashboard.messagesDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Notifications about changes in the content of your
-                  subscriptions.
+                  {t("dashboard.messagesBody")}
                 </p>
                 <Button asChild className="w-full">
                   <Link href="/home/messages">
                     <ArrowRight className="h-4 w-4 mr-2" />
-                    Go to Messages
+                    {t("dashboard.messagesCta")}
                   </Link>
                 </Button>
               </CardContent>

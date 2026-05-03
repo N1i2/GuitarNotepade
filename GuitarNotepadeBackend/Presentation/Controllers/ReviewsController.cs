@@ -5,7 +5,6 @@ using Application.Features.Queries.Songs;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using Application.DTOs.Song.Comment;
 
 namespace Presentation.Controllers;
@@ -13,7 +12,7 @@ namespace Presentation.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class ReviewsController : ControllerBase
+public class ReviewsController : ApiControllerBase
 {
     private readonly IMediator _mediator;
 
@@ -134,19 +133,5 @@ public class ReviewsController : ControllerBase
         {
             return Forbid();
         }
-    }
-
-    private Guid GetCurrentUserId()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)
-                         ?? User.FindFirst("sub")
-                         ?? User.FindFirst("userId");
-
-        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-        {
-            throw new UnauthorizedAccessException("Invalid user ID in token");
-        }
-
-        return userId;
     }
 }

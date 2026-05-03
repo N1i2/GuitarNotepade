@@ -1,5 +1,10 @@
 import { AuthService } from "./auth-service";
 
+export function getApiBaseUrl(): string {
+  const raw = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+  return raw.replace(/\/$/, "");
+}
+
 export interface ApiErrorResponse {
   exceptionType?: string;
   message?: string;
@@ -8,6 +13,15 @@ export interface ApiErrorResponse {
   timestamp?: string;
   path?: string;
   requestId?: string;
+}
+
+export function authHeaders(
+  token: string | null,
+  extra?: Record<string, string>,
+): Record<string, string> {
+  const headers: Record<string, string> = { ...(extra ?? {}) };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
 }
 
 export class ApiError extends Error {
@@ -25,8 +39,9 @@ export class ApiError extends Error {
 }
 
 class ApiClient {
-  private baseURL: string =
-    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+  private get baseURL(): string {
+    return getApiBaseUrl();
+  }
 
   private async request<T>(
     endpoint: string,
@@ -40,15 +55,10 @@ class ApiClient {
     const token = AuthService.getToken();
     const hasAuthToken = Boolean(token);
 
-    console.log(`🌐 API Request: ${options.method || "GET"} ${url}`);
-
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
+      ...authHeaders(token),
     };
-
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
 
     if (options.headers) {
       Object.assign(headers, options.headers);
@@ -62,8 +72,6 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
-
-      console.log(`📡 Response status: ${response.status}`);
 
       if (response.status === 401) {
         if (hasAuthToken) {
@@ -97,8 +105,8 @@ class ApiClient {
       if (contentType?.includes("application/json")) {
         try {
           data = await response.json();
-        } catch (e) {
-          console.warn("Failed to parse JSON response:", e);
+        } catch {
+          data = null;
         }
       }
 
@@ -117,7 +125,6 @@ class ApiClient {
 
       return data as T;
     } catch (error) {
-      console.error("❌ API Error:", error);
       if (error instanceof ApiError) {
         throw error;
       }
@@ -136,11 +143,6 @@ class ApiClient {
     endpoint: string,
     data?: TRequest,
   ): Promise<TResponse> {
-    console.log(`📤 POST ${endpoint}`, {
-      hasAudio: !!(data as any)?.audioBase64,
-      audioType: (data as any)?.audioType,
-      audioLength: (data as any)?.audioBase64?.length,
-    });
     return this.request<TResponse>(endpoint, {
       method: "POST",
       body: JSON.stringify(data),

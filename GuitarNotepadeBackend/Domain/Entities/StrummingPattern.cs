@@ -1,3 +1,4 @@
+using Domain.Common;
 using Domain.Entities.Base;
 using Domain.ValidationRules.StrummingPatternsRules;
 
@@ -23,11 +24,11 @@ public class StrummingPattern : BaseEntityWithId
         Description = string.Empty;
     }
 
-    public static StrummingPattern Create(string name, string pattern, bool isFingerStyle, Guid createByUserId, string? description = null)
+    public static StrummingPattern Create(string name, string pattern, bool isFingerStyle, Guid createdByUserId, string? description = null)
     {
         NameRule.IsValid(name);
         PatternRule.IsValid(pattern);
-
+        Guard.AgainstEmptyGuid(createdByUserId, nameof(createdByUserId));
 
         var newStrummingPatterns = new StrummingPattern
         {
@@ -35,7 +36,7 @@ public class StrummingPattern : BaseEntityWithId
             Pattern = pattern,
             Description = description,
             IsFingerStyle = isFingerStyle,
-            CreatedByUserId = createByUserId,
+            CreatedByUserId = createdByUserId,
             CreatedAt = DateTime.UtcNow
         };
 

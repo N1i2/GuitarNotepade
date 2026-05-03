@@ -1,4 +1,5 @@
-﻿using Domain.Entities.Base;
+﻿using Domain.Common;
+using Domain.Entities.Base;
 using Domain.ValidationRules.ChordsRules;
 
 namespace Domain.Entities;
@@ -25,6 +26,7 @@ public class Chord : BaseEntityWithId
     {
         NameRule.IsValid(name);
         FingeringRule.IsValid(fingering);
+        Guard.AgainstEmptyGuid(createdByUserId, nameof(createdByUserId));
 
         var chord = new Chord
         {

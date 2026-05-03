@@ -9,4 +9,6 @@ public interface INotificationRepository : IBaseRepository<Notification>
         int take,
         int skip = 0,
         CancellationToken cancellationToken = default);
+
+    Task<int> DeleteReadNotificationsOlderThanAsync(DateTime cutoffUtc, CancellationToken cancellationToken = default);
 }

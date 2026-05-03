@@ -10,13 +10,12 @@ using Domain.Interfaces.Services;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace Presentation.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class SongsController : ControllerBase
+public class SongsController : ApiControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IUnitOfWork _unitOfWork;
@@ -566,13 +565,13 @@ public class SongsController : ControllerBase
     [Authorize]
     public async Task<ActionResult> DeleteComment(
         Guid id,
-        [FromQuery] Guid? segmetId = null)
+        [FromQuery] Guid? segmentId = null)
     {
         try
         {
             var userId = GetCurrentUserId();
 
-            var command = new DeleteCommentCommand(userId, id, segmetId);
+            var command = new DeleteCommentCommand(userId, id, segmentId);
 
             await _mediator.Send(command);
             return NoContent();
@@ -727,42 +726,5 @@ public class SongsController : ControllerBase
         var command = new CountOfCreateSongCommand(userId);
 
         return await _mediator.Send(command);
-    }
-
-    private Guid GetCurrentUserId()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)
-                         ?? User.FindFirst("sub")
-                         ?? User.FindFirst("userId");
-
-        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-        {
-            throw new UnauthorizedAccessException("Invalid user ID in token");
-        }
-
-        return userId;
-    }
-
-    private Guid? TryGetCurrentUserId()
-    {
-        if (User.Identity?.IsAuthenticated != true)
-            return null;
-
-        try
-        {
-            return GetCurrentUserId();
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private string GetCurrentUserRole()
-    {
-        var roleClaim = User.FindFirst(ClaimTypes.Role)
-                       ?? User.FindFirst("role");
-
-        return roleClaim?.Value ?? "User";
     }
 }

@@ -33,7 +33,15 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Chords, opt => opt.MapFrom(src => src.SongChords.Select(sc => sc.Chord)))
             .ForMember(dest => dest.Patterns, opt => opt.MapFrom(src => src.SongPatterns.Select(sp => sp.StrummingPattern)))
             .ForMember(dest => dest.Comments, opt => opt.MapFrom(src => src.Comments))
-            .ForMember(dest => dest.Segments, opt => opt.MapFrom(src => MapSegmentsWithPositions(src)))
+            .ForMember(dest => dest.Segments, opt => opt.MapFrom((src, _, _, ctx) =>
+            {
+                if (src.Structure?.SegmentPositions == null)
+                    return new List<SegmentDataWithPositionDto>();
+                return src.Structure.SegmentPositions
+                    .OrderBy(sp => sp.PositionIndex)
+                    .Select(sp => ctx.Mapper.Map<SegmentDataWithPositionDto>(sp))
+                    .ToList();
+            }))
             .ForMember(dest => dest.AverageBeautifulRating, opt => opt.MapFrom(src =>
                 src.AverageBeautifulRating.HasValue ? (double?)Convert.ToDouble(src.AverageBeautifulRating.Value) : null))
             .ForMember(dest => dest.AverageDifficultyRating, opt => opt.MapFrom(src =>
@@ -137,55 +145,5 @@ public class MappingProfile : Profile
 
         CreateMap<Notification, NotificationDto>()
             .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString()));
-    }
-
-    private List<SegmentDataWithPositionDto> MapSegmentsWithPositions(Song song)
-    {
-        if (song.Structure == null || song.Structure.SegmentPositions == null)
-            return new List<SegmentDataWithPositionDto>();
-
-        return song.Structure.SegmentPositions
-            .OrderBy(sp => sp.PositionIndex)
-            .Select(sp => new SegmentDataWithPositionDto
-            {
-                PositionIndex = sp.PositionIndex,
-                RepeatGroup = sp.RepeatGroup,
-                SegmentData = MapSegmentToDto(sp.Segment)
-            })
-            .ToList();
-    }
-
-    private SegmentDataDto MapSegmentToDto(SongSegment segment)
-    {
-        if (segment == null)
-            return new SegmentDataDto();
-
-        return new SegmentDataDto
-        {
-            Id = segment.Id,
-            Type = segment.Type.ToString(),
-            Lyric = segment.Lyric,
-            ChordId = segment.ChordId,
-            PatternId = segment.PatternId,
-            Duration = segment.Duration,
-            Description = segment.Description,
-            Color = segment.Color,
-            BackgroundColor = segment.BackgroundColor,
-            Chord = segment.Chord != null ? new SongChordDto
-            {
-                Id = segment.Chord.Id,
-                Name = segment.Chord.Name,
-                Fingering = segment.Chord.Fingering,
-                Description = segment.Chord.Description
-            } : null,
-            Pattern = segment.Pattern != null ? new SongPatternDto
-            {
-                Id = segment.Pattern.Id,
-                Name = segment.Pattern.Name,
-                Pattern = segment.Pattern.Pattern,
-                IsFingerStyle = segment.Pattern.IsFingerStyle,
-                Description = segment.Pattern.Description
-            } : null
-        };
     }
 }

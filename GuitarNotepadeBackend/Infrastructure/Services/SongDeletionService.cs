@@ -1,4 +1,5 @@
-﻿using Domain.Entities;
+﻿using Domain.Common;
+using Domain.Entities;
 using Domain.Interfaces;
 using Domain.Interfaces.Services;
 using Microsoft.Extensions.Logging;
@@ -39,7 +40,7 @@ public class SongDeletionService : ISongDeletionService
 
         foreach (var songAlbum in songAlbums)
         {
-            if (songAlbum.Album != null && songAlbum.Album.Title != "Favorite")
+            if (songAlbum.Album != null && songAlbum.Album.Title != Constants.Albums.FavoriteTitle)
             {
                 _logger.LogInformation("Sending notification for album {AlbumId} about song removal", songAlbum.AlbumId);
 

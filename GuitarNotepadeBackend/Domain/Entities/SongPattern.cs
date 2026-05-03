@@ -1,4 +1,5 @@
-﻿using Domain.Entities.Base;
+﻿using Domain.Common;
+using Domain.Entities.Base;
 
 namespace Domain.Entities;
 
@@ -14,15 +15,8 @@ public class SongPattern : BaseEntityWithId
 
     public static SongPattern Create(Guid songId, Guid strummingPatternId)
     {
-        if (songId == Guid.Empty)
-        {
-            throw new ArgumentException("SongId is required", nameof(songId));
-        }
-
-        if (strummingPatternId == Guid.Empty)
-        {
-            throw new ArgumentException("StrummingPatternId is required", nameof(strummingPatternId));
-        }
+        Guard.AgainstEmptyGuid(songId, nameof(songId));
+        Guard.AgainstEmptyGuid(strummingPatternId, nameof(strummingPatternId));
 
         return new SongPattern
         {

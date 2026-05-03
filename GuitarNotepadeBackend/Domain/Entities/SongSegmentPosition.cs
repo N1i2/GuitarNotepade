@@ -1,4 +1,5 @@
-﻿using Domain.Entities.Base;
+﻿using Domain.Common;
+using Domain.Entities.Base;
 
 namespace Domain.Entities;
 
@@ -21,11 +22,8 @@ public class SongSegmentPosition : BaseEntityWithId
         int positionIndex,
         string? repeatGroup = null)
     {
-        if (songId == Guid.Empty)
-            throw new ArgumentException("SongId is required", nameof(songId));
-
-        if (segmentId == Guid.Empty)
-            throw new ArgumentException("SegmentId is required", nameof(segmentId));
+        Guard.AgainstEmptyGuid(songId, nameof(songId));
+        Guard.AgainstEmptyGuid(segmentId, nameof(segmentId));
 
         if (positionIndex < 0)
             throw new ArgumentException("PositionIndex cannot be negative", nameof(positionIndex));
@@ -53,8 +51,7 @@ public class SongSegmentPosition : BaseEntityWithId
 
     public void SetSegment(Guid newSegmentId)
     {
-        if (newSegmentId == Guid.Empty)
-            throw new ArgumentException("SegmentId cannot be empty", nameof(newSegmentId));
+        Guard.AgainstEmptyGuid(newSegmentId, nameof(newSegmentId));
 
         SegmentId = newSegmentId;
     }

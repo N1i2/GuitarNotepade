@@ -9,7 +9,7 @@ import {
 
 export class ProfileService {
   private static readonly BASE_PATH = "/user";
-  private static readonly ADMIN_PATH = "/usermanagement";
+  private static readonly ADMIN_PATH = "/UserManagement";
 
   static async getProfile(): Promise<UserProfileResponse> {
     return await apiClient.get<UserProfileResponse>(
@@ -39,23 +39,7 @@ export class ProfileService {
   }
 
   static async getAllUsers(filters: FiltersForUsers): Promise<PaginatedUsers> {
-    const params = new URLSearchParams();
-
-    if (filters.emailFilter) params.append("emailFilter", filters.emailFilter);
-    if (filters.nikNameFilter)
-      params.append("nikNameFilter", filters.nikNameFilter);
-    if (filters.isBlocked !== undefined && filters.isBlocked !== null)
-      params.append("isBlocked", filters.isBlocked.toString());
-    if (filters.role) params.append("role", filters.role);
-
-    params.append("page", (filters.page || 1).toString());
-    params.append("pageSize", (filters.pageSize || 10).toString());
-    params.append("sortBy", filters.sortBy || "createdAt");
-    params.append("sortOrder", filters.sortOrder || "desc");
-
-    return await apiClient.get<PaginatedUsers>(
-      `${this.ADMIN_PATH}/users?${params.toString()}`,
-    );
+    return this.getUsers(filters);
   }
 
   static async getUsers(filters: FiltersForUsers): Promise<PaginatedUsers> {
