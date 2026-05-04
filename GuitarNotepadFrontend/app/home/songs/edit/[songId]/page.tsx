@@ -402,22 +402,11 @@ function EditSongContent() {
   };
 
   const handleNavigateToChord = (chordId: string) => {
-    sessionStorage.setItem("returning_from_edit", "true");
-    saveState();
-    saveMetadata({
-      title,
-      artist,
-      genre,
-      theme,
-      description,
-      isPublic,
-      audioData,
-      songId,
-    });
-    router.push(`/home/chords/${chordId}?returnTo=song-edit&songId=${songId}`);
-  };
-
-  const handleNavigateToPattern = (patternId: string) => {
+    const chord = state.chords.find((c) => c.id === chordId);
+    if (!chord?.name) {
+      toast.error("Chord not found in song editor");
+      return;
+    }
     sessionStorage.setItem("returning_from_edit", "true");
     saveState();
     saveMetadata({
@@ -431,7 +420,30 @@ function EditSongContent() {
       songId,
     });
     router.push(
-      `/home/patterns/${patternId}?returnTo=song-edit&songId=${songId}`,
+      `/home/chords/${encodeURIComponent(chord.name)}?returnTo=song-edit&songId=${songId}`,
+    );
+  };
+
+  const handleNavigateToPattern = (patternId: string) => {
+    const pattern = state.patterns.find((p) => p.id === patternId);
+    if (!pattern?.name) {
+      toast.error("Pattern not found in song editor");
+      return;
+    }
+    sessionStorage.setItem("returning_from_edit", "true");
+    saveState();
+    saveMetadata({
+      title,
+      artist,
+      genre,
+      theme,
+      description,
+      isPublic,
+      audioData,
+      songId,
+    });
+    router.push(
+      `/home/patterns/${encodeURIComponent(pattern.name)}?returnTo=song-edit&songId=${songId}`,
     );
   };
 

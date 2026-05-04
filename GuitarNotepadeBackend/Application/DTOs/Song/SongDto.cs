@@ -13,6 +13,7 @@ public class SongDto
     public string? ParentSongTitle { get; set; }
     public string Genre { get; set; } = string.Empty;
     public string Theme { get; set; } = string.Empty;
+    public string FullText { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public int ReviewCount { get; set; }

@@ -31,6 +31,13 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -39,6 +46,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PatternsGrid } from "@/components/patterns/pattern-grid";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface FilteredPatternsResult {
   items: Pattern[];
@@ -58,6 +66,7 @@ export default function PatternsPage() {
   const router = useRouter();
   const { user } = useAuth();
   const toast = useToast();
+  const { t } = useTranslation();
   const isGuest = user?.role === "Guest";
 
   const [allPatterns, setAllPatterns] = useState<Pattern[]>([]);
@@ -70,6 +79,10 @@ export default function PatternsPage() {
   const [fingerStyleFilter, setFingerStyleFilter] = useState<boolean | null>(
     null,
   );
+  const [sortField, setSortField] = useState<
+    "name" | "createdAt" | "updatedAt"
+  >("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const pageSize = 16;
 
   const filteredPatterns = useMemo((): FilteredPatternsResult => {
@@ -97,7 +110,21 @@ export default function PatternsPage() {
       );
     }
 
-    filtered.sort((a, b) => a.name.localeCompare(b.name));
+    const dir = sortOrder === "asc" ? 1 : -1;
+    filtered.sort((a, b) => {
+      let cmp = 0;
+      if (sortField === "name") {
+        cmp = a.name.localeCompare(b.name);
+      } else if (sortField === "createdAt") {
+        cmp =
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      } else {
+        const au = a.updatedAt || a.createdAt;
+        const bu = b.updatedAt || b.createdAt;
+        cmp = new Date(au).getTime() - new Date(bu).getTime();
+      }
+      return cmp * dir;
+    });
 
     const startIndex = (currentPage - 1) * pageSize;
     const paginated = filtered.slice(startIndex, startIndex + pageSize);
@@ -117,6 +144,8 @@ export default function PatternsPage() {
     showOnlyMyPatterns,
     fingerStyleFilter,
     user,
+    sortField,
+    sortOrder,
   ]);
 
   const loadAllPatterns = async () => {
@@ -149,8 +178,8 @@ export default function PatternsPage() {
 
       setAllPatterns(allPatternsData);
       setPatternsCount(allPatternsData.length);
-    } catch (error: unknown) {
-      toast.error("Failed to load patterns. Please try again.");
+    } catch {
+      toast.error(t("patternsPage.loadError"));
     } finally {
       setIsLoadingAll(false);
     }
@@ -166,14 +195,14 @@ export default function PatternsPage() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, showOnlyMyPatterns, fingerStyleFilter]);
+  }, [searchTerm, showOnlyMyPatterns, fingerStyleFilter, sortField, sortOrder]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
   const handlePatternClick = (name: string) => {
-    router.push(`/home/patterns/${name}`);
+    router.push(`/home/patterns/${encodeURIComponent(name)}`);
   };
 
   const handleCreateNew = () => {
@@ -186,10 +215,17 @@ export default function PatternsPage() {
   };
 
   const getFilterBadgeText = () => {
-    if (fingerStyleFilter === true) return "FingerStyle";
-    if (fingerStyleFilter === false) return "Strumming";
-    return "All Types";
+    if (fingerStyleFilter === true) return t("patternsPage.filterFingerstyle");
+    if (fingerStyleFilter === false) return t("patternsPage.filterStrumming");
+    return t("patternsPage.filterAllTypes");
   };
+
+  const pageTitle =
+    filteredPatterns.totalPages > 1
+      ? t("common.pageOf")
+          .replace("{current}", String(currentPage))
+          .replace("{total}", String(filteredPatterns.totalPages))
+      : "";
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
@@ -197,11 +233,10 @@ export default function PatternsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              Patterns Library
+              {t("patternsPage.title")}
             </h1>
             <p className="text-muted-foreground mt-2">
-              Browse and manage guitar playing patterns (strumming and
-              fingerstyle).
+              {t("patternsPage.subtitle")}
             </p>
           </div>
           <div className="hidden md:block">
@@ -209,12 +244,17 @@ export default function PatternsPage() {
               <CardContent className="p-3">
                 <div className="flex items-center gap-2">
                   <ListMusic className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium">Patterns Database</span>
+                  <span className="text-sm font-medium">
+                    {t("patternsPage.dbTitle")}
+                  </span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   {isLoadingAll
-                    ? "Loading patterns..."
-                    : `${patternsCount} total patterns`}
+                    ? t("patternsPage.loadingPatterns")
+                    : t("patternsPage.totalPatterns").replace(
+                        "{n}",
+                        String(patternsCount),
+                      )}
                 </p>
               </CardContent>
             </Card>
@@ -222,20 +262,65 @@ export default function PatternsPage() {
         </div>
 
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-              <div className="flex-1 w-full md:w-auto">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search patterns (e.g., Basic Strum, Travis Picking)..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 w-full"
-                  />
-                </div>
+          <CardContent className="pt-6 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="relative sm:col-span-2">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={t("patternsPage.searchPlaceholder")}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-full"
+                />
               </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  {t("common.sortBy")}
+                </Label>
+                <Select
+                  value={sortField}
+                  onValueChange={(v) =>
+                    setSortField(v as "name" | "createdAt" | "updatedAt")
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name">
+                      {t("patternsPage.sortFieldName")}
+                    </SelectItem>
+                    <SelectItem value="createdAt">
+                      {t("patternsPage.sortFieldCreated")}
+                    </SelectItem>
+                    <SelectItem value="updatedAt">
+                      {t("patternsPage.sortFieldUpdated")}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  {t("common.sortOrder")}
+                </Label>
+                <Select
+                  value={sortOrder}
+                  onValueChange={(v) => setSortOrder(v as "asc" | "desc")}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="asc">{t("common.ascending")}</SelectItem>
+                    <SelectItem value="desc">
+                      {t("common.descending")}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
               <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center space-x-2">
@@ -246,22 +331,24 @@ export default function PatternsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
-                        <DropdownMenuLabel>Pattern Type</DropdownMenuLabel>
+                        <DropdownMenuLabel>
+                          {t("patternsPage.patternType")}
+                        </DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => setFingerStyleFilter(null)}
                         >
-                          All Types
+                          {t("patternsPage.filterAllTypes")}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => setFingerStyleFilter(true)}
                         >
-                          FingerStyle
+                          {t("patternsPage.filterFingerstyle")}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => setFingerStyleFilter(false)}
                         >
-                          Strumming
+                          {t("patternsPage.filterStrumming")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -286,7 +373,7 @@ export default function PatternsPage() {
                         ) : (
                           <Eye className="h-4 w-4" />
                         )}
-                        <span>Only my patterns</span>
+                        <span>{t("patternsPage.onlyMine")}</span>
                       </div>
                     </Label>
                   </div>
@@ -295,8 +382,12 @@ export default function PatternsPage() {
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="hidden md:flex">
                     <Hash className="h-3 w-3 mr-1" />
-                    {isLoadingAll ? "..." : filteredPatterns.totalCount}{" "}
-                    patterns
+                    {isLoadingAll
+                      ? "…"
+                      : t("patternsPage.countBadge").replace(
+                          "{n}",
+                          String(filteredPatterns.totalCount),
+                        )}
                   </Badge>
                   {!isGuest && (
                     <Button
@@ -305,7 +396,7 @@ export default function PatternsPage() {
                       className="w-full sm:w-auto"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Create New Pattern
+                      {t("patternsPage.createNew")}
                     </Button>
                   )}
                 </div>
@@ -320,7 +411,12 @@ export default function PatternsPage() {
                     className="cursor-pointer hover:bg-secondary/80"
                     onClick={() => setFingerStyleFilter(null)}
                   >
-                    Type: {fingerStyleFilter ? "FingerStyle" : "Strumming"}
+                    {t("patternsPage.typeBadge").replace(
+                      "{type}",
+                      fingerStyleFilter
+                        ? t("patternsPage.filterFingerstyle")
+                        : t("patternsPage.filterStrumming"),
+                    )}
                     <span className="ml-1 text-xs">×</span>
                   </Badge>
                 )}
@@ -331,7 +427,7 @@ export default function PatternsPage() {
                     className="cursor-pointer hover:bg-secondary/80"
                     onClick={() => setShowOnlyMyPatterns(false)}
                   >
-                    My Patterns
+                    {t("patternsPage.myPatternsBadge")}
                     <span className="ml-1 text-xs">×</span>
                   </Badge>
                 )}
@@ -343,7 +439,7 @@ export default function PatternsPage() {
                 <div className="flex items-center gap-2 text-sm">
                   <User className="h-4 w-4 text-blue-600" />
                   <span className="text-blue-700 dark:text-blue-300">
-                    Showing only patterns that you can edit
+                    {t("patternsPage.mineHint")}
                   </span>
                 </div>
               </div>
@@ -354,7 +450,7 @@ export default function PatternsPage() {
                 <div className="flex items-center gap-2 text-sm">
                   <EyeOff className="h-4 w-4 text-amber-600" />
                   <span className="text-amber-700 dark:text-amber-300">
-                    Sign in to use "Only my patterns" filter
+                    {t("patternsPage.signInFilter")}
                   </span>
                 </div>
               </div>
@@ -368,24 +464,31 @@ export default function PatternsPage() {
               <div className="flex items-center gap-2">
                 <Grid3x3 className="h-5 w-5" />
                 <CardTitle>
-                  {showOnlyMyPatterns ? "My Patterns" : "All Patterns"}
+                  {showOnlyMyPatterns
+                    ? t("patternsPage.gridMineTitle")
+                    : t("patternsPage.gridAllTitle")}
                 </CardTitle>
                 {!isLoadingAll && (
                   <span className="text-sm text-muted-foreground ml-2">
-                    ({filteredPatterns.totalCount} total)
+                    (
+                    {t("common.totalCountShort").replace(
+                      "{n}",
+                      String(filteredPatterns.totalCount),
+                    )}
+                    )
                   </span>
                 )}
               </div>
-              {!isLoading && filteredPatterns.items.length > 0 && (
-                <div className="text-sm text-muted-foreground">
-                  Page {currentPage} of {filteredPatterns.totalPages}
-                </div>
-              )}
+              {!isLoadingAll &&
+                filteredPatterns.items.length > 0 &&
+                pageTitle && (
+                  <div className="text-sm text-muted-foreground">{pageTitle}</div>
+                )}
             </div>
             <CardDescription>
               {showOnlyMyPatterns
-                ? "Patterns that you created. Click edit icon to modify."
-                : "Click any pattern to see its details and notation"}
+                ? t("patternsPage.gridDescMine")
+                : t("patternsPage.gridDescAll")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -421,15 +524,18 @@ export default function PatternsPage() {
                 <ListMusic className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold">
                   {showOnlyMyPatterns
-                    ? "No patterns found"
-                    : "No patterns available"}
+                    ? t("patternsPage.emptyMine")
+                    : t("patternsPage.emptyAll")}
                 </h3>
                 <p className="text-muted-foreground mt-2">
                   {searchTerm
-                    ? `No patterns matching "${searchTerm}"`
+                    ? t("patternsPage.emptySearch").replace(
+                        "{term}",
+                        searchTerm,
+                      )
                     : showOnlyMyPatterns
-                      ? "You haven't created any patterns yet. Create your first one!"
-                      : "No patterns available yet. Create the first one!"}
+                      ? t("patternsPage.emptyMineHint")
+                      : t("patternsPage.emptyAllHint")}
                 </p>
                 {(searchTerm ||
                   showOnlyMyPatterns ||
@@ -442,7 +548,7 @@ export default function PatternsPage() {
                           setSearchTerm("");
                         }}
                       >
-                        Clear Search
+                        {t("patternsPage.clearSearch")}
                       </Button>
                     )}
                     {(showOnlyMyPatterns || fingerStyleFilter !== null) && (
@@ -453,12 +559,12 @@ export default function PatternsPage() {
                           setFingerStyleFilter(null);
                         }}
                       >
-                        Clear Filters
+                        {t("patternsPage.clearFilters")}
                       </Button>
                     )}
                     <Button variant="default" onClick={handleCreateNew}>
                       <Plus className="h-4 w-4 mr-2" />
-                      Create New Pattern
+                      {t("patternsPage.createNew")}
                     </Button>
                   </div>
                 )}

@@ -3,7 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/components/providers/auth-provider";
+import { useTranslation } from "@/hooks/use-translation";
 import { PatternsService } from "@/lib/api/patterns-service";
+import { getCreationQuotaBanner } from "@/lib/usage/creation-quota-messages";
+import { LimitWarningAlert } from "@/components/usage/limit-warning-alert";
 import {
   Card,
   CardContent,
@@ -41,9 +45,34 @@ export default function CreatePatternPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo");
+  const songId = searchParams.get("songId");
   const toast = useToast();
+  const { user } = useAuth();
+  const { t } = useTranslation();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [remainingPatterns, setRemainingPatterns] = useState<number | null>(
+    null,
+  );
+
+  useEffect(() => {
+    const run = async () => {
+      if (!user || user.role === "Guest") return;
+      try {
+        const r = await PatternsService.countOfCreate();
+        setRemainingPatterns(r);
+      } catch {
+        setRemainingPatterns(null);
+      }
+    };
+    void run();
+  }, [user]);
+
+  const patternQuotaInfo =
+    user && user.role !== "Guest"
+      ? getCreationQuotaBanner(remainingPatterns, user, "patterns", t)
+      : null;
+
   const [formData, setFormData] = useState<ExtendedPatternFormData>({
     name: "",
     description: "",
@@ -186,6 +215,8 @@ export default function CreatePatternPage() {
   const handleBack = () => {
     if (returnTo === "song-create") {
       router.push("/home/songs/create");
+    } else if (returnTo === "song-edit" && songId) {
+      router.push(`/home/songs/edit/${songId}`);
     } else {
       router.push("/home/patterns");
     }
@@ -210,8 +241,12 @@ export default function CreatePatternPage() {
 
       if (returnTo === "song-create") {
         router.push("/home/songs/create");
+      } else if (returnTo === "song-edit" && songId) {
+        router.push(`/home/songs/edit/${songId}`);
       } else {
-        router.push(`/home/patterns/${createdPattern.name}`);
+        router.push(
+          `/home/patterns/${encodeURIComponent(createdPattern.name)}`,
+        );
       }
     } catch (error: unknown) {
       let errorMessage = "Failed to create pattern";
@@ -255,6 +290,15 @@ export default function CreatePatternPage() {
             Create a new strumming or fingerstyle pattern for the library
           </p>
         </div>
+
+        {patternQuotaInfo && (
+          <LimitWarningAlert
+            message={patternQuotaInfo.message}
+            isWarning={patternQuotaInfo.isWarning}
+            showLink={patternQuotaInfo.showLink}
+            upgradeLabel={t("limits.upgradePremium")}
+          />
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="space-y-6">

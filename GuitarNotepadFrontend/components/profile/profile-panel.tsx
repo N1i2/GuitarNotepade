@@ -32,6 +32,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useUsageCounters } from "@/hooks/use-usage-counters";
+import {
+  useCreationQuotas,
+  isUnlimitedCreationQuota,
+} from "@/hooks/use-creation-quotas";
+import { useTranslation } from "@/hooks/use-translation";
 import { Badge } from "@/components/ui/badge";
 
 const profileSchema = z
@@ -80,6 +85,7 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 export function ProfilePanel() {
   const { user, setUser, logout } = useAuth();
   const toast = useToast();
+  const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarSrc, setAvatarSrc] = useState<string>("");
@@ -271,23 +277,35 @@ export function ProfilePanel() {
 
   const {
     isLoading: usageLoading,
-    error: usageError,
     chordsCount,
     patternsCount,
     songsCount,
+    albumsCount,
     subscriptionsCount,
   } = useUsageCounters();
 
-  const freeLimits = {
-    chords: 3,
-    patterns: 3,
-    songs: 5,
-    subscriptions: 5,
-  };
+  const {
+    isLoading: quotasLoading,
+    chordsRemaining,
+    patternsRemaining,
+    songsRemaining,
+    albumsRemaining,
+  } = useCreationQuotas(!!user && user.role !== "Guest");
 
-  const formatUsage = (count: number | null, limit: number) => {
-    if (count === null) return "—";
-    return `${count} / ${limit}`;
+  const isPremiumUi = !!(user?.hasPremium || user?.role === "Admin");
+
+  const formatCreationLine = (
+    used: number | null,
+    remaining: number | null,
+  ) => {
+    if (used === null) return "—";
+    if (isPremiumUi || isUnlimitedCreationQuota(remaining)) {
+      return `${t("profile.usageCount").replace("{used}", String(used))} · ${t("profile.usageUnlimited")}`;
+    }
+    if (remaining === null || quotasLoading) {
+      return `${t("profile.usageCount").replace("{used}", String(used))} · …`;
+    }
+    return `${t("profile.usageCount").replace("{used}", String(used))} · ${t("profile.usageRemaining").replace("{n}", String(remaining))}`;
   };
 
   return (
@@ -311,62 +329,97 @@ export function ProfilePanel() {
 
         <Card className="border-primary/20">
           <CardHeader>
-            <CardTitle>Usage</CardTitle>
-            <CardDescription>
-              Free users are limited to a few items. Upgrade to Premium for
-              unlimited access.
-            </CardDescription>
+          <CardTitle>{t("profile.usageTitle")}</CardTitle>
+          <CardDescription>
+              {t("profile.usageDesc")}
+          </CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-4">
             <div>
               <div className="text-xs font-medium text-muted-foreground mb-1">
-                Chords created
+                {t("profile.chordsCreated")}
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-lg font-semibold">
-                  {formatUsage(chordsCount, freeLimits.chords)}
+                  {formatCreationLine(chordsCount, chordsRemaining)}
                 </span>
                 <Badge variant="secondary">
-                  {usageLoading ? "Loading" : "Free"}
+                  {usageLoading || quotasLoading
+                    ? t("profile.usageLoading")
+                    : isPremiumUi
+                      ? t("profile.usageBadgePremium")
+                      : t("profile.usageBadgeFree")}
                 </Badge>
               </div>
             </div>
             <div>
               <div className="text-xs font-medium text-muted-foreground mb-1">
-                Patterns created
+                {t("profile.patternsCreated")}
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-lg font-semibold">
-                  {formatUsage(patternsCount, freeLimits.patterns)}
+                  {formatCreationLine(patternsCount, patternsRemaining)}
                 </span>
                 <Badge variant="secondary">
-                  {usageLoading ? "Loading" : "Free"}
+                  {usageLoading || quotasLoading
+                    ? t("profile.usageLoading")
+                    : isPremiumUi
+                      ? t("profile.usageBadgePremium")
+                      : t("profile.usageBadgeFree")}
                 </Badge>
               </div>
             </div>
             <div>
               <div className="text-xs font-medium text-muted-foreground mb-1">
-                Songs created
+                {t("profile.songsCreated")}
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-lg font-semibold">
-                  {formatUsage(songsCount, freeLimits.songs)}
+                  {formatCreationLine(songsCount, songsRemaining)}
                 </span>
                 <Badge variant="secondary">
-                  {usageLoading ? "Loading" : "Free"}
+                  {usageLoading || quotasLoading
+                    ? t("profile.usageLoading")
+                    : isPremiumUi
+                      ? t("profile.usageBadgePremium")
+                      : t("profile.usageBadgeFree")}
                 </Badge>
               </div>
             </div>
             <div>
               <div className="text-xs font-medium text-muted-foreground mb-1">
-                Subscriptions
+                {t("profile.albumsCreated")}
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-lg font-semibold">
-                  {formatUsage(subscriptionsCount, freeLimits.subscriptions)}
+                  {formatCreationLine(albumsCount, albumsRemaining)}
                 </span>
                 <Badge variant="secondary">
-                  {usageLoading ? "Loading" : "Free"}
+                  {usageLoading || quotasLoading
+                    ? t("profile.usageLoading")
+                    : isPremiumUi
+                      ? t("profile.usageBadgePremium")
+                      : t("profile.usageBadgeFree")}
+                </Badge>
+              </div>
+            </div>
+            <div>
+              <div className="text-xs font-medium text-muted-foreground mb-1">
+                {t("profile.subscriptions")}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-semibold">
+                  {subscriptionsCount === null
+                    ? "—"
+                    : t("profile.usageCount").replace(
+                        "{used}",
+                        String(subscriptionsCount),
+                      )}
+                </span>
+                <Badge variant="secondary">
+                  {usageLoading
+                    ? t("profile.usageLoading")
+                    : t("profile.usageBadgeFree")}
                 </Badge>
               </div>
             </div>

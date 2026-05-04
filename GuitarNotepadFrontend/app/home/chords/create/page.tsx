@@ -1,12 +1,16 @@
 "use client";
 
 import { Suspense } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Play, Loader2 } from "lucide-react";
 import { chordAudioService } from "@/lib/services/chord-audio-service";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/components/providers/auth-provider";
+import { useTranslation } from "@/hooks/use-translation";
 import { ChordsService } from "@/lib/api/chords-service";
+import { getCreationQuotaBanner } from "@/lib/usage/creation-quota-messages";
+import { LimitWarningAlert } from "@/components/usage/limit-warning-alert";
 import {
   Card,
   CardContent,
@@ -69,10 +73,32 @@ function CreateChordPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo");
+  const songId = searchParams.get("songId");
   const toast = useToast();
+  const { user } = useAuth();
+  const { t } = useTranslation();
 
   const [isLoading, setIsLoading] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [remainingChords, setRemainingChords] = useState<number | null>(null);
+
+  useEffect(() => {
+    const run = async () => {
+      if (!user || user.role === "Guest") return;
+      try {
+        const r = await ChordsService.countOfCreate();
+        setRemainingChords(r);
+      } catch {
+        setRemainingChords(null);
+      }
+    };
+    void run();
+  }, [user]);
+
+  const chordQuotaInfo =
+    user && user.role !== "Guest"
+      ? getCreationQuotaBanner(remainingChords, user, "chords", t)
+      : null;
 
   const {
     register,
@@ -103,6 +129,8 @@ function CreateChordPageContent() {
   const handleBack = () => {
     if (returnTo === "song-create") {
       router.push("/home/songs/create");
+    } else if (returnTo === "song-edit" && songId) {
+      router.push(`/home/songs/edit/${songId}`);
     } else {
       router.push("/home/chords");
     }
@@ -144,8 +172,10 @@ function CreateChordPageContent() {
 
       if (returnTo === "song-create") {
         router.push("/home/songs/create");
+      } else if (returnTo === "song-edit" && songId) {
+        router.push(`/home/songs/edit/${songId}`);
       } else {
-        router.push(`/home/chords/${createdChord.name}`);
+        router.push(`/home/chords/${encodeURIComponent(createdChord.name)}`);
       }
     } catch (error: unknown) {
       const isApiError =
@@ -189,6 +219,15 @@ function CreateChordPageContent() {
             Create a new chord diagram for the library
           </p>
         </div>
+
+        {chordQuotaInfo && (
+          <LimitWarningAlert
+            message={chordQuotaInfo.message}
+            isWarning={chordQuotaInfo.isWarning}
+            showLink={chordQuotaInfo.showLink}
+            upgradeLabel={t("limits.upgradePremium")}
+          />
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="space-y-6">

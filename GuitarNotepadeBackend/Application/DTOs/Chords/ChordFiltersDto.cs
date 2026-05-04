@@ -3,6 +3,7 @@
 public class ChordFiltersDto
 {
     public string? Name { get; set; }
+    public string? Fingering { get; set; }
     public bool? MyChordsOnly { get; set; } = false;
     public Guid? UserId { get; set; } 
     public int Page { get; set; } = 1;

@@ -42,6 +42,7 @@ function ChordVariationsPageContent() {
 
   const chordName = decodeURIComponent(params.chordName as string);
   const returnTo = searchParams.get("returnTo");
+  const songId = searchParams.get("songId");
 
   const [variations, setVariations] = useState<PaginatedChords | null>(null);
   const [currentVariation, setCurrentVariation] = useState<Chord | null>(null);
@@ -163,6 +164,8 @@ function ChordVariationsPageContent() {
         toast.success("Chord deleted successfully");
         if (returnTo === "song-create") {
           router.push("/home/songs/create");
+        } else if (returnTo === "song-edit" && songId) {
+          router.push(`/home/songs/edit/${songId}`);
         } else {
           router.push("/home/chords");
         }

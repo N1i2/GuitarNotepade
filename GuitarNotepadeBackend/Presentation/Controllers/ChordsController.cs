@@ -22,6 +22,7 @@ public class ChordsController : ApiControllerBase
     [HttpGet]
     public async Task<ActionResult<PaginatedDto<ChordDto>>> GetAllChords(
         [FromQuery] string? name = null,
+        [FromQuery] string? fingering = null,
         [FromQuery] bool? myChordsOnly = false,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
@@ -40,6 +41,7 @@ public class ChordsController : ApiControllerBase
             var filters = new ChordFiltersDto
             {
                 Name = name,
+                Fingering = fingering,
                 MyChordsOnly = isAuth ? myChordsOnly : false,
                 UserId = isAuth && myChordsOnly == true ? GetCurrentUserId() : null,
                 Page = page,

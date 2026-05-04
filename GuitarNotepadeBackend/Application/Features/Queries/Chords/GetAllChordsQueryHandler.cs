@@ -27,6 +27,12 @@ public class GetAllChordsQueryHandler : IRequestHandler<GetAllChordsQuery, Pagin
             filteredQuery = filteredQuery.Where(c => c.Name.Contains(request.Filters.Name));
         }
 
+        if (!string.IsNullOrWhiteSpace(request.Filters.Fingering))
+        {
+            var fg = request.Filters.Fingering.Trim();
+            filteredQuery = filteredQuery.Where(c => c.Fingering.Contains(fg));
+        }
+
         if (request.Filters.MyChordsOnly.HasValue && request.Filters.MyChordsOnly.Value && request.Filters.UserId.HasValue)
         {
             filteredQuery = filteredQuery.Where(c => c.CreatedByUserId == request.Filters.UserId.Value);

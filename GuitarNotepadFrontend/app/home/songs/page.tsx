@@ -45,6 +45,7 @@ import {
   Music,
 } from "lucide-react";
 import { Pagination } from "@/components/user-management/pagination";
+import { useTranslation } from "@/hooks/use-translation";
 
 const genres = [
   "Rock",
@@ -88,6 +89,7 @@ export default function SongsPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const toast = useToast();
+  const { t } = useTranslation();
   const isGuest = user?.role === "Guest";
 
   const [allSongs, setAllSongs] = useState<SongDto[]>([]);
@@ -110,8 +112,6 @@ export default function SongsPage() {
   const [difficultyRange, setDifficultyRange] = useState<[number, number]>([
     1, 5,
   ]);
-
-  const [searchInText, setSearchInText] = useState(false);
 
   const pageSize = 12;
 
@@ -200,8 +200,10 @@ export default function SongsPage() {
           return true;
         }
 
-        if (searchInText && song.fullText) {
-          return song.fullText.toLowerCase().includes(searchLower);
+        if (song.fullText) {
+          if (song.fullText.toLowerCase().includes(searchLower)) {
+            return true;
+          }
         }
 
         return false;
@@ -278,7 +280,6 @@ export default function SongsPage() {
     beautyRange,
     useDifficultyFilter,
     difficultyRange,
-    searchInText,
     user,
   ]);
 
@@ -333,10 +334,10 @@ export default function SongsPage() {
           setAllSongs(publicData.songs);
           setTotalSongsCount(publicData.totalCount);
         } catch (publicError: any) {
-          toast.error("Failed to load public songs");
+          toast.error(t("songsPage.loadPublicError"));
         }
       } else {
-        toast.error("Failed to load songs. Please try again.");
+        toast.error(t("songsPage.loadError"));
       }
     } finally {
       setIsLoading(false);
@@ -366,7 +367,6 @@ export default function SongsPage() {
     beautyRange,
     useDifficultyFilter,
     difficultyRange,
-    searchInText,
   ]);
 
   const handlePageChange = (page: number) => {
@@ -475,8 +475,6 @@ export default function SongsPage() {
     setSelectedTheme("all");
     setHasAudioFilter("all");
     setSearchTerm("");
-    setSearchInText(false);
-
     setUseBeautyFilter(false);
     setUseDifficultyFilter(false);
     setBeautyRange([1, 5]);
@@ -491,7 +489,6 @@ export default function SongsPage() {
       selectedTheme !== "all" ||
       hasAudioFilter !== "all" ||
       searchTerm ||
-      searchInText ||
       useBeautyFilter ||
       useDifficultyFilter ||
       (useBeautyFilter && (beautyRange[0] > 1 || beautyRange[1] < 5)) ||
@@ -522,10 +519,11 @@ export default function SongsPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Songs Library</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {t("songsPage.title")}
+            </h1>
             <p className="text-muted-foreground mt-2">
-              Browse and manage guitar songs. Click any song to view its
-              details.
+              {t("songsPage.subtitle")}
             </p>
           </div>
           <div className="hidden md:block">
@@ -533,12 +531,17 @@ export default function SongsPage() {
               <CardContent className="p-3">
                 <div className="flex items-center gap-2">
                   <Music2 className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium">Song Database</span>
+                  <span className="text-sm font-medium">
+                    {t("songsPage.dbTitle")}
+                  </span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   {isLoading
-                    ? "Loading songs..."
-                    : `${totalSongsCount} total songs`}
+                    ? t("songsPage.loadingSongs")
+                    : t("songsPage.totalSongs").replace(
+                        "{n}",
+                        String(totalSongsCount),
+                      )}
                 </p>
               </CardContent>
             </Card>
@@ -552,7 +555,7 @@ export default function SongsPage() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search songs by title, artist, or creator..."
+                    placeholder={t("songsPage.searchPlaceholder")}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10 w-full"
@@ -561,22 +564,6 @@ export default function SongsPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="searchInText"
-                    checked={searchInText}
-                    onCheckedChange={(checked) =>
-                      setSearchInText(checked as boolean)
-                    }
-                  />
-                  <Label
-                    htmlFor="searchInText"
-                    className="text-sm font-medium cursor-pointer"
-                  >
-                    Search in text
-                  </Label>
-                </div>
-
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="showOnlyMySongs"
@@ -598,7 +585,7 @@ export default function SongsPage() {
                       ) : (
                         <Eye className="h-4 w-4" />
                       )}
-                      <span>Only my songs</span>
+                      <span>{t("songsPage.onlyMine")}</span>
                     </div>
                   </Label>
                 </div>
@@ -606,7 +593,12 @@ export default function SongsPage() {
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="hidden md:flex">
                     <Music2 className="h-3 w-3 mr-1" />
-                    {isLoading ? "..." : filteredSongs.totalCount} songs
+                    {isLoading
+                      ? "…"
+                      : t("songsPage.countBadge").replace(
+                          "{n}",
+                          String(filteredSongs.totalCount),
+                        )}
                   </Badge>
                   {!isGuest && (
                     <Button
@@ -615,14 +607,18 @@ export default function SongsPage() {
                       className="w-full sm:w-auto"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Create New Song
+                      {t("songsPage.createNew")}
                     </Button>
                   )}
                 </div>
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-7 gap-4">
+            <div className="mt-6 rounded-lg border bg-muted/30 p-4 space-y-3">
+              <h3 className="text-sm font-semibold">
+                {t("songsPage.filtersSection")}
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label
                   htmlFor="visibilityFilter"
@@ -630,7 +626,7 @@ export default function SongsPage() {
                 >
                   <div className="flex items-center gap-2">
                     <Filter className="h-4 w-4" />
-                    Visibility
+                    {t("songsPage.visibility")}
                   </div>
                 </Label>
                 <Select
@@ -638,12 +634,18 @@ export default function SongsPage() {
                   onValueChange={setVisibilityFilter}
                 >
                   <SelectTrigger id="visibilityFilter">
-                    <SelectValue placeholder="Filter by visibility" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Songs</SelectItem>
-                    <SelectItem value="public">Public Only</SelectItem>
-                    <SelectItem value="private">Private Only</SelectItem>
+                    <SelectItem value="all">
+                      {t("songsPage.visibilityAll")}
+                    </SelectItem>
+                    <SelectItem value="public">
+                      {t("songsPage.visibilityPublic")}
+                    </SelectItem>
+                    <SelectItem value="private">
+                      {t("songsPage.visibilityPrivate")}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -652,15 +654,17 @@ export default function SongsPage() {
                 <Label htmlFor="genreFilter" className="text-sm font-medium">
                   <div className="flex items-center gap-2">
                     <Tag className="h-4 w-4" />
-                    Genre
+                    {t("songsPage.genre")}
                   </div>
                 </Label>
                 <Select value={selectedGenre} onValueChange={setSelectedGenre}>
                   <SelectTrigger id="genreFilter">
-                    <SelectValue placeholder="Filter by genre" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Genres</SelectItem>
+                    <SelectItem value="all">
+                      {t("songsPage.genreAll")}
+                    </SelectItem>
                     {genres.map((genre) => (
                       <SelectItem key={genre} value={genre}>
                         {genre}
@@ -674,15 +678,17 @@ export default function SongsPage() {
                 <Label htmlFor="themeFilter" className="text-sm font-medium">
                   <div className="flex items-center gap-2">
                     <Hash className="h-4 w-4" />
-                    Theme
+                    {t("songsPage.theme")}
                   </div>
                 </Label>
                 <Select value={selectedTheme} onValueChange={setSelectedTheme}>
                   <SelectTrigger id="themeFilter">
-                    <SelectValue placeholder="Filter by theme" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Themes</SelectItem>
+                    <SelectItem value="all">
+                      {t("songsPage.themeAll")}
+                    </SelectItem>
                     {themes.map((theme) => (
                       <SelectItem key={theme} value={theme}>
                         {theme}
@@ -696,7 +702,7 @@ export default function SongsPage() {
                 <Label htmlFor="audioFilter" className="text-sm font-medium">
                   <div className="flex items-center gap-2">
                     <Music2 className="h-4 w-4" />
-                    Audio
+                    {t("songsPage.audio")}
                   </div>
                 </Label>
                 <Select
@@ -704,17 +710,19 @@ export default function SongsPage() {
                   onValueChange={setHasAudioFilter}
                 >
                   <SelectTrigger id="audioFilter">
-                    <SelectValue placeholder="Audio filter" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All songs</SelectItem>
+                    <SelectItem value="all">
+                      {t("songsPage.audioAll")}
+                    </SelectItem>
                     <SelectItem value="yes">
                       <div className="flex items-center gap-2">
                         <Music2 className="h-4 w-4" />
-                        With audio
+                        {t("songsPage.audioYes")}
                       </div>
                     </SelectItem>
-                    <SelectItem value="no">Without audio</SelectItem>
+                    <SelectItem value="no">{t("songsPage.audioNo")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -735,13 +743,15 @@ export default function SongsPage() {
                     htmlFor="useBeautyFilter"
                     className="text-sm font-medium cursor-pointer"
                   >
-                    Filter by Beauty Rating
+                    {t("songsPage.filterBeauty")}
                   </Label>
                 </div>
                 {useBeautyFilter && (
                   <div className="mt-2 pl-6">
                     <Label className="text-sm font-medium">
-                      Beauty: {beautyRange[0]}-{beautyRange[1]}
+                      {t("songsPage.beautyRange")
+                        .replace("{min}", String(beautyRange[0]))
+                        .replace("{max}", String(beautyRange[1]))}
                     </Label>
                     <Slider
                       value={beautyRange}
@@ -771,13 +781,15 @@ export default function SongsPage() {
                     htmlFor="useDifficultyFilter"
                     className="text-sm font-medium cursor-pointer"
                   >
-                    Filter by Difficulty Rating
+                    {t("songsPage.filterDifficulty")}
                   </Label>
                 </div>
                 {useDifficultyFilter && (
                   <div className="mt-2 pl-6">
                     <Label className="text-sm font-medium">
-                      Difficulty: {difficultyRange[0]}-{difficultyRange[1]}
+                      {t("songsPage.difficultyRange")
+                        .replace("{min}", String(difficultyRange[0]))
+                        .replace("{max}", String(difficultyRange[1]))}
                     </Label>
                     <Slider
                       value={difficultyRange}
@@ -793,22 +805,34 @@ export default function SongsPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="sortBy" className="text-sm font-medium">
-                  Sort By
+                  {t("common.sortBy")}
                 </Label>
                 <Select value={sortBy} onValueChange={setSortBy}>
                   <SelectTrigger id="sortBy">
-                    <SelectValue placeholder="Sort by" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="createdAt">Date Created</SelectItem>
-                    <SelectItem value="updatedAt">Date Updated</SelectItem>
-                    <SelectItem value="title">Title</SelectItem>
-                    <SelectItem value="artist">Artist</SelectItem>
-                    <SelectItem value="averageBeautiful">Beauty</SelectItem>
-                    <SelectItem value="averageDifficulty">
-                      Difficulty
+                    <SelectItem value="createdAt">
+                      {t("songsPage.sort.createdAt")}
                     </SelectItem>
-                    <SelectItem value="reviewCount">Reviews</SelectItem>
+                    <SelectItem value="updatedAt">
+                      {t("songsPage.sort.updatedAt")}
+                    </SelectItem>
+                    <SelectItem value="title">
+                      {t("songsPage.sort.title")}
+                    </SelectItem>
+                    <SelectItem value="artist">
+                      {t("songsPage.sort.artist")}
+                    </SelectItem>
+                    <SelectItem value="averageBeautiful">
+                      {t("songsPage.sort.beauty")}
+                    </SelectItem>
+                    <SelectItem value="averageDifficulty">
+                      {t("songsPage.sort.difficulty")}
+                    </SelectItem>
+                    <SelectItem value="reviewCount">
+                      {t("songsPage.sort.reviews")}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -817,21 +841,22 @@ export default function SongsPage() {
             <div className="mt-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Select value={sortOrder} onValueChange={setSortOrder}>
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Order" />
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="desc">Descending</SelectItem>
-                    <SelectItem value="asc">Ascending</SelectItem>
+                    <SelectItem value="desc">{t("common.descending")}</SelectItem>
+                    <SelectItem value="asc">{t("common.ascending")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {hasActiveFilters() && (
                 <Button variant="outline" size="sm" onClick={clearAllFilters}>
-                  Clear All Filters
+                  {t("songsPage.clearFilters")}
                 </Button>
               )}
+            </div>
             </div>
 
             {user && showOnlyMySongs && (
@@ -839,7 +864,7 @@ export default function SongsPage() {
                 <div className="flex items-center gap-2 text-sm">
                   <User className="h-4 w-4 text-blue-600" />
                   <span className="text-blue-700 dark:text-blue-300">
-                    Showing only songs that you own
+                    {t("songsPage.mineHint")}
                   </span>
                 </div>
               </div>
@@ -850,7 +875,7 @@ export default function SongsPage() {
                 <div className="flex items-center gap-2 text-sm">
                   <EyeOff className="h-4 w-4 text-amber-600" />
                   <span className="text-amber-700 dark:text-amber-300">
-                    Sign in to use "Only my songs" filter
+                    {t("songsPage.signInFilter")}
                   </span>
                 </div>
               </div>

@@ -14,6 +14,7 @@ export class ChordsService {
     const params = new URLSearchParams();
 
     if (filters?.name) params.append("name", filters.name);
+    if (filters?.fingering) params.append("fingering", filters.fingering);
     if (filters?.myChordsOnly) params.append("myChordsOnly", "true");
 
     params.append("page", (filters?.page || 1).toString());

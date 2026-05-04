@@ -41,6 +41,7 @@ export default function PatternDetailPage() {
 
   const patternName = decodeURIComponent(params.patternName as string);
   const returnTo = searchParams.get("returnTo");
+  const songId = searchParams.get("songId");
 
   const [pattern, setPattern] = useState<Pattern | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -76,6 +77,8 @@ export default function PatternDetailPage() {
   const handleBack = () => {
     if (returnTo === "song-create") {
       router.push("/home/songs/create");
+    } else if (returnTo === "song-edit" && songId) {
+      router.push(`/home/songs/edit/${songId}`);
     } else {
       router.push("/home/patterns");
     }
@@ -90,6 +93,8 @@ export default function PatternDetailPage() {
     toast.success(`Pattern "${pattern?.name}" deleted successfully`);
     if (returnTo === "song-create") {
       router.push("/home/songs/create");
+    } else if (returnTo === "song-edit" && songId) {
+      router.push(`/home/songs/edit/${songId}`);
     } else {
       router.push("/home/patterns");
     }

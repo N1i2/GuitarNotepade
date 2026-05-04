@@ -23,15 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  ArrowLeft,
-  Save,
-  Upload,
-  X,
-  AlertCircle,
-  Music,
-  ExternalLink,
-} from "lucide-react";
+import { ArrowLeft, Save, Upload, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -42,58 +34,14 @@ import {
 } from "@/lib/validations/album";
 import { AlbumService } from "@/lib/api/albom-service";
 import { CreateAlbumDto } from "@/types/albom";
-import Link from "next/link";
-
-function LimitWarningAlert({
-  message,
-  isWarning,
-  showLink,
-}: {
-  message: string;
-  isWarning: boolean;
-  showLink?: boolean;
-}) {
-  return (
-    <div
-      className={`rounded-lg border p-4 ${
-        isWarning
-          ? "border-red-300 bg-red-50 dark:bg-red-950/20"
-          : "border-blue-200 bg-blue-50 dark:bg-blue-950/20"
-      }`}
-    >
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 min-w-0">
-          {isWarning ? (
-            <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-0" />
-          ) : (
-            <Music className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-0" />
-          )}
-          <span
-            className={`text-sm ${isWarning ? "text-red-700 dark:text-red-300" : "text-blue-700 dark:text-blue-300"}`}
-          >
-            {message}
-          </span>
-        </div>
-        {showLink && (
-          <Link href="/home/premium" className="flex-0">
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2 whitespace-nowrap border-red-300 hover:bg-red-100 dark:border-red-700 dark:hover:bg-red-900/30"
-            >
-              <ExternalLink className="h-3 w-3" />
-              Upgrade to Premium
-            </Button>
-          </Link>
-        )}
-      </div>
-    </div>
-  );
-}
+import { LimitWarningAlert } from "@/components/usage/limit-warning-alert";
+import { useTranslation } from "@/hooks/use-translation";
+import { getCreationQuotaBanner } from "@/lib/usage/creation-quota-messages";
 
 export default function CreateAlbumPage() {
   const router = useRouter();
   const toast = useToast();
+  const { t } = useTranslation();
   const { user, isGuest } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -108,9 +56,7 @@ export default function CreateAlbumPage() {
       try {
         const remaining = await AlbumService.countOfCreate();
         setRemainingAlbums(remaining);
-        console.log("📊 Remaining albums limit:", remaining);
-      } catch (error) {
-        console.error("Failed to check album limit:", error);
+      } catch {
       }
     };
 
@@ -118,42 +64,8 @@ export default function CreateAlbumPage() {
   }, [user]);
 
   const getRemainingInfo = () => {
-    if (!user) return null;
-    if (user.role === "Guest") return null;
-    if (user.role === "Admin" || user.hasPremium) {
-      return {
-        message: "Unlimited albums available (Premium/Admin account)",
-        isWarning: false,
-        showLink: false,
-      };
-    }
-    if (remainingAlbums === null) {
-      return {
-        message: "Checking your album limit...",
-        isWarning: false,
-        showLink: false,
-      };
-    }
-    if (remainingAlbums === 0) {
-      return {
-        message:
-          "You've reached the free limit. Upgrade to Premium to create more albums!",
-        isWarning: true,
-        showLink: true,
-      };
-    }
-    if (remainingAlbums <= 2) {
-      return {
-        message: `Only ${remainingAlbums} album${remainingAlbums !== 1 ? "s" : ""} remaining in your free plan`,
-        isWarning: true,
-        showLink: false,
-      };
-    }
-    return {
-      message: `${remainingAlbums} album${remainingAlbums !== 1 ? "s" : ""} remaining in your free plan`,
-      isWarning: false,
-      showLink: false,
-    };
+    if (!user || user.role === "Guest") return null;
+    return getCreationQuotaBanner(remainingAlbums, user, "albums", t);
   };
 
   const remainingInfo = getRemainingInfo();
@@ -318,7 +230,7 @@ export default function CreateAlbumPage() {
 
     if (
       remainingAlbums !== null &&
-      remainingAlbums <= 0 &&
+      remainingAlbums === 0 &&
       user.role !== "Admin" &&
       !user.hasPremium
     ) {
@@ -501,6 +413,7 @@ export default function CreateAlbumPage() {
             message={remainingInfo.message}
             isWarning={remainingInfo.isWarning}
             showLink={remainingInfo.showLink}
+            upgradeLabel={t("limits.upgradePremium")}
           />
         )}
 
@@ -776,7 +689,7 @@ export default function CreateAlbumPage() {
                         isLoading ||
                         !isValid ||
                         (remainingAlbums !== null &&
-                          remainingAlbums <= 0 &&
+                          remainingAlbums === 0 &&
                           user?.role !== "Admin" &&
                           !user?.hasPremium)
                       }

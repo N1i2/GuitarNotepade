@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
@@ -723,6 +723,13 @@ function SongDetailPageContent() {
     setMousePos({ x: e.clientX, y: e.clientY });
   };
 
+  const scrollToSongSegment = useCallback((segmentId: string) => {
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`song-segment-${segmentId}`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, []);
+
   const canEdit = song && user?.id === song.ownerId;
   const canDelete =
     song && (user?.id === song.ownerId || user?.role === "Admin");
@@ -812,6 +819,7 @@ function SongDetailPageContent() {
       const segmentElement = (
         <span
           key={segment.id}
+          id={`song-segment-${segment.id}`}
           style={segmentStyles}
           className={`relative inline-block group cursor-default ${isEmptyPlayback ? "min-w-8" : ""}`}
           title={!showAllHints ? chordName || undefined : undefined}
@@ -1418,16 +1426,8 @@ function SongDetailPageContent() {
                   }))}
                   comments={allComments}
                   onSegmentClick={(segmentId) => {
-                    const segment = uiSegments.find((s) => s.id === segmentId);
-                    if (segment) {
-                      const previewElement =
-                        document.querySelector(".preview-text");
-                      if (previewElement) {
-                        previewElement.scrollIntoView({
-                          behavior: "smooth",
-                          block: "center",
-                        });
-                      }
+                    if (uiSegments.some((s) => s.id === segmentId)) {
+                      scrollToSongSegment(segmentId);
                     }
                   }}
                 />
@@ -1641,14 +1641,7 @@ function SongDetailPageContent() {
                                 size="sm"
                                 onClick={() => {
                                   if (segment) {
-                                    const textElement =
-                                      document.querySelector(".preview-text");
-                                    if (textElement) {
-                                      textElement.scrollIntoView({
-                                        behavior: "smooth",
-                                        block: "center",
-                                      });
-                                    }
+                                    scrollToSongSegment(segment.id);
                                   }
                                 }}
                               >

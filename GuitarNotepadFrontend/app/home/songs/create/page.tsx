@@ -14,13 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import {
-  ArrowLeft,
-  Save,
-  AlertCircle,
-  Music,
-  ExternalLink,
-} from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import { SegmentTable } from "@/components/song/table-editor/segment-table";
 import { convertTableToDTO, convertCommentsToDTO } from "@/lib/table-converter";
 import {
@@ -37,59 +31,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import Link from "next/link";
-
-function LimitWarningAlert({
-  message,
-  isWarning,
-  showLink,
-}: {
-  message: string;
-  isWarning: boolean;
-  showLink?: boolean;
-}) {
-  return (
-    <div
-      className={`rounded-lg border p-4 ${
-        isWarning
-          ? "border-red-300 bg-red-50 dark:bg-red-950/20"
-          : "border-blue-200 bg-blue-50 dark:bg-blue-950/20"
-      }`}
-    >
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 min-w-0">
-          {isWarning ? (
-            <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-0" />
-          ) : (
-            <Music className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-0" />
-          )}
-          <span
-            className={`text-sm ${isWarning ? "text-red-700 dark:text-red-300" : "text-blue-700 dark:text-blue-300"}`}
-          >
-            {message}
-          </span>
-        </div>
-        {showLink && (
-          <Link href="/home/premium" className="flex-0">
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2 whitespace-nowrap border-red-300 hover:bg-red-100 dark:border-red-700 dark:hover:bg-red-900/30"
-            >
-              <ExternalLink className="h-3 w-3" />
-              Upgrade to Premium
-            </Button>
-          </Link>
-        )}
-      </div>
-    </div>
-  );
-}
+import { LimitWarningAlert } from "@/components/usage/limit-warning-alert";
+import { useTranslation } from "@/hooks/use-translation";
+import { getCreationQuotaBanner } from "@/lib/usage/creation-quota-messages";
 
 function CreateSongContent() {
   const router = useRouter();
   const { user } = useAuth();
   const toast = useToast();
+  const { t } = useTranslation();
   const { state, dispatch } = useTableEditor();
   const {
     saveState,
@@ -165,9 +115,7 @@ function CreateSongContent() {
       try {
         const remaining = await SongsService.countOfCreate();
         setRemainingSongs(remaining);
-        console.log("📊 Remaining songs limit:", remaining);
-      } catch (error) {
-        console.error("Failed to check song limit:", error);
+      } catch {
       } finally {
         setIsCheckingLimit(false);
       }
@@ -176,43 +124,8 @@ function CreateSongContent() {
     checkRemainingSongs();
   }, [user]);
 
-  const getRemainingInfo = () => {
-    if (!user) return null;
-    if (user.role === "Admin" || user.hasPremium) {
-      return {
-        message: "Unlimited songs available (Premium/Admin account)",
-        isWarning: false,
-        showLink: false,
-      };
-    }
-    if (remainingSongs === null) {
-      return {
-        message: "Checking your song limit...",
-        isWarning: false,
-        showLink: false,
-      };
-    }
-    if (remainingSongs === 0) {
-      return {
-        message:
-          "You've reached the free limit. Upgrade to Premium to create more songs!",
-        isWarning: true,
-        showLink: true,
-      };
-    }
-    if (remainingSongs <= 2) {
-      return {
-        message: `Only ${remainingSongs} song${remainingSongs !== 1 ? "s" : ""} remaining in your free plan`,
-        isWarning: true,
-        showLink: false,
-      };
-    }
-    return {
-      message: `${remainingSongs} song${remainingSongs !== 1 ? "s" : ""} remaining in your free plan`,
-      isWarning: false,
-      showLink: false,
-    };
-  };
+  const getRemainingInfo = () =>
+    getCreationQuotaBanner(remainingSongs, user, "songs", t);
 
   useEffect(() => {
     clearStateIfNewSong();
@@ -350,7 +263,7 @@ function CreateSongContent() {
 
     if (
       remainingSongs !== null &&
-      remainingSongs <= 0 &&
+      remainingSongs === 0 &&
       user.role !== "Admin" &&
       !user.hasPremium
     ) {
@@ -499,6 +412,11 @@ function CreateSongContent() {
   };
 
   const handleNavigateToChord = (chordId: string) => {
+    const chord = state.chords.find((c) => c.id === chordId);
+    if (!chord?.name) {
+      toast.error("Chord not found in song editor");
+      return;
+    }
     sessionStorage.setItem("returning_from_edit", "true");
     saveState();
     saveMetadata({
@@ -510,10 +428,17 @@ function CreateSongContent() {
       isPublic,
       audioData,
     });
-    router.push(`/home/chords/${chordId}?returnTo=song-create`);
+    router.push(
+      `/home/chords/${encodeURIComponent(chord.name)}?returnTo=song-create`,
+    );
   };
 
   const handleNavigateToPattern = (patternId: string) => {
+    const pattern = state.patterns.find((p) => p.id === patternId);
+    if (!pattern?.name) {
+      toast.error("Pattern not found in song editor");
+      return;
+    }
     sessionStorage.setItem("returning_from_edit", "true");
     saveState();
     saveMetadata({
@@ -525,7 +450,9 @@ function CreateSongContent() {
       isPublic,
       audioData,
     });
-    router.push(`/home/patterns/${patternId}?returnTo=song-create`);
+    router.push(
+      `/home/patterns/${encodeURIComponent(pattern.name)}?returnTo=song-create`,
+    );
   };
 
   const handleCreateChord = () => {
@@ -666,6 +593,7 @@ function CreateSongContent() {
             message={remainingInfo.message}
             isWarning={remainingInfo.isWarning}
             showLink={remainingInfo.showLink}
+            upgradeLabel={t("limits.upgradePremium")}
           />
         )}
 
@@ -935,7 +863,7 @@ function CreateSongContent() {
               !title.trim() ||
               state.segments.length === 0 ||
               (remainingSongs !== null &&
-                remainingSongs <= 0 &&
+                remainingSongs === 0 &&
                 user?.role !== "Admin" &&
                 !user?.hasPremium)
             }

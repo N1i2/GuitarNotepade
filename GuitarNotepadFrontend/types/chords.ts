@@ -23,6 +23,7 @@ export interface UpdateChordDto {
 
 export interface ChordFilters {
   name?: string;
+  fingering?: string;
   myChordsOnly?: boolean;
   page?: number;
   pageSize?: number;

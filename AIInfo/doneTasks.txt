@@ -63,3 +63,13 @@ Completed tasks log (common for Backend + Frontend + Docs)
 
 2026-05-03 (Frontend i18n — Priority 1)
 10) Локализация RU/EN: `lib/i18n/storage` (`guitar-notepad-locale`, автovыбор из `navigator.language`, иначе EN), `lib/i18n/messages/en.ts` + `ru.ts`, `I18nProvider` / `useTranslation`, `LocaleToggle` в шапке; `Header` и `app/home/page.tsx` на ключах перевода. Правила зафиксированы в `AGENT.md` и skill.
+
+2026-05-03 (Frontend Priority 1 — навигация и комментарии к сегменту)
+11) Просмотр аккорда/паттерна из редактора песни: переход по `encodeURIComponent(имени)` сопоставление с `[chordName]` / `[patternName]` (`songs/create`, `songs/edit`). Возврат из просмотра/создания аккорда и паттерна при `returnTo=song-edit` + `songId` на страницах `chords/[chordName]`, `patterns/[patternName]`, `chords/create`, `patterns/create`. После создания аккорда без returnTo — URL с encode имени.
+12) Страница песни `[songId]`: якорные `id="song-segment-{segmentId}"` в превью текста; «Jump to segment» и клики в Segments List вызывают `scrollIntoView` к нужному сегменту (раньше использовался несуществующий класс `.preview-text`).
+
+2026-05-03 (Frontend Priority 1, строки firstPriority ~5–15)
+13) i18n: расширены `en.ts`/`ru.ts` (лимиты, общие строки, страницы аккордов/паттернов/песен, профиль); подключены к `app/home/chords`, `patterns`, `songs`, профилю, баннерам квот, общему `LimitWarningAlert`.
+14) Лимиты создания: `useCreationQuotas`, `getCreationQuotaBanner` + `remaining === 0` (не блокировать −1 бесконечность); индикаторы на create song/album/chord/pattern; блок Usage в профиле с альбомами и остатком слотов.
+15) Фильтры: аккорды — второе поле по аппликатуре + сортировка по имени/датам; бек `ChordFiltersDto.Fingering` + query; паттерны — сортировка по имени/датам, ссылка с `encodeURIComponent`; песни — `SongDto.FullText` в API, клиент всегда ищет по full text, фильтры сгруппированы в одной карточке, галочка «только текст» убрана.
+16) Компонент `components/usage/limit-warning-alert.tsx`; `useUsageCounters` + `albumsCount` через `getMyAlbums(true,1,1)`.
