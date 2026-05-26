@@ -46,6 +46,15 @@ import {
 } from "lucide-react";
 import { Pagination } from "@/components/user-management/pagination";
 import { useTranslation } from "@/hooks/use-translation";
+import { SearchInput } from "@/components/list-page/search-input";
+import {
+  ListPageActionsBar,
+  ListPageCountBadge,
+  ListPageCreateButton,
+  ListPageFiltersCard,
+  ListPageFiltersPanel,
+  ListPageOnlyMineFilter,
+} from "@/components/list-page/list-page-filters";
 
 const genres = [
   "Rock",
@@ -548,77 +557,36 @@ export default function SongsPage() {
           </div>
         </div>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-              <div className="flex-1 w-full md:w-auto">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder={t("songsPage.searchPlaceholder")}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 w-full"
-                  />
-                </div>
+        <ListPageFiltersCard>
+          <SearchInput
+            placeholder={t("songsPage.searchPlaceholder")}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+
+          <ListPageFiltersPanel
+            footer={
+              <div className="flex items-center justify-between gap-4">
+                <Select value={sortOrder} onValueChange={setSortOrder}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="desc">
+                      {t("common.descending")}
+                    </SelectItem>
+                    <SelectItem value="asc">{t("common.ascending")}</SelectItem>
+                  </SelectContent>
+                </Select>
+                {hasActiveFilters() && (
+                  <Button variant="outline" size="sm" onClick={clearAllFilters}>
+                    {t("songsPage.clearFilters")}
+                  </Button>
+                )}
               </div>
-
-              <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="showOnlyMySongs"
-                    checked={showOnlyMySongs}
-                    onCheckedChange={(checked) =>
-                      setShowOnlyMySongs(checked as boolean)
-                    }
-                    disabled={isGuest}
-                  />
-                  <Label
-                    htmlFor="showOnlyMySongs"
-                    className={`text-sm font-medium cursor-pointer ${
-                      !user ? "text-muted-foreground" : ""
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      {showOnlyMySongs ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                      <span>{t("songsPage.onlyMine")}</span>
-                    </div>
-                  </Label>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="hidden md:flex">
-                    <Music2 className="h-3 w-3 mr-1" />
-                    {isLoading
-                      ? "…"
-                      : t("songsPage.countBadge").replace(
-                          "{n}",
-                          String(filteredSongs.totalCount),
-                        )}
-                  </Badge>
-                  {!isGuest && (
-                    <Button
-                      onClick={handleCreateNew}
-                      variant="default"
-                      className="w-full sm:w-auto"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      {t("songsPage.createNew")}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 rounded-lg border bg-muted/30 p-4 space-y-3">
-              <h3 className="text-sm font-semibold">
-                {t("songsPage.filtersSection")}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            }
+          >
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
               <div className="space-y-2">
                 <Label
                   htmlFor="visibilityFilter"
@@ -747,8 +715,8 @@ export default function SongsPage() {
                   </Label>
                 </div>
                 {useBeautyFilter && (
-                  <div className="mt-2 pl-6">
-                    <Label className="text-sm font-medium">
+                  <div className="mt-2 space-y-2 pl-6">
+                    <Label className="block text-sm font-medium leading-normal">
                       {t("songsPage.beautyRange")
                         .replace("{min}", String(beautyRange[0]))
                         .replace("{max}", String(beautyRange[1]))}
@@ -759,7 +727,7 @@ export default function SongsPage() {
                       max={5}
                       step={0.5}
                       onValueChange={setBeautyRange as any}
-                      className="w-full"
+                      className="w-full py-1"
                     />
                   </div>
                 )}
@@ -785,8 +753,8 @@ export default function SongsPage() {
                   </Label>
                 </div>
                 {useDifficultyFilter && (
-                  <div className="mt-2 pl-6">
-                    <Label className="text-sm font-medium">
+                  <div className="mt-2 space-y-2 pl-6">
+                    <Label className="block text-sm font-medium leading-normal">
                       {t("songsPage.difficultyRange")
                         .replace("{min}", String(difficultyRange[0]))
                         .replace("{max}", String(difficultyRange[1]))}
@@ -797,7 +765,7 @@ export default function SongsPage() {
                       max={5}
                       step={0.5}
                       onValueChange={setDifficultyRange as any}
-                      className="w-full"
+                      className="w-full py-1"
                     />
                   </div>
                 )}
@@ -837,29 +805,39 @@ export default function SongsPage() {
                 </Select>
               </div>
             </div>
+          </ListPageFiltersPanel>
 
-            <div className="mt-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Select value={sortOrder} onValueChange={setSortOrder}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="desc">{t("common.descending")}</SelectItem>
-                    <SelectItem value="asc">{t("common.ascending")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          <ListPageActionsBar
+            left={
+              <ListPageOnlyMineFilter
+                id="showOnlyMySongs"
+                checked={showOnlyMySongs}
+                onCheckedChange={setShowOnlyMySongs}
+                disabled={isGuest}
+                label={t("songsPage.onlyMine")}
+              />
+            }
+            right={
+              <>
+                <ListPageCountBadge icon={<Music2 className="mr-1 h-3 w-3" />}>
+                  {isLoading
+                    ? "…"
+                    : t("songsPage.countBadge").replace(
+                        "{n}",
+                        String(filteredSongs.totalCount),
+                      )}
+                </ListPageCountBadge>
+                {!isGuest && (
+                  <ListPageCreateButton
+                    label={t("songsPage.createNew")}
+                    onClick={handleCreateNew}
+                  />
+                )}
+              </>
+            }
+          />
 
-              {hasActiveFilters() && (
-                <Button variant="outline" size="sm" onClick={clearAllFilters}>
-                  {t("songsPage.clearFilters")}
-                </Button>
-              )}
-            </div>
-            </div>
-
-            {user && showOnlyMySongs && (
+          {user && showOnlyMySongs && (
               <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
                 <div className="flex items-center gap-2 text-sm">
                   <User className="h-4 w-4 text-blue-600" />
@@ -922,8 +900,7 @@ export default function SongsPage() {
                 </span>
               )}
             </div>
-          </CardContent>
-        </Card>
+        </ListPageFiltersCard>
 
         <Card>
           <CardHeader>

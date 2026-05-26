@@ -37,6 +37,12 @@ import {
   Hash,
 } from "lucide-react";
 import { Pagination } from "@/components/user-management/pagination";
+import { SearchInput } from "@/components/list-page/search-input";
+import {
+  ListPageActionsBar,
+  ListPageCountBadge,
+  ListPageFiltersCard,
+} from "@/components/list-page/list-page-filters";
 
 export default function SubscriptionsPage() {
   const router = useRouter();
@@ -203,30 +209,20 @@ export default function SubscriptionsPage() {
           </div>
         </div>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-              <div className="flex-1 w-full md:w-auto">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search subscribed albums by title or description..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 w-full"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="hidden md:flex">
-                  <Disc className="h-3 w-3 mr-1" />
-                  {filteredSubscriptions.totalCount} albums
-                </Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <ListPageFiltersCard>
+          <SearchInput
+            placeholder="Search subscribed albums by title or description..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <ListPageActionsBar
+            right={
+              <ListPageCountBadge icon={<Disc className="mr-1 h-3 w-3" />}>
+                {filteredSubscriptions.totalCount} albums
+              </ListPageCountBadge>
+            }
+          />
+        </ListPageFiltersCard>
 
         <Card>
           <CardHeader>
@@ -424,7 +420,7 @@ export default function SubscriptionsPage() {
                                 ) : (
                                   <div className="text-center p-2 bg-white/10 backdrop-blur-sm rounded-md border border-white/20">
                                     <div className="text-sm font-medium text-white">
-                                      —
+                                      –
                                     </div>
                                     <div className="text-xs text-white/70">
                                       Theme

@@ -869,7 +869,7 @@ function SongDetailPageContent() {
                   </div>
                   {segment.comments?.[0]?.authorName && (
                     <div className="text-xs text-muted-foreground pt-1 border-t">
-                      — {segment.comments[0].authorName}
+                      – {segment.comments[0].authorName}
                     </div>
                   )}
                 </div>
@@ -1107,7 +1107,7 @@ function SongDetailPageContent() {
                         Genre
                       </Label>
                       <div className="font-medium">
-                        {song.genre && song.genre !== "" ? song.genre : "—"}
+                        {song.genre && song.genre !== "" ? song.genre : "–"}
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -1115,7 +1115,7 @@ function SongDetailPageContent() {
                         Theme
                       </Label>
                       <div className="font-medium">
-                        {song.theme && song.theme !== "" ? song.theme : "—"}
+                        {song.theme && song.theme !== "" ? song.theme : "–"}
                       </div>
                     </div>
                   </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -17,34 +18,43 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { showErrorToast } from "@/lib/utils/error-parser";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "@/hooks/use-translation";
 
-const loginSchema = z.object({
-  email: z.string().email("Enter a valid email"),
-  password: z.string().min(1, "Password cannot be empty"),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
+type LoginFormValues = {
+  email: string;
+  password: string;
+};
 
 export function LoginForm() {
   const { login } = useAuth();
   const router = useRouter();
   const toast = useToast();
+  const { t } = useTranslation();
+
+  const loginSchema = useMemo(
+    () =>
+      z.object({
+        email: z.string().email(t("auth.validation.emailInvalid")),
+        password: z.string().min(1, t("auth.validation.passwordEmpty")),
+      }),
+    [t],
+  );
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-    setError,
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     mode: "onBlur",
   });
 
   const onSubmit = async (values: LoginFormValues) => {
-    const loadingToastId = toast.loading("Signing you in...");
+    const loadingToastId = toast.loading(t("auth.login.loadingToast"));
     try {
       await login(values.email, values.password);
       toast.dismiss(loadingToastId);
-      toast.success("Successfully logged in!");
+      toast.success(t("auth.login.successToast"));
       router.push("/home");
     } catch (err) {
       toast.dismiss(loadingToastId);
@@ -55,15 +65,13 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle className="text-2xl">Login</CardTitle>
-        <CardDescription>
-          Enter your email and password to login to your account
-        </CardDescription>
+        <CardTitle className="text-2xl">{t("auth.login.title")}</CardTitle>
+        <CardDescription>{t("auth.login.description")}</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("auth.login.email")}</Label>
             <Input
               id="email"
               autoComplete="username"
@@ -80,7 +88,7 @@ export function LoginForm() {
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t("auth.login.password")}</Label>
             <Input
               id="password"
               type="password"
@@ -103,7 +111,9 @@ export function LoginForm() {
             disabled={isSubmitting}
             aria-busy={isSubmitting}
           >
-            {isSubmitting ? "Signing in..." : "Sign In"}
+            {isSubmitting
+              ? t("auth.login.submitting")
+              : t("auth.login.submit")}
           </Button>
         </form>
       </CardContent>

@@ -3,31 +3,49 @@ export interface PasswordValidationResult {
   errors: string[];
 }
 
+export interface PasswordValidationMessages {
+  minLength: string;
+  uppercase: string;
+  lowercase: string;
+  number: string;
+  special: string;
+  common: string;
+}
+
+const defaultPasswordMessages: PasswordValidationMessages = {
+  minLength: "Password must be at least 8 characters long",
+  uppercase: "Password must contain at least one uppercase letter",
+  lowercase: "Password must contain at least one lowercase letter",
+  number: "Password must contain at least one number",
+  special:
+    "Password must contain at least one special character (!@#$%^&* etc.)",
+  common: "This password is too common and insecure",
+};
+
 export const validatePassword = (
   password: string,
+  messages: PasswordValidationMessages = defaultPasswordMessages,
 ): PasswordValidationResult => {
   const errors: string[] = [];
 
   if (password.length < 8) {
-    errors.push("Password must be at least 8 characters long");
+    errors.push(messages.minLength);
   }
 
   if (!/(?=.*[A-Z])/.test(password)) {
-    errors.push("Password must contain at least one uppercase letter");
+    errors.push(messages.uppercase);
   }
 
   if (!/(?=.*[a-z])/.test(password)) {
-    errors.push("Password must contain at least one lowercase letter");
+    errors.push(messages.lowercase);
   }
 
   if (!/(?=.*\d)/.test(password)) {
-    errors.push("Password must contain at least one number");
+    errors.push(messages.number);
   }
 
   if (!/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/.test(password)) {
-    errors.push(
-      "Password must contain at least one special character (!@#$%^&* etc.)",
-    );
+    errors.push(messages.special);
   }
 
   const weakPasswords = [
@@ -43,7 +61,7 @@ export const validatePassword = (
   ];
 
   if (weakPasswords.includes(password.toLowerCase())) {
-    errors.push("This password is too common and insecure");
+    errors.push(messages.common);
   }
 
   return {

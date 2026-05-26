@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -23,44 +24,75 @@ import { PasswordStrength } from "./password-strength";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/client";
 import { parseBackendError, showErrorToast } from "@/lib/utils/error-parser";
+import { useTranslation } from "@/hooks/use-translation";
 
-const registerSchema = z
-  .object({
-    email: z.string().email("Enter a valid email").min(1, "Email is required"),
-    nikName: z
-      .string()
-      .min(3, "Nickname must be at least 3 characters long")
-      .max(50, "Nickname is too long"),
-    password: z.string().min(1, "Password is required"),
-    confirmPassword: z.string().min(1, "Confirm password is required"),
-  })
-  .superRefine((data, ctx) => {
-    const passwordValidation = validatePassword(data.password);
-    if (!passwordValidation.isValid) {
-      passwordValidation.errors.forEach((error) => {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: error,
-          path: ["password"],
-        });
-      });
-    }
-
-    if (!validatePasswordMatch(data.password, data.confirmPassword)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Passwords do not match",
-        path: ["confirmPassword"],
-      });
-    }
-  });
-
-type RegisterFormValues = z.infer<typeof registerSchema>;
+type RegisterFormValues = {
+  email: string;
+  nikName: string;
+  password: string;
+  confirmPassword: string;
+};
 
 export function RegisterForm() {
   const { register: registerAuth } = useAuth();
   const router = useRouter();
   const toast = useToast();
+  const { t } = useTranslation();
+
+  const passwordMessages = useMemo(
+    () => ({
+      minLength: t("auth.validation.passwordMinLength"),
+      uppercase: t("auth.validation.passwordUppercase"),
+      lowercase: t("auth.validation.passwordLowercase"),
+      number: t("auth.validation.passwordNumber"),
+      special: t("auth.validation.passwordSpecial"),
+      common: t("auth.validation.passwordCommon"),
+    }),
+    [t],
+  );
+
+  const registerSchema = useMemo(
+    () =>
+      z
+        .object({
+          email: z
+            .string()
+            .email(t("auth.validation.emailInvalid"))
+            .min(1, t("auth.validation.emailRequired")),
+          nikName: z
+            .string()
+            .min(3, t("auth.validation.nicknameMin"))
+            .max(50, t("auth.validation.nicknameMax")),
+          password: z.string().min(1, t("auth.validation.passwordRequired")),
+          confirmPassword: z
+            .string()
+            .min(1, t("auth.validation.confirmRequired")),
+        })
+        .superRefine((data, ctx) => {
+          const passwordValidation = validatePassword(
+            data.password,
+            passwordMessages,
+          );
+          if (!passwordValidation.isValid) {
+            passwordValidation.errors.forEach((error) => {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: error,
+                path: ["password"],
+              });
+            });
+          }
+
+          if (!validatePasswordMatch(data.password, data.confirmPassword)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t("auth.validation.passwordMismatch"),
+              path: ["confirmPassword"],
+            });
+          }
+        }),
+    [t, passwordMessages],
+  );
 
   const {
     register,
@@ -82,7 +114,7 @@ export function RegisterForm() {
   const password = watch("password");
 
   const onSubmit = async (values: RegisterFormValues) => {
-    const loadingToastId = toast.loading("Creating your account...");
+    const loadingToastId = toast.loading(t("auth.register.loadingToast"));
 
     try {
       await registerAuth(
@@ -92,8 +124,11 @@ export function RegisterForm() {
         values.confirmPassword,
       );
       toast.dismiss(loadingToastId);
-      toast.success("Account created successfully! 🎸", {
-        description: `Welcome to GuitarNotepad, ${values.nikName}!`,
+      toast.success(t("auth.register.successTitle"), {
+        description: t("auth.register.successDescription").replace(
+          "{name}",
+          values.nikName,
+        ),
         duration: 3000,
       });
       router.push("/home");
@@ -101,7 +136,7 @@ export function RegisterForm() {
       toast.dismiss(loadingToastId);
 
       if (err instanceof ApiError || err instanceof Error) {
-        const { fieldErrors, generalError } = parseBackendError(err);
+        const { fieldErrors } = parseBackendError(err);
 
         if (Object.keys(fieldErrors).length > 0) {
           Object.entries(fieldErrors).forEach(([field, messages]) => {
@@ -114,8 +149,8 @@ export function RegisterForm() {
 
         showErrorToast(err, toast);
       } else {
-        toast.error("Registration failed", {
-          description: "Please try again later",
+        toast.error(t("auth.register.failed"), {
+          description: t("auth.register.failedDescription"),
         });
       }
     }
@@ -124,13 +159,13 @@ export function RegisterForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle className="text-2xl">Register</CardTitle>
-        <CardDescription>Create your GuitarNotepad account</CardDescription>
+        <CardTitle className="text-2xl">{t("auth.register.title")}</CardTitle>
+        <CardDescription>{t("auth.register.description")}</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("auth.login.email")}</Label>
             <Input
               id="email"
               type="email"
@@ -149,7 +184,7 @@ export function RegisterForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="nikName">Nickname</Label>
+            <Label htmlFor="nikName">{t("auth.register.nickname")}</Label>
             <Input
               id="nikName"
               type="text"
@@ -171,11 +206,11 @@ export function RegisterForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t("auth.login.password")}</Label>
             <Input
               id="password"
               type="password"
-              placeholder="Enter a strong password"
+              placeholder={t("auth.register.passwordPlaceholder")}
               {...register("password")}
               aria-invalid={!!errors.password}
               aria-describedby={
@@ -194,11 +229,13 @@ export function RegisterForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Label htmlFor="confirmPassword">
+              {t("auth.register.confirmPassword")}
+            </Label>
             <Input
               id="confirmPassword"
               type="password"
-              placeholder="Confirm your password"
+              placeholder={t("auth.register.confirmPlaceholder")}
               {...register("confirmPassword")}
               aria-invalid={!!errors.confirmPassword}
               aria-describedby={
@@ -223,7 +260,9 @@ export function RegisterForm() {
             disabled={isSubmitting}
             aria-busy={isSubmitting}
           >
-            {isSubmitting ? "Creating account..." : "Create Account"}
+            {isSubmitting
+              ? t("auth.register.submitting")
+              : t("auth.register.submit")}
           </Button>
         </form>
       </CardContent>

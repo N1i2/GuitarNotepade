@@ -14,21 +14,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Search,
   Plus,
   Grid3x3,
   Hash,
   User,
-  Eye,
   EyeOff,
   ListMusic,
 } from "lucide-react";
 import { Pagination } from "@/components/user-management/pagination";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -47,6 +43,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PatternsGrid } from "@/components/patterns/pattern-grid";
 import { useTranslation } from "@/hooks/use-translation";
+import { SearchInput } from "@/components/list-page/search-input";
+import {
+  ListPageActionsBar,
+  ListPageCountBadge,
+  ListPageCreateButton,
+  ListPageFiltersCard,
+  ListPageFiltersPanel,
+  ListPageOnlyMineFilter,
+} from "@/components/list-page/list-page-filters";
 
 interface FilteredPatternsResult {
   items: Pattern[];
@@ -261,18 +266,15 @@ export default function PatternsPage() {
           </div>
         </div>
 
-        <Card>
-          <CardContent className="pt-6 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="relative sm:col-span-2">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder={t("patternsPage.searchPlaceholder")}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-full"
-                />
-              </div>
+        <ListPageFiltersCard>
+          <SearchInput
+            placeholder={t("patternsPage.searchPlaceholder")}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+
+          <ListPageFiltersPanel>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label className="text-sm font-medium">
                   {t("common.sortBy")}
@@ -319,144 +321,121 @@ export default function PatternsPage() {
                 </Select>
               </div>
             </div>
+          </ListPageFiltersPanel>
 
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-              <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center space-x-2">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          {getFilterBadgeText()}
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuLabel>
-                          {t("patternsPage.patternType")}
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => setFingerStyleFilter(null)}
-                        >
-                          {t("patternsPage.filterAllTypes")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => setFingerStyleFilter(true)}
-                        >
-                          {t("patternsPage.filterFingerstyle")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => setFingerStyleFilter(false)}
-                        >
-                          {t("patternsPage.filterStrumming")}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="showOnlyMyPatterns"
-                      checked={showOnlyMyPatterns}
-                      onCheckedChange={(checked: boolean) =>
-                        setShowOnlyMyPatterns(checked)
-                      }
-                      disabled={isGuest}
-                    />
-                    <Label
-                      htmlFor="showOnlyMyPatterns"
-                      className={`text-sm font-medium cursor-pointer ${!user ? "text-muted-foreground" : ""}`}
-                    >
-                      <div className="flex items-center gap-2">
-                        {showOnlyMyPatterns ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                        <span>{t("patternsPage.onlyMine")}</span>
-                      </div>
-                    </Label>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="hidden md:flex">
-                    <Hash className="h-3 w-3 mr-1" />
-                    {isLoadingAll
-                      ? "…"
-                      : t("patternsPage.countBadge").replace(
-                          "{n}",
-                          String(filteredPatterns.totalCount),
-                        )}
-                  </Badge>
-                  {!isGuest && (
-                    <Button
-                      onClick={handleCreateNew}
-                      variant="default"
-                      className="w-full sm:w-auto"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      {t("patternsPage.createNew")}
+          <ListPageActionsBar
+            left={
+              <>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      {getFilterBadgeText()}
                     </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuLabel>
+                      {t("patternsPage.patternType")}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => setFingerStyleFilter(null)}
+                    >
+                      {t("patternsPage.filterAllTypes")}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setFingerStyleFilter(true)}
+                    >
+                      {t("patternsPage.filterFingerstyle")}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setFingerStyleFilter(false)}
+                    >
+                      {t("patternsPage.filterStrumming")}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <ListPageOnlyMineFilter
+                  id="showOnlyMyPatterns"
+                  checked={showOnlyMyPatterns}
+                  onCheckedChange={setShowOnlyMyPatterns}
+                  disabled={isGuest}
+                  label={t("patternsPage.onlyMine")}
+                />
+              </>
+            }
+            right={
+              <>
+                <ListPageCountBadge icon={<Hash className="mr-1 h-3 w-3" />}>
+                  {isLoadingAll
+                    ? "…"
+                    : t("patternsPage.countBadge").replace(
+                        "{n}",
+                        String(filteredPatterns.totalCount),
+                      )}
+                </ListPageCountBadge>
+                {!isGuest && (
+                  <ListPageCreateButton
+                    label={t("patternsPage.createNew")}
+                    onClick={handleCreateNew}
+                  />
+                )}
+              </>
+            }
+          />
+
+          {(fingerStyleFilter !== null || showOnlyMyPatterns) && (
+            <div className="flex flex-wrap gap-2">
+              {fingerStyleFilter !== null && (
+                <Badge
+                  variant="secondary"
+                  className="cursor-pointer hover:bg-secondary/80"
+                  onClick={() => setFingerStyleFilter(null)}
+                >
+                  {t("patternsPage.typeBadge").replace(
+                    "{type}",
+                    fingerStyleFilter
+                      ? t("patternsPage.filterFingerstyle")
+                      : t("patternsPage.filterStrumming"),
                   )}
-                </div>
+                  <span className="ml-1 text-xs">×</span>
+                </Badge>
+              )}
+
+              {showOnlyMyPatterns && user && (
+                <Badge
+                  variant="secondary"
+                  className="cursor-pointer hover:bg-secondary/80"
+                  onClick={() => setShowOnlyMyPatterns(false)}
+                >
+                  {t("patternsPage.myPatternsBadge")}
+                  <span className="ml-1 text-xs">×</span>
+                </Badge>
+              )}
+            </div>
+          )}
+
+          {user && showOnlyMyPatterns && (
+            <div className="rounded-md border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-900/20">
+              <div className="flex items-center gap-2 text-sm">
+                <User className="h-4 w-4 text-blue-600" />
+                <span className="text-blue-700 dark:text-blue-300">
+                  {t("patternsPage.mineHint")}
+                </span>
               </div>
             </div>
+          )}
 
-            {(fingerStyleFilter !== null || showOnlyMyPatterns) && (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {fingerStyleFilter !== null && (
-                  <Badge
-                    variant="secondary"
-                    className="cursor-pointer hover:bg-secondary/80"
-                    onClick={() => setFingerStyleFilter(null)}
-                  >
-                    {t("patternsPage.typeBadge").replace(
-                      "{type}",
-                      fingerStyleFilter
-                        ? t("patternsPage.filterFingerstyle")
-                        : t("patternsPage.filterStrumming"),
-                    )}
-                    <span className="ml-1 text-xs">×</span>
-                  </Badge>
-                )}
-
-                {showOnlyMyPatterns && user && (
-                  <Badge
-                    variant="secondary"
-                    className="cursor-pointer hover:bg-secondary/80"
-                    onClick={() => setShowOnlyMyPatterns(false)}
-                  >
-                    {t("patternsPage.myPatternsBadge")}
-                    <span className="ml-1 text-xs">×</span>
-                  </Badge>
-                )}
+          {isGuest && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
+              <div className="flex items-center gap-2 text-sm">
+                <EyeOff className="h-4 w-4 text-amber-600" />
+                <span className="text-amber-700 dark:text-amber-300">
+                  {t("patternsPage.signInFilter")}
+                </span>
               </div>
-            )}
-
-            {user && showOnlyMyPatterns && (
-              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
-                <div className="flex items-center gap-2 text-sm">
-                  <User className="h-4 w-4 text-blue-600" />
-                  <span className="text-blue-700 dark:text-blue-300">
-                    {t("patternsPage.mineHint")}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {isGuest && (
-              <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-md border border-amber-200 dark:border-amber-800">
-                <div className="flex items-center gap-2 text-sm">
-                  <EyeOff className="h-4 w-4 text-amber-600" />
-                  <span className="text-amber-700 dark:text-amber-300">
-                    {t("patternsPage.signInFilter")}
-                  </span>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          )}
+        </ListPageFiltersCard>
 
         <Card>
           <CardHeader>

@@ -39,6 +39,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ChordGrid } from "@/components/chords/chord-grid";
 import { Pagination } from "@/components/user-management/pagination";
+import { SearchInput } from "@/components/list-page/search-input";
+import {
+  ListPageActionsBar,
+  ListPageCountBadge,
+  ListPageCreateButton,
+  ListPageFiltersCard,
+  ListPageFiltersPanel,
+  ListPageOnlyMineFilter,
+} from "@/components/list-page/list-page-filters";
 
 interface UniqueChordItem {
   name: string;
@@ -330,154 +339,124 @@ export default function ChordsPage() {
           </div>
         </div>
 
-        <Card>
-          <CardContent className="pt-6 space-y-4">
-            <div className="flex flex-col gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder={t("chordsPage.searchNamePlaceholder")}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 w-full"
-                  />
-                </div>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder={t("chordsPage.searchFingeringPlaceholder")}
-                    value={fingeringTerm}
-                    onChange={(e) => setFingeringTerm(e.target.value)}
-                    className="pl-10 w-full"
-                  />
-                </div>
+        <ListPageFiltersCard>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <SearchInput
+              placeholder={t("chordsPage.searchNamePlaceholder")}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <SearchInput
+              placeholder={t("chordsPage.searchFingeringPlaceholder")}
+              value={fingeringTerm}
+              onChange={(e) => setFingeringTerm(e.target.value)}
+            />
+          </div>
+
+          <ListPageFiltersPanel>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  {t("common.sortBy")}
+                </Label>
+                <Select
+                  value={sortField}
+                  onValueChange={(v) =>
+                    setSortField(v as "name" | "createdAt" | "updatedAt")
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name">
+                      {t("chordsPage.sortFieldName")}
+                    </SelectItem>
+                    <SelectItem value="createdAt">
+                      {t("chordsPage.sortFieldCreated")}
+                    </SelectItem>
+                    <SelectItem value="updatedAt">
+                      {t("chordsPage.sortFieldUpdated")}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-
-              <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-end justify-between">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">
-                      {t("common.sortBy")}
-                    </Label>
-                    <Select
-                      value={sortField}
-                      onValueChange={(v) =>
-                        setSortField(v as "name" | "createdAt" | "updatedAt")
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="name">
-                          {t("chordsPage.sortFieldName")}
-                        </SelectItem>
-                        <SelectItem value="createdAt">
-                          {t("chordsPage.sortFieldCreated")}
-                        </SelectItem>
-                        <SelectItem value="updatedAt">
-                          {t("chordsPage.sortFieldUpdated")}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">
-                      {t("common.sortOrder")}
-                    </Label>
-                    <Select
-                      value={sortOrder}
-                      onValueChange={(v) => setSortOrder(v as "asc" | "desc")}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="asc">
-                          {t("common.ascending")}
-                        </SelectItem>
-                        <SelectItem value="desc">
-                          {t("common.descending")}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="showOnlyMyChords"
-                      checked={showOnlyMyChords}
-                      onCheckedChange={(checked) =>
-                        setShowOnlyMyChords(checked as boolean)
-                      }
-                      disabled={isGuest}
-                    />
-                    <Label
-                      htmlFor="showOnlyMyChords"
-                      className={`text-sm font-medium cursor-pointer ${!user ? "text-muted-foreground" : ""}`}
-                    >
-                      <div className="flex items-center gap-2">
-                        {showOnlyMyChords ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                        <span>{t("chordsPage.onlyMine")}</span>
-                      </div>
-                    </Label>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="hidden md:flex">
-                      <Hash className="h-3 w-3 mr-1" />
-                      {isLoadingAll
-                        ? "…"
-                        : t("chordsPage.countBadge").replace(
-                            "{n}",
-                            String(uniqueChords.totalCount),
-                          )}
-                    </Badge>
-                    {!isGuest && (
-                      <Button
-                        onClick={handleCreateNew}
-                        variant="default"
-                        className="w-full sm:w-auto"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        {t("chordsPage.createNew")}
-                      </Button>
-                    )}
-                  </div>
-                </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  {t("common.sortOrder")}
+                </Label>
+                <Select
+                  value={sortOrder}
+                  onValueChange={(v) => setSortOrder(v as "asc" | "desc")}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="asc">
+                      {t("common.ascending")}
+                    </SelectItem>
+                    <SelectItem value="desc">
+                      {t("common.descending")}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
+          </ListPageFiltersPanel>
 
-            {user && showOnlyMyChords && (
-              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
-                <div className="flex items-center gap-2 text-sm">
-                  <User className="h-4 w-4 text-blue-600" />
-                  <span className="text-blue-700 dark:text-blue-300">
-                    {t("chordsPage.mineHint")}
-                  </span>
-                </div>
-              </div>
-            )}
+          <ListPageActionsBar
+            left={
+              <ListPageOnlyMineFilter
+                id="showOnlyMyChords"
+                checked={showOnlyMyChords}
+                onCheckedChange={setShowOnlyMyChords}
+                disabled={isGuest}
+                label={t("chordsPage.onlyMine")}
+              />
+            }
+            right={
+              <>
+                <ListPageCountBadge icon={<Hash className="mr-1 h-3 w-3" />}>
+                  {isLoadingAll
+                    ? "…"
+                    : t("chordsPage.countBadge").replace(
+                        "{n}",
+                        String(uniqueChords.totalCount),
+                      )}
+                </ListPageCountBadge>
+                {!isGuest && (
+                  <ListPageCreateButton
+                    label={t("chordsPage.createNew")}
+                    onClick={handleCreateNew}
+                  />
+                )}
+              </>
+            }
+          />
 
-            {isGuest && (
-              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-md border border-amber-200 dark:border-amber-800">
-                <div className="flex items-center gap-2 text-sm">
-                  <EyeOff className="h-4 w-4 text-amber-600" />
-                  <span className="text-amber-700 dark:text-amber-300">
-                    {t("chordsPage.signInFilter")}
-                  </span>
-                </div>
+          {user && showOnlyMyChords && (
+            <div className="rounded-md border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-900/20">
+              <div className="flex items-center gap-2 text-sm">
+                <User className="h-4 w-4 text-blue-600" />
+                <span className="text-blue-700 dark:text-blue-300">
+                  {t("chordsPage.mineHint")}
+                </span>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          )}
+
+          {isGuest && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
+              <div className="flex items-center gap-2 text-sm">
+                <EyeOff className="h-4 w-4 text-amber-600" />
+                <span className="text-amber-700 dark:text-amber-300">
+                  {t("chordsPage.signInFilter")}
+                </span>
+              </div>
+            </div>
+          )}
+        </ListPageFiltersCard>
 
         <Card>
           <CardHeader>

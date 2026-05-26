@@ -298,7 +298,7 @@ export function ProfilePanel() {
     used: number | null,
     remaining: number | null,
   ) => {
-    if (used === null) return "—";
+    if (used === null) return "–";
     if (isPremiumUi || isUnlimitedCreationQuota(remaining)) {
       return `${t("profile.usageCount").replace("{used}", String(used))} · ${t("profile.usageUnlimited")}`;
     }
@@ -410,7 +410,7 @@ export function ProfilePanel() {
               <div className="flex items-center gap-2">
                 <span className="text-lg font-semibold">
                   {subscriptionsCount === null
-                    ? "—"
+                    ? "–"
                     : t("profile.usageCount").replace(
                         "{used}",
                         String(subscriptionsCount),
@@ -687,7 +687,7 @@ export function ProfilePanel() {
                   month: "long",
                   day: "numeric",
                 })
-              : "—"}
+              : "–"}
           </div>
         </div>
       </CardFooter>

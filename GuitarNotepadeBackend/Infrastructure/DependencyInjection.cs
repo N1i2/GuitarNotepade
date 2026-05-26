@@ -7,6 +7,7 @@ using Infrastructure.Handlers;
 using Infrastructure.Repositories;
 using Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -16,19 +17,38 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        var useInMemory =
+            string.Equals(
+                Environment.GetEnvironmentVariable("USE_INMEMORY_DB"),
+                "true",
+                StringComparison.OrdinalIgnoreCase)
+            || string.Equals(
+                Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"),
+                "Testing",
+                StringComparison.OrdinalIgnoreCase);
+
         services.AddDbContext<AppDbContext>(options =>
         {
-            var connectionString = GetConnectionString(configuration);
-            options.UseNpgsql(connectionString,
-                b =>
-                {
-                    b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
-                    b.EnableRetryOnFailure(
-                        maxRetryCount: 3,
-                        maxRetryDelay: TimeSpan.FromSeconds(5),
-                        errorCodesToAdd: null);
-                    b.CommandTimeout(30);
-                });
+            if (useInMemory)
+            {
+                options.UseInMemoryDatabase(
+                    Environment.GetEnvironmentVariable("INMEMORY_DB_NAME") ?? "GuitarNotepadTests");
+                options.ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning));
+            }
+            else
+            {
+                var connectionString = GetConnectionString(configuration);
+                options.UseNpgsql(connectionString,
+                    b =>
+                    {
+                        b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
+                        b.EnableRetryOnFailure(
+                            maxRetryCount: 3,
+                            maxRetryDelay: TimeSpan.FromSeconds(5),
+                            errorCodesToAdd: null);
+                        b.CommandTimeout(30);
+                    });
+            }
         }, ServiceLifetime.Scoped);
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();

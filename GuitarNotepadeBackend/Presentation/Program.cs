@@ -12,15 +12,20 @@ using Microsoft.AspNetCore.Http.Features;
 
 var builder = WebApplication.CreateBuilder(args);
 
-if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true")
+var isTesting = builder.Environment.IsEnvironment("Testing");
+
+if (!isTesting)
 {
-    Console.WriteLine("Running in Docker container, loading .env.docker...");
-    Env.Load(".env.docker");
-}
-else
-{
-    Console.WriteLine("Running locally, loading .env...");
-    Env.Load();
+    if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true")
+    {
+        Console.WriteLine("Running in Docker container, loading .env.docker...");
+        Env.Load(".env.docker");
+    }
+    else
+    {
+        Console.WriteLine("Running locally, loading .env...");
+        Env.Load();
+    }
 }
 
 var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET")
@@ -122,6 +127,8 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+if (!app.Environment.IsEnvironment("Testing"))
+{
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -157,6 +164,7 @@ using (var scope = app.Services.CreateScope())
         if (!app.Environment.IsDevelopment())
             throw;
     }
+}
 }
 
 if (app.Environment.IsDevelopment())
@@ -231,3 +239,5 @@ app.MapGet("/health/full", async (AppDbContext dbContext) =>
 });
 
 app.Run();
+
+public partial class Program;

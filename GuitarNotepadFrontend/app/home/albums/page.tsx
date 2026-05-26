@@ -48,6 +48,15 @@ import { Pagination } from "@/components/user-management/pagination";
 import { genres, themes } from "@/lib/validations/album";
 import { AlbumService } from "@/lib/api/albom-service";
 import { SubscriptionsService } from "@/lib/api/subscriptions-service";
+import { SearchInput } from "@/components/list-page/search-input";
+import {
+  ListPageActionsBar,
+  ListPageCountBadge,
+  ListPageCreateButton,
+  ListPageFiltersCard,
+  ListPageFiltersPanel,
+  ListPageOnlyMineFilter,
+} from "@/components/list-page/list-page-filters";
 
 export default function AlbumsPage() {
   const router = useRouter();
@@ -435,122 +444,52 @@ export default function AlbumsPage() {
           </div>
         </div>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div className="space-y-2">
-                <Label htmlFor="search" className="text-sm font-medium">
-                  <div className="flex items-center gap-2">
-                    <Search className="h-4 w-4" />
-                    Search Albums
-                  </div>
-                </Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="search"
-                    placeholder="Search by title, description, genre..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 w-full"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="ownerFilter" className="text-sm font-medium">
-                  <div className="flex items-center gap-2">
-                    <AtSign className="h-4 w-4" />
-                    Filter by Owner
-                  </div>
-                </Label>
-                <div className="relative">
-                  <UserCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="ownerFilter"
-                    placeholder="Filter by owner nickname..."
-                    value={
-                      ownerNicknameFilter === "all" ? "" : ownerNicknameFilter
-                    }
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setOwnerNicknameFilter(value || "all");
-                    }}
-                    className="pl-10 w-full"
-                  />
-                  {ownerNicknameFilter !== "all" && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <button
-                        onClick={() => setOwnerNicknameFilter("all")}
-                        className="text-muted-foreground hover:text-foreground"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+        <ListPageFiltersCard>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="search" className="text-sm font-medium">
+                Search Albums
+              </Label>
+              <SearchInput
+                id="search"
+                placeholder="Search by title, description, genre..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="showOnlyMyAlbums"
-                  checked={showOnlyMyAlbums}
-                  onCheckedChange={(checked) =>
-                    setShowOnlyMyAlbums(checked as boolean)
+            <div className="space-y-2">
+              <Label htmlFor="ownerFilter" className="text-sm font-medium">
+                Filter by Owner
+              </Label>
+              <div className="relative">
+                <UserCircle className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="ownerFilter"
+                  placeholder="Filter by owner nickname..."
+                  value={
+                    ownerNicknameFilter === "all" ? "" : ownerNicknameFilter
                   }
-                  disabled={!user || isGuest}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setOwnerNicknameFilter(value || "all");
+                  }}
+                  className="w-full pl-10"
                 />
-                <Label
-                  htmlFor="showOnlyMyAlbums"
-                  className={`text-sm font-medium cursor-pointer ${
-                    !user || isGuest ? "text-muted-foreground" : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    {showOnlyMyAlbums ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                    <span>Only my albums</span>
-                  </div>
-                </Label>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="hidden md:flex">
-                  <Disc className="h-3 w-3 mr-1" />
-                  {isLoading ? "..." : filteredAlbums.totalCount} albums
-                </Badge>
-                <Button
-                  onClick={handleCreateNew}
-                  variant="default"
-                  className="w-full sm:w-auto"
-                  disabled={
-                    isGuest ||
-                    (remainingAlbums !== null &&
-                      remainingAlbums <= 0 &&
-                      user?.role !== "Admin" &&
-                      !user?.hasPremium)
-                  }
-                  title={
-                    remainingAlbums !== null &&
-                    remainingAlbums <= 0 &&
-                    user?.role !== "Admin" &&
-                    !user?.hasPremium
-                      ? "You've reached the free limit. Upgrade to Premium to create more albums!"
-                      : undefined
-                  }
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create New Album
-                </Button>
+                {ownerNicknameFilter !== "all" && (
+                  <button
+                    type="button"
+                    onClick={() => setOwnerNicknameFilter("all")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
             </div>
+          </div>
 
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-7 gap-4">
+          <ListPageFiltersPanel>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
               <div className="space-y-2">
                 <Label
                   htmlFor="visibilityFilter"
@@ -691,8 +630,47 @@ export default function AlbumsPage() {
                 </div>
               )}
             </div>
+          </ListPageFiltersPanel>
 
-            {user && !isGuest && showOnlyMyAlbums && (
+          <ListPageActionsBar
+            left={
+              <ListPageOnlyMineFilter
+                id="showOnlyMyAlbums"
+                checked={showOnlyMyAlbums}
+                onCheckedChange={setShowOnlyMyAlbums}
+                disabled={!user || isGuest}
+                label="Only my albums"
+              />
+            }
+            right={
+              <>
+                <ListPageCountBadge icon={<Disc className="mr-1 h-3 w-3" />}>
+                  {isLoading ? "..." : `${filteredAlbums.totalCount} albums`}
+                </ListPageCountBadge>
+                <ListPageCreateButton
+                  label="Create New Album"
+                  onClick={handleCreateNew}
+                  disabled={
+                    isGuest ||
+                    (remainingAlbums !== null &&
+                      remainingAlbums <= 0 &&
+                      user?.role !== "Admin" &&
+                      !user?.hasPremium)
+                  }
+                  title={
+                    remainingAlbums !== null &&
+                    remainingAlbums <= 0 &&
+                    user?.role !== "Admin" &&
+                    !user?.hasPremium
+                      ? "You've reached the free limit. Upgrade to Premium to create more albums!"
+                      : undefined
+                  }
+                />
+              </>
+            }
+          />
+
+          {user && !isGuest && showOnlyMyAlbums && (
               <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
                 <div className="flex items-center gap-2 text-sm">
                   <User className="h-4 w-4 text-blue-600" />
@@ -742,8 +720,7 @@ export default function AlbumsPage() {
                 </Badge>
               )}
             </div>
-          </CardContent>
-        </Card>
+        </ListPageFiltersCard>
 
         <Card>
           <CardHeader>
