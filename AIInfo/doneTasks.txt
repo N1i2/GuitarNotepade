@@ -85,3 +85,4 @@ Completed tasks log (common for Backend + Frontend + Docs)
 
 2026-05-25 (Docs — заключение)
 22) Переписан раздел «Заключение» под «Guitar Notepad» с сохранением объёма: `AIInfo/Docs/end.docx`, `AIInfo/Docs/results.docx`; скрипт `AIInfo/Docs/build_end_docx.py`.
+23) Обновлена таблица технологий (12×3) в `AIInfo/Docs/using.docx` под стек Guitar Notepad; скрипт `AIInfo/Docs/build_using_docx.py`.
