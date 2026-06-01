@@ -1,6 +1,6 @@
 <mxfile host="Electron">
   <diagram name="Page-1" id="e3FogACXa9z6a6bmA3uU">
-    <mxGraphModel dx="2161" dy="1264" grid="1" gridSize="1" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="2053" dy="1201" grid="1" gridSize="1" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -109,8 +109,8 @@
             <mxPoint x="452.75006103515625" y="490.4999694824219" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="gQFzv3x9TeoyYKkbsaOU-441" parent="1" style="text;html=1;whiteSpace=wrap;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=14;" value="Отправка данных о паттерне" vertex="1">
-          <mxGeometry height="30" width="200" x="201.75006103515625" y="463.4999694824219" as="geometry" />
+        <mxCell id="gQFzv3x9TeoyYKkbsaOU-441" parent="1" style="text;html=1;whiteSpace=wrap;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=14;" value="Отправка данных о паттерне игры" vertex="1">
+          <mxGeometry height="30" width="215.25" x="201.75" y="463.5" as="geometry" />
         </mxCell>
         <mxCell id="gQFzv3x9TeoyYKkbsaOU-444" edge="1" parent="1" source="gQFzv3x9TeoyYKkbsaOU-428" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;fontFamily=Times New Roman;fontSize=14;fillColor=none;" target="gQFzv3x9TeoyYKkbsaOU-445" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
@@ -127,7 +127,7 @@
             <mxPoint x="541.7500610351562" y="613.4999694824219" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="gQFzv3x9TeoyYKkbsaOU-447" parent="1" style="text;html=1;whiteSpace=wrap;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=14;" value="Запрос на создание паттерна" vertex="1">
+        <mxCell id="gQFzv3x9TeoyYKkbsaOU-447" parent="1" style="text;html=1;whiteSpace=wrap;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=14;" value="Запрос на создание паттерна игры" vertex="1">
           <mxGeometry height="30" width="130" x="481.75006103515625" y="531.4999694824219" as="geometry" />
         </mxCell>
         <mxCell id="gQFzv3x9TeoyYKkbsaOU-448" edge="1" parent="1" source="gQFzv3x9TeoyYKkbsaOU-464" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;fontFamily=Times New Roman;fontSize=14;fillColor=none;" target="gQFzv3x9TeoyYKkbsaOU-449" value="">
@@ -145,8 +145,8 @@
             <mxPoint x="815.7500610351562" y="583.4999694824219" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="gQFzv3x9TeoyYKkbsaOU-451" parent="1" style="text;html=1;whiteSpace=wrap;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=14;" value="Проверка на возможность создания паттерна" vertex="1">
-          <mxGeometry height="10" width="170" x="636.7500610351562" y="563.4999694824219" as="geometry" />
+        <mxCell id="gQFzv3x9TeoyYKkbsaOU-451" parent="1" style="text;html=1;whiteSpace=wrap;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=14;" value="Проверка на возможность создания паттерна игры" vertex="1">
+          <mxGeometry height="10" width="170" x="636.7500610351562" y="561.4999694824219" as="geometry" />
         </mxCell>
         <mxCell id="gQFzv3x9TeoyYKkbsaOU-452" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Times New Roman;fontSize=14;" value="" vertex="1">
           <mxGeometry height="80" width="10" x="996.7500610351562" y="593.4999694824219" as="geometry" />
@@ -157,7 +157,7 @@
             <mxPoint x="991.7500610351562" y="607.4999694824219" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="gQFzv3x9TeoyYKkbsaOU-454" parent="1" style="text;html=1;whiteSpace=wrap;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=14;" value="Запрос на совпадение паттернов" vertex="1">
+        <mxCell id="gQFzv3x9TeoyYKkbsaOU-454" parent="1" style="text;html=1;whiteSpace=wrap;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=14;" value="Запрос на совпадение паттернов игры" vertex="1">
           <mxGeometry height="30" width="145" x="839" y="575" as="geometry" />
         </mxCell>
         <mxCell id="gQFzv3x9TeoyYKkbsaOU-455" edge="1" parent="1" source="gQFzv3x9TeoyYKkbsaOU-452" style="endArrow=classic;html=1;rounded=0;exitX=1.011;exitY=0.381;exitDx=0;exitDy=0;exitPerimeter=0;fontFamily=Times New Roman;fontSize=14;fillColor=none;" value="">
@@ -166,8 +166,8 @@
             <mxPoint x="1371.7500610351562" y="623.4999694824219" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="gQFzv3x9TeoyYKkbsaOU-456" parent="1" style="text;html=1;whiteSpace=wrap;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=14;" value="Запрос на паттерны" vertex="1">
-          <mxGeometry height="30" width="120" x="1049.7500610351562" y="597.4999694824219" as="geometry" />
+        <mxCell id="gQFzv3x9TeoyYKkbsaOU-456" parent="1" style="text;html=1;whiteSpace=wrap;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=14;" value="Запрос на паттерны игры" vertex="1">
+          <mxGeometry height="30" width="154.25" x="1024" y="596" as="geometry" />
         </mxCell>
         <mxCell id="gQFzv3x9TeoyYKkbsaOU-457" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;entryX=1;entryY=0.75;entryDx=0;entryDy=0;fontFamily=Times New Roman;fontSize=14;fillColor=none;dashed=1;" target="gQFzv3x9TeoyYKkbsaOU-452" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
@@ -175,8 +175,8 @@
             <mxPoint x="1301.7500610351562" y="683.4999694824219" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="gQFzv3x9TeoyYKkbsaOU-458" parent="1" style="text;html=1;whiteSpace=wrap;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=14;" value="Паттерн" vertex="1">
-          <mxGeometry height="30" width="60" x="1241.7500610351562" y="629.4999694824219" as="geometry" />
+        <mxCell id="gQFzv3x9TeoyYKkbsaOU-458" parent="1" style="text;html=1;whiteSpace=wrap;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=14;" value="Паттерн игры" vertex="1">
+          <mxGeometry height="30" width="94.25" x="1241.75" y="627.5" as="geometry" />
         </mxCell>
         <mxCell id="gQFzv3x9TeoyYKkbsaOU-459" edge="1" parent="1" source="gQFzv3x9TeoyYKkbsaOU-452" style="endArrow=classic;html=1;rounded=0;entryX=1.062;entryY=0.765;entryDx=0;entryDy=0;exitX=-0.221;exitY=0.875;exitDx=0;exitDy=0;exitPerimeter=0;entryPerimeter=0;fontFamily=Times New Roman;fontSize=14;fillColor=none;dashed=1;" target="gQFzv3x9TeoyYKkbsaOU-449" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
@@ -211,8 +211,8 @@
             <mxPoint x="811.7500610351562" y="733.4999694824219" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="gQFzv3x9TeoyYKkbsaOU-466" parent="1" style="text;html=1;whiteSpace=wrap;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=14;" value="Запрос на создание паттерна" vertex="1">
-          <mxGeometry height="30" width="175" x="637.7500610351562" y="706.4999694824219" as="geometry" />
+        <mxCell id="gQFzv3x9TeoyYKkbsaOU-466" parent="1" style="text;html=1;whiteSpace=wrap;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=14;" value="Запрос на создание паттерна игры" vertex="1">
+          <mxGeometry height="30" width="175" x="637.7500610351562" y="701.4999694824219" as="geometry" />
         </mxCell>
         <mxCell id="gQFzv3x9TeoyYKkbsaOU-467" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Times New Roman;fontSize=14;" value="" vertex="1">
           <mxGeometry height="80" width="10" x="1196.7500610351562" y="723.4999694824219" as="geometry" />
@@ -232,7 +232,7 @@
             <mxPoint x="831.7500610351562" y="783.4999694824219" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="gQFzv3x9TeoyYKkbsaOU-471" parent="1" style="text;html=1;whiteSpace=wrap;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=14;" value="Новая сущность паттерна" vertex="1">
+        <mxCell id="gQFzv3x9TeoyYKkbsaOU-471" parent="1" style="text;html=1;whiteSpace=wrap;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=14;" value="Новая сущность паттерна игры" vertex="1">
           <mxGeometry height="30" width="150" x="1031.7500610351562" y="763.4999694824219" as="geometry" />
         </mxCell>
         <mxCell id="gQFzv3x9TeoyYKkbsaOU-472" edge="1" parent="1" source="gQFzv3x9TeoyYKkbsaOU-430" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;fontFamily=Times New Roman;fontSize=14;fillColor=none;" target="gQFzv3x9TeoyYKkbsaOU-473" value="">
@@ -299,8 +299,8 @@
             <mxPoint x="641.7500610351562" y="993.4999694824219" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="gQFzv3x9TeoyYKkbsaOU-485" parent="1" style="text;html=1;whiteSpace=wrap;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=14;" value="Паттерн успешно создан" vertex="1">
-          <mxGeometry height="30" width="150" x="656.7500610351562" y="967.4999694824219" as="geometry" />
+        <mxCell id="gQFzv3x9TeoyYKkbsaOU-485" parent="1" style="text;html=1;whiteSpace=wrap;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=14;" value="Паттерн игры успешно создан" vertex="1">
+          <mxGeometry height="30" width="150" x="656.7500610351562" y="963.4999694824219" as="geometry" />
         </mxCell>
         <mxCell id="gQFzv3x9TeoyYKkbsaOU-486" edge="1" parent="1" source="gQFzv3x9TeoyYKkbsaOU-445" style="endArrow=classic;html=1;rounded=0;entryX=0.894;entryY=0.928;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0.026;exitY=0.917;exitDx=0;exitDy=0;exitPerimeter=0;fontFamily=Times New Roman;fontSize=14;fillColor=none;dashed=1;" target="gQFzv3x9TeoyYKkbsaOU-439" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
@@ -308,8 +308,8 @@
             <mxPoint x="1041.7500610351562" y="913.4999694824219" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="gQFzv3x9TeoyYKkbsaOU-487" parent="1" style="text;html=1;whiteSpace=wrap;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=14;" value="Паттерн успешно создан" vertex="1">
-          <mxGeometry height="30" width="150" x="476.75006103515625" y="993.4999694824219" as="geometry" />
+        <mxCell id="gQFzv3x9TeoyYKkbsaOU-487" parent="1" style="text;html=1;whiteSpace=wrap;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=14;" value="Паттерн игры успешно создан" vertex="1">
+          <mxGeometry height="30" width="150" x="476.75006103515625" y="989.4999694824219" as="geometry" />
         </mxCell>
         <mxCell id="gQFzv3x9TeoyYKkbsaOU-488" edge="1" parent="1" source="gQFzv3x9TeoyYKkbsaOU-439" style="endArrow=classic;html=1;rounded=0;exitX=-0.072;exitY=0.972;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1.319;entryY=0.913;entryDx=0;entryDy=0;entryPerimeter=0;fontFamily=Times New Roman;fontSize=14;fillColor=none;dashed=1;" target="gQFzv3x9TeoyYKkbsaOU-490" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
@@ -317,8 +317,8 @@
             <mxPoint x="411.75006103515625" y="1003.4999694824219" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="gQFzv3x9TeoyYKkbsaOU-489" parent="1" style="text;html=1;whiteSpace=wrap;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=14;" value="Результат создания паттерна" vertex="1">
-          <mxGeometry height="30" width="190" x="266.75006103515625" y="1021.4999694824219" as="geometry" />
+        <mxCell id="gQFzv3x9TeoyYKkbsaOU-489" parent="1" style="text;html=1;whiteSpace=wrap;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=14;" value="Результат создания паттерна игры" vertex="1">
+          <mxGeometry height="30" width="206" x="219" y="1019.5" as="geometry" />
         </mxCell>
         <mxCell id="gQFzv3x9TeoyYKkbsaOU-490" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Times New Roman;fontSize=14;fillColor=none;" value="" vertex="1">
           <mxGeometry height="670" width="10" x="151.75006103515625" y="433.4999694824219" as="geometry" />
