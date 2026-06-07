@@ -285,4 +285,7 @@ export const ruMessages: Record<MessageKey, string> = {
   "profile.usageRemaining": "Осталось слотов: {n}",
   "profile.usageBadgeFree": "Бесплатный план",
   "profile.usageBadgePremium": "Премиум",
+
+  "songEditor.capitalLineBreakHint":
+    "На странице просмотра слово с заглавной буквы (после пробела или в начале сегмента) отображается с новой строки.",
 };

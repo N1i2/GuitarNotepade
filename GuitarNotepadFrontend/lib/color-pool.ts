@@ -1,56 +1,6 @@
-export const COLOR_PALETTE = [
-  "#FF6B6B",
-  "#4ECDC4",
-  "#45B7D1",
-  "#96CEB4",
-  "#FFEEAD",
-  "#D4A5A5",
-  "#9B59B6",
-  "#3498DB",
-  "#E67E22",
-  "#2ECC71",
-  "#E74C3C",
-  "#1ABC9C",
-  "#F1C40F",
-  "#E67E22",
-  "#E91E63",
-  "#9C27B0",
-  "#673AB7",
-  "#3F51B5",
-  "#2196F3",
-  "#03A9F4",
-  "#00BCD4",
-  "#009688",
-  "#4CAF50",
-  "#8BC34A",
-  "#CDDC39",
-  "#FFEB3B",
-  "#FFC107",
-  "#FF9800",
-  "#FF5722",
-  "#795548",
-  "#9E9E9E",
-  "#607D8B",
-  "#F44336",
-  "#E91E63",
-  "#9C27B0",
-  "#673AB7",
-  "#3F51B5",
-  "#2196F3",
-  "#03A9F4",
-  "#00BCD4",
-  "#009688",
-  "#4CAF50",
-  "#8BC34A",
-  "#CDDC39",
-  "#FFEB3B",
-  "#FFC107",
-  "#FF9800",
-  "#FF5722",
-  "#795548",
-  "#9E9E9E",
-  "#607D8B",
-];
+import { ALL_COLORS } from "@/lib/song-segment-utils";
+
+export { ALL_COLORS as COLOR_PALETTE };
 
 export interface ColorAssignment {
   id: string;
@@ -64,7 +14,7 @@ export class ColorPool {
   private assignedColors: Map<string, ColorAssignment>;
 
   constructor() {
-    this.availableColors = [...COLOR_PALETTE];
+    this.availableColors = [...ALL_COLORS];
     this.assignedColors = new Map();
   }
 
@@ -73,13 +23,14 @@ export class ColorPool {
       return this.assignedColors.get(id)!.color;
     }
 
+    this.refreshAvailableColors();
+
     if (this.availableColors.length === 0) {
-      console.warn("No more colors available, reusing from palette");
-      this.availableColors = [...COLOR_PALETTE];
+      console.warn("All resource colors are assigned");
+      return ALL_COLORS[this.assignedColors.size % ALL_COLORS.length];
     }
 
     const color = this.availableColors.shift()!;
-
     this.assignedColors.set(id, { id, type, color, name });
 
     return color;
@@ -92,7 +43,7 @@ export class ColorPool {
     color: string,
   ): void {
     const existingAssignment = Array.from(this.assignedColors.values()).find(
-      (a) => a.color === color && a.id !== id,
+      (assignment) => assignment.color === color && assignment.id !== id,
     );
 
     if (existingAssignment) {
@@ -102,7 +53,9 @@ export class ColorPool {
 
     if (this.assignedColors.has(id)) {
       const oldColor = this.assignedColors.get(id)!.color;
-      this.availableColors.push(oldColor);
+      if (!this.availableColors.includes(oldColor)) {
+        this.availableColors.push(oldColor);
+      }
     }
 
     const colorIndex = this.availableColors.indexOf(color);
@@ -116,7 +69,9 @@ export class ColorPool {
   releaseColor(id: string): void {
     const assignment = this.assignedColors.get(id);
     if (assignment) {
-      this.availableColors.unshift(assignment.color);
+      if (!this.availableColors.includes(assignment.color)) {
+        this.availableColors.push(assignment.color);
+      }
       this.assignedColors.delete(id);
     }
   }
@@ -126,36 +81,36 @@ export class ColorPool {
   }
 
   getChordAssignments(): ColorAssignment[] {
-    return this.getAllAssignments().filter((a) => a.type === "chord");
+    return this.getAllAssignments().filter((assignment) => assignment.type === "chord");
   }
 
   getPatternAssignments(): ColorAssignment[] {
-    return this.getAllAssignments().filter((a) => a.type === "pattern");
+    return this.getAllAssignments().filter(
+      (assignment) => assignment.type === "pattern",
+    );
   }
 
   updateColor(id: string, newColor: string): boolean {
     const assignment = this.assignedColors.get(id);
     if (!assignment) return false;
 
-    const oldColorIndex = this.availableColors.indexOf(assignment.color);
-    if (oldColorIndex !== -1) {
-      this.availableColors.splice(oldColorIndex, 1);
-    }
-
-    this.availableColors.push(assignment.color);
-
-    assignment.color = newColor;
-
-    const newColorIndex = this.availableColors.indexOf(newColor);
-    if (newColorIndex !== -1) {
-      this.availableColors.splice(newColorIndex, 1);
-    }
-
+    this.forceAssignColor(id, assignment.type, assignment.name, newColor);
     return true;
   }
 
   reset(): void {
-    this.availableColors = [...COLOR_PALETTE];
+    this.availableColors = [...ALL_COLORS];
     this.assignedColors.clear();
+  }
+
+  getUsedColors(): string[] {
+    return Array.from(this.assignedColors.values()).map(
+      (assignment) => assignment.color,
+    );
+  }
+
+  private refreshAvailableColors(): void {
+    const usedColors = new Set(this.getUsedColors());
+    this.availableColors = ALL_COLORS.filter((color) => !usedColors.has(color));
   }
 }

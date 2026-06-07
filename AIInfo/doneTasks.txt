@@ -86,3 +86,13 @@ Completed tasks log (common for Backend + Frontend + Docs)
 2026-05-25 (Docs — заключение)
 22) Переписан раздел «Заключение» под «Guitar Notepad» с сохранением объёма: `AIInfo/Docs/end.docx`, `AIInfo/Docs/results.docx`; скрипт `AIInfo/Docs/build_end_docx.py`.
 23) Обновлена таблица технологий (12×3) в `AIInfo/Docs/using.docx` под стек Guitar Notepad; скрипт `AIInfo/Docs/build_using_docx.py`.
+
+2026-05-23 (Frontend song editor)
+24) Исправлена потеря фокуса при поиске аккорда/паттерна в таблице сегментов: `AdvancedResourceSelect` переведён с Radix Select на Popover + кастомный список; поиск и фильтры локальны внутри компонента, без re-render родительской строки.
+
+2026-05-23 (Frontend song view + editor colors)
+25) Страница просмотра песни: уменьшены отступы между сегментами/строками; перенос строки по заглавной букве в начале слова; аккорды — рамка 2px + лёгкий фон вместо подчёркивания (`SongViewTextRenderer`).
+26) Единый пул цветов `ALL_COLORS` для аккордов и паттернов: `ColorPool`, dedup при загрузке/SET_SEGMENTS, picker с общей палитрой; подсказка о переносе строк на create/edit (RU/EN).
+
+2026-05-23 (Frontend song edit parity)
+27) Страница edit приведена к правилам create: восстановление сессии после навигации к аккордам/паттернам, очистка чужого draft, validateResources при загрузке, visibility refresh, подсказки в Statistics; segment-table не подставляет цвет из DTO — назначает ColorPool.

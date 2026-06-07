@@ -10,6 +10,8 @@ import {
   FullSongDto,
   UpdateSongWithSegmentsDto,
 } from "@/types/songs";
+import { ALL_COLORS } from "@/lib/song-segment-utils";
+import { deduplicateSegmentColors } from "@/lib/resource-color-utils";
 
 export function convertSegmentsToUI(data: FullSongDto): {
   segments: UISegment[];
@@ -101,10 +103,24 @@ export function convertSegmentsToUI(data: FullSongDto): {
     position += uiSegment.length;
   });
 
+  const dedupedSegments = deduplicateSegmentColors(segments);
+
+  const chordColorsFromSegments = new Map<string, string>();
+  const patternColorsFromSegments = new Map<string, string>();
+
+  dedupedSegments.forEach((segment) => {
+    if (segment.chordId && segment.color) {
+      chordColorsFromSegments.set(segment.chordId, segment.color);
+    }
+    if (segment.patternId && segment.backgroundColor) {
+      patternColorsFromSegments.set(segment.patternId, segment.backgroundColor);
+    }
+  });
+
   const chords: SongChordDto[] = Array.from(
     new Map(
       data.chords?.map((chord) => {
-        const colorFromSegments = chordColors.get(chord.id);
+        const colorFromSegments = chordColorsFromSegments.get(chord.id);
         return [
           chord.id,
           {
@@ -112,7 +128,7 @@ export function convertSegmentsToUI(data: FullSongDto): {
             color:
               colorFromSegments ||
               chord.color ||
-              getDefaultChordColor(chord.id),
+              getDefaultResourceColor(chord.id),
           },
         ];
       }) || [],
@@ -122,7 +138,7 @@ export function convertSegmentsToUI(data: FullSongDto): {
   const patterns: SongPatternDto[] = Array.from(
     new Map(
       data.patterns?.map((pattern) => {
-        const colorFromSegments = patternColors.get(pattern.id);
+        const colorFromSegments = patternColorsFromSegments.get(pattern.id);
         return [
           pattern.id,
           {
@@ -130,7 +146,7 @@ export function convertSegmentsToUI(data: FullSongDto): {
             color:
               colorFromSegments ||
               pattern.color ||
-              getDefaultPatternColor(pattern.id),
+              getDefaultResourceColor(pattern.id),
           },
         ];
       }) || [],
@@ -140,7 +156,7 @@ export function convertSegmentsToUI(data: FullSongDto): {
   const allComments = (data.comments || []).map(convertSongCommentToUI);
 
   return {
-    segments,
+    segments: dedupedSegments,
     chords,
     patterns,
     text: fullText,
@@ -148,55 +164,22 @@ export function convertSegmentsToUI(data: FullSongDto): {
   };
 }
 
-export function getDefaultChordColor(chordId: string): string {
-  const colors = [
-    "#FF6B6B",
-    "#4ECDC4",
-    "#FFD166",
-    "#06D6A0",
-    "#118AB2",
-    "#EF476F",
-    "#073B4C",
-    "#FF9F1C",
-    "#2EC4B6",
-    "#E71D36",
-    "#B91372",
-    "#06BCC1",
-    "#C5D86D",
-    "#F4D35E",
-    "#EE964B",
-  ];
-
+export function getDefaultResourceColor(resourceId: string): string {
   let hash = 0;
-  for (let i = 0; i < chordId.length; i++) {
-    hash = (hash << 5) - hash + chordId.charCodeAt(i);
+  for (let index = 0; index < resourceId.length; index++) {
+    hash = (hash << 5) - hash + resourceId.charCodeAt(index);
     hash = hash & hash;
   }
 
-  return colors[Math.abs(hash) % colors.length];
+  return ALL_COLORS[Math.abs(hash) % ALL_COLORS.length];
+}
+
+export function getDefaultChordColor(chordId: string): string {
+  return getDefaultResourceColor(chordId);
 }
 
 export function getDefaultPatternColor(patternId: string): string {
-  const colors = [
-    "#FF6B6B",
-    "#4ECDC4",
-    "#FFD166",
-    "#06D6A0",
-    "#118AB2",
-    "#EF476F",
-    "#073B4C",
-    "#FF9F1C",
-    "#2EC4B6",
-    "#E71D36",
-  ];
-
-  let hash = 0;
-  for (let i = 0; i < patternId.length; i++) {
-    hash = (hash << 5) - hash + patternId.charCodeAt(i);
-    hash = hash & hash;
-  }
-
-  return colors[Math.abs(hash) % colors.length];
+  return getDefaultResourceColor(patternId);
 }
 
 export function convertStateToBackendFormat(state: SongCreationState): any {

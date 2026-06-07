@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Save } from "lucide-react";
 import { SegmentTable } from "@/components/song/table-editor/segment-table";
+import { SegmentLineBreakHint } from "@/components/song/segment-line-break-hint";
 import { convertTableToDTO, convertCommentsToDTO } from "@/lib/table-converter";
 import {
   TableEditorProvider,
@@ -411,6 +412,17 @@ function CreateSongContent() {
     });
   };
 
+  const handleChordColorChange = (chordId: string, color: string) => {
+    dispatch({ type: "UPDATE_CHORD_COLOR", payload: { chordId, color } });
+  };
+
+  const handlePatternColorChange = (patternId: string, color: string) => {
+    dispatch({
+      type: "UPDATE_PATTERN_COLOR",
+      payload: { patternId, color },
+    });
+  };
+
   const handleNavigateToChord = (chordId: string) => {
     const chord = state.chords.find((c) => c.id === chordId);
     if (!chord?.name) {
@@ -703,6 +715,8 @@ function CreateSongContent() {
               onReplacePattern={handleReplacePattern}
               onCreateChord={handleCreateChord}
               onCreatePattern={handleCreatePattern}
+              onChordColorChange={handleChordColorChange}
+              onPatternColorChange={handlePatternColorChange}
               audioData={audioData}
               onAudioChange={setAudioData}
             />
@@ -813,6 +827,7 @@ function CreateSongContent() {
                 <CardTitle>Song Segments</CardTitle>
               </CardHeader>
               <CardContent>
+                <SegmentLineBreakHint />
                 <SegmentTable
                   segments={state.segments}
                   chords={state.chords}

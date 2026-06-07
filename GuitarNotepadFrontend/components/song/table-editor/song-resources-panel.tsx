@@ -20,10 +20,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SongChordDto, SongPatternDto, TableSegment } from "@/types/songs";
+import { AudioInputData } from "@/types/audio";
 import { DeleteResourceDialog } from "./delete-resource-dialog";
 import { ReplaceResourceDialog } from "./replace-resource-dialog";
-import { AudioInputData } from "@/types/audio";
 import { AudioInputSection } from "../audio-input-section";
+import { ResourceColorPicker } from "./resource-color-picker";
 
 interface SongResourcesPanelProps {
   segments: TableSegment[];
@@ -37,6 +38,8 @@ interface SongResourcesPanelProps {
   onReplacePattern?: (oldPatternId: string, newPatternId: string) => void;
   onCreateChord?: () => void;
   onCreatePattern?: () => void;
+  onChordColorChange?: (chordId: string, color: string) => void;
+  onPatternColorChange?: (patternId: string, color: string) => void;
   audioData?: AudioInputData;
   onAudioChange?: (data: AudioInputData) => void;
 }
@@ -53,6 +56,8 @@ export function SongResourcesPanel({
   onReplacePattern,
   onCreateChord,
   onCreatePattern,
+  onChordColorChange,
+  onPatternColorChange,
   audioData,
   onAudioChange,
 }: SongResourcesPanelProps) {
@@ -109,6 +114,16 @@ export function SongResourcesPanel({
       patternColors.set(segment.patternId, segment.backgroundColor);
     }
   });
+
+  const usedSegmentColors = Array.from(
+    new Set(
+      segments.flatMap((segment) =>
+        [segment.color, segment.backgroundColor].filter(
+          (color): color is string => Boolean(color),
+        ),
+      ),
+    ),
+  );
 
   const handleDeleteClick = (
     type: "chord" | "pattern",
@@ -188,23 +203,24 @@ export function SongResourcesPanel({
                 {usedChords.map((chord) => (
                   <div
                     key={chord.id}
-                    className="flex items-center justify-between p-2 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                    className="flex items-center justify-between gap-2 rounded-lg border bg-card p-2 transition-colors hover:bg-accent/50"
                   >
+                    <ResourceColorPicker
+                      type="chord"
+                      currentColor={chordColors.get(chord.id)}
+                      usedColors={usedSegmentColors}
+                      onColorChange={(color) =>
+                        onChordColorChange?.(chord.id, color)
+                      }
+                      disabled={!onChordColorChange}
+                    />
                     <div
-                      className="flex items-center gap-3 flex-1 cursor-pointer"
-                      onClick={() => onChordClick?.(chord.name)}
+                      className="min-w-0 flex-1 cursor-pointer"
+                      onClick={() => onChordClick?.(chord.id)}
                     >
-                      <div
-                        className="w-6 h-6 rounded-full shrink-0"
-                        style={{
-                          backgroundColor: chordColors.get(chord.id) || "#ccc",
-                        }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">{chord.name}</div>
-                        <div className="text-xs text-muted-foreground truncate">
-                          {chord.fingering}
-                        </div>
+                      <div className="truncate font-medium">{chord.name}</div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {chord.fingering}
                       </div>
                     </div>
 
@@ -220,7 +236,7 @@ export function SongResourcesPanel({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onClick={() => onChordClick?.(chord.name)}
+                          onClick={() => onChordClick?.(chord.id)}
                         >
                           <Eye className="h-4 w-4 mr-2" />
                           View Details
@@ -266,26 +282,24 @@ export function SongResourcesPanel({
                 {usedPatterns.map((pattern) => (
                   <div
                     key={pattern.id}
-                    className="flex items-center justify-between p-2 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                    className="flex items-center justify-between gap-2 rounded-lg border bg-card p-2 transition-colors hover:bg-accent/50"
                   >
+                    <ResourceColorPicker
+                      type="pattern"
+                      currentColor={patternColors.get(pattern.id)}
+                      usedColors={usedSegmentColors}
+                      onColorChange={(color) =>
+                        onPatternColorChange?.(pattern.id, color)
+                      }
+                      disabled={!onPatternColorChange}
+                    />
                     <div
-                      className="flex items-center gap-3 flex-1 cursor-pointer"
+                      className="min-w-0 flex-1 cursor-pointer"
                       onClick={() => onPatternClick?.(pattern.id)}
                     >
-                      <div
-                        className="w-6 h-6 rounded border-2 shrink-0"
-                        style={{
-                          backgroundColor:
-                            patternColors.get(pattern.id) || "#ccc",
-                        }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">
-                          {pattern.name}
-                        </div>
-                        <div className="text-xs text-muted-foreground truncate">
-                          {pattern.isFingerStyle ? "Fingerstyle" : "Strumming"}
-                        </div>
+                      <div className="truncate font-medium">{pattern.name}</div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {pattern.isFingerStyle ? "Fingerstyle" : "Strumming"}
                       </div>
                     </div>
 
@@ -301,7 +315,7 @@ export function SongResourcesPanel({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onClick={() => onPatternClick?.(pattern.name)}
+                          onClick={() => onPatternClick?.(pattern.id)}
                         >
                           <Eye className="h-4 w-4 mr-2" />
                           View Details

@@ -8,6 +8,10 @@ import {
   SegmentType,
 } from "@/types/songs";
 import { ColorPool } from "@/lib/color-pool";
+import {
+  deduplicateSegmentColors,
+  syncColorPoolFromSegments,
+} from "@/lib/resource-color-utils";
 
 interface TableEditorState {
   segments: TableSegment[];
@@ -49,6 +53,11 @@ type TableEditorAction =
   | {
       type: "REPLACE_PATTERN";
       payload: { oldPatternId: string; newPatternId: string };
+    }
+  | { type: "UPDATE_CHORD_COLOR"; payload: { chordId: string; color: string } }
+  | {
+      type: "UPDATE_PATTERN_COLOR";
+      payload: { patternId: string; color: string };
     };
 
 const initialState: TableEditorState = {
@@ -64,8 +73,16 @@ function tableEditorReducer(
   action: TableEditorAction,
 ): TableEditorState {
   switch (action.type) {
-    case "SET_SEGMENTS":
-      return { ...state, segments: action.payload };
+    case "SET_SEGMENTS": {
+      const dedupedSegments = deduplicateSegmentColors(action.payload);
+      syncColorPoolFromSegments(
+        state.colorPool,
+        dedupedSegments,
+        new Map(state.chords.map((chord) => [chord.id, chord.name])),
+        new Map(state.patterns.map((pattern) => [pattern.id, pattern.name])),
+      );
+      return { ...state, segments: dedupedSegments };
+    }
 
     case "ADD_SEGMENT": {
       const newSegment: TableSegment = action.payload || {
@@ -307,6 +324,96 @@ function tableEditorReducer(
       }
 
       return { ...state, segments: newSegments };
+    }
+
+    case "UPDATE_CHORD_COLOR": {
+      const { chordId, color } = action.payload;
+      const chord = state.chords.find((c) => c.id === chordId);
+      if (!chord) return state;
+
+      const displaced = state.colorPool
+        .getAllAssignments()
+        .find(
+          (assignment) => assignment.color === color && assignment.id !== chordId,
+        );
+
+      state.colorPool.forceAssignColor(chordId, "chord", chord.name, color);
+
+      let segments = state.segments.map((segment) =>
+        segment.chordId === chordId ? { ...segment, color } : segment,
+      );
+
+      if (displaced) {
+        const replacementColor = state.colorPool.getColor(
+          displaced.id,
+          displaced.type,
+          displaced.name,
+        );
+
+        segments = segments.map((segment) => {
+          if (displaced.type === "chord" && segment.chordId === displaced.id) {
+            return { ...segment, color: replacementColor };
+          }
+          if (
+            displaced.type === "pattern" &&
+            segment.patternId === displaced.id
+          ) {
+            return { ...segment, backgroundColor: replacementColor };
+          }
+          return segment;
+        });
+      }
+
+      return { ...state, segments };
+    }
+
+    case "UPDATE_PATTERN_COLOR": {
+      const { patternId, color } = action.payload;
+      const pattern = state.patterns.find((p) => p.id === patternId);
+      if (!pattern) return state;
+
+      const displaced = state.colorPool
+        .getAllAssignments()
+        .find(
+          (assignment) =>
+            assignment.color === color && assignment.id !== patternId,
+        );
+
+      state.colorPool.forceAssignColor(
+        patternId,
+        "pattern",
+        pattern.name,
+        color,
+      );
+
+      let segments = state.segments.map((segment) =>
+        segment.patternId === patternId
+          ? { ...segment, backgroundColor: color }
+          : segment,
+      );
+
+      if (displaced) {
+        const replacementColor = state.colorPool.getColor(
+          displaced.id,
+          displaced.type,
+          displaced.name,
+        );
+
+        segments = segments.map((segment) => {
+          if (displaced.type === "chord" && segment.chordId === displaced.id) {
+            return { ...segment, color: replacementColor };
+          }
+          if (
+            displaced.type === "pattern" &&
+            segment.patternId === displaced.id
+          ) {
+            return { ...segment, backgroundColor: replacementColor };
+          }
+          return segment;
+        });
+      }
+
+      return { ...state, segments };
     }
 
     default:

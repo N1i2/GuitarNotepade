@@ -286,6 +286,9 @@ export const enMessages = {
   "profile.usageRemaining": "{n} slots left",
   "profile.usageBadgeFree": "Free plan",
   "profile.usageBadgePremium": "Premium",
+
+  "songEditor.capitalLineBreakHint":
+    "On the song view page, a word that starts with a capital letter (after a space or at the start of a segment) begins on a new line.",
 } as const;
 
 export type MessageKey = keyof typeof enMessages;

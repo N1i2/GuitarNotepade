@@ -67,6 +67,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SegmentsList } from "@/components/song/segments-list";
+import { SongViewTextRenderer } from "@/components/song/song-view-text-renderer";
 import { convertSegmentsToUI } from "@/lib/song-converter";
 import { CreateSongReviewDto, SongReviewDto } from "@/types/reviews";
 import { RatingDisplay } from "@/components/song/review/rating-display";
@@ -746,158 +747,6 @@ function SongDetailPageContent() {
     });
   };
 
-  const renderTextWithSegments = () => {
-    if (!songText) return null;
-
-    const segments = [...uiSegments].sort(
-      (a, b) => a.startIndex - b.startIndex,
-    );
-    const result: React.ReactNode[] = [];
-    let lastIndex = 0;
-
-    segments.forEach((segment) => {
-      if (segment.startIndex > songText.length) return;
-
-      if (segment.startIndex > lastIndex) {
-        const beforeText = songText.substring(lastIndex, segment.startIndex);
-        if (beforeText) {
-          result.push(
-            <span
-              key={`text-before-${segment.id}-${lastIndex}`}
-              className="whitespace-pre-wrap"
-              style={{ display: "inline-block", padding: "2px 0" }}
-            >
-              {beforeText}
-            </span>,
-          );
-        }
-      }
-
-      const segmentEnd = Math.min(
-        segment.startIndex + segment.length,
-        songText.length,
-      );
-      const segmentText = songText.substring(segment.startIndex, segmentEnd);
-
-      const hasContent = segmentText.trim().length > 0;
-      const hasChord = !!segment.chordId;
-      const hasPattern = !!segment.patternId;
-      const isEmptyPlayback = !hasContent && (hasChord || hasPattern);
-
-      const chordName = uiChords.find((c) => c.id === segment.chordId)?.name;
-      const pattern = uiPatterns.find((p) => p.id === segment.patternId);
-      const hasComments = segment.comments && segment.comments.length > 0;
-
-      const segmentStyles: React.CSSProperties = {
-        display: "inline-block",
-        padding: "2px 12px",
-        margin: "0 2px",
-        borderRadius: "6px",
-        lineHeight: "1.9",
-      };
-
-      if (hasChord && segment.color) {
-        segmentStyles.borderBottom = `3px solid ${segment.color}`;
-        segmentStyles.backgroundColor = `${segment.color}15`;
-      }
-
-      if (hasPattern && pattern?.color) {
-        segmentStyles.backgroundColor = pattern.color;
-        segmentStyles.borderRadius = "6px";
-        segmentStyles.padding = "2px 12px";
-      } else if (hasPattern && segment.backgroundColor) {
-        segmentStyles.backgroundColor = segment.backgroundColor;
-        segmentStyles.borderRadius = "6px";
-        segmentStyles.padding = "2px 12px";
-      }
-
-      if (!hasChord && !hasPattern && hasContent) {
-        segmentStyles.padding = "2px 12px";
-        segmentStyles.backgroundColor = "transparent";
-      }
-
-      const segmentElement = (
-        <span
-          key={segment.id}
-          id={`song-segment-${segment.id}`}
-          style={segmentStyles}
-          className={`relative inline-block group cursor-default ${isEmptyPlayback ? "min-w-8" : ""}`}
-          title={!showAllHints ? chordName || undefined : undefined}
-          onMouseEnter={(e) => {
-            if (!showAllHints) {
-              handleSegmentMouseEnter(segment.id, e);
-            }
-          }}
-          onMouseLeave={() => {
-            if (!showAllHints) {
-              handleSegmentMouseLeave();
-            }
-          }}
-        >
-          {showAllHints && chordName && (
-            <span className="inline-block text-[10px] bg-popover text-popover-foreground px-1 py-0.5 rounded shadow-sm mr-1 align-middle">
-              {chordName}
-            </span>
-          )}
-
-          {isEmptyPlayback ? (
-            <span className="opacity-50 italic text-sm">⏺</span>
-          ) : (
-            segmentText
-          )}
-
-          {hasComments && (
-            <Popover
-              open={popoverSegment === segment.id}
-              onOpenChange={(open) =>
-                setPopoverSegment(open ? segment.id : null)
-              }
-            >
-              <PopoverTrigger asChild>
-                <span className="absolute -top-2 -right-2 cursor-help">
-                  <MessageSquare className="h-3 w-3 text-blue-500 fill-blue-100" />
-                </span>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-3">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <MessageSquare className="h-4 w-4 text-blue-500" />
-                    <span>Comment</span>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {segment.comments?.[0]?.text || "No comment"}
-                  </div>
-                  {segment.comments?.[0]?.authorName && (
-                    <div className="text-xs text-muted-foreground pt-1 border-t">
-                      – {segment.comments[0].authorName}
-                    </div>
-                  )}
-                </div>
-              </PopoverContent>
-            </Popover>
-          )}
-        </span>
-      );
-
-      result.push(segmentElement);
-      lastIndex = segmentEnd;
-    });
-
-    if (lastIndex < songText.length) {
-      result.push(
-        <span
-          key={`text-end-${lastIndex}`}
-          className="whitespace-pre-wrap"
-          style={{ display: "inline-block", padding: "2px 0" }}
-        >
-          {songText.substring(lastIndex)}
-        </span>,
-      );
-    }
-
-    return result;
-  };
-
   const uniqueChords = Array.from(
     new Map(song?.chords?.map((chord) => [chord.id, chord]) || []).values(),
   );
@@ -1370,18 +1219,32 @@ function SongDetailPageContent() {
                 </CardHeader>
                 <CardContent>
                   <div
-                    className={`min-h-[400px] p-4 border rounded-lg bg-background whitespace-pre-wrap font-mono overflow-y-auto leading-relaxed text-base relative ${
+                    className={`song-view-text min-h-[400px] p-4 border rounded-lg bg-background whitespace-pre-wrap font-mono overflow-y-auto text-base relative leading-[1.8] ${
                       showAllHints ? "pt-8" : ""
                     }`}
                     onMouseMove={handleMouseMove}
-                    style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      alignItems: "center",
-                      gap: "4px 8px",
-                    }}
                   >
-                    {renderTextWithSegments() || (
+                    {songText ? (
+                      <SongViewTextRenderer
+                        songText={songText}
+                        segments={uiSegments}
+                        chords={uiChords}
+                        patterns={uiPatterns}
+                        showAllHints={showAllHints}
+                        popoverSegment={popoverSegment}
+                        onPopoverSegmentChange={setPopoverSegment}
+                        onSegmentMouseEnter={(segmentId, event) => {
+                          if (!showAllHints) {
+                            handleSegmentMouseEnter(segmentId, event);
+                          }
+                        }}
+                        onSegmentMouseLeave={() => {
+                          if (!showAllHints) {
+                            handleSegmentMouseLeave();
+                          }
+                        }}
+                      />
+                    ) : (
                       <div className="text-muted-foreground italic h-full flex items-center justify-center">
                         No text available
                       </div>

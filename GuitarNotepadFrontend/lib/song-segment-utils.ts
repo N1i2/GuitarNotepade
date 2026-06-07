@@ -6,40 +6,34 @@ import {
 } from "@/types/songs";
 
 export const ALL_COLORS = [
-  "#FF6B6B",
-  "#4ECDC4",
-  "#FFD166",
-  "#06D6A0",
-  "#118AB2",
-  "#EF476F",
-  "#073B4C",
-  "#FF9F1C",
-  "#2EC4B6",
-  "#E71D36",
-  "#B91372",
-  "#06BCC1",
-  "#C5D86D",
-  "#F4D35E",
-  "#EE964B",
-  "#F95738",
-  "#0D3B66",
-  "#FAF0CA",
-  "#A663CC",
-  "#6A994E",
-  "#E63946",
-  "#A8DADC",
-  "#457B9D",
-  "#1D3557",
-  "#F4A261",
-  "#2A9D8F",
-  "#E9C46A",
-  "#264653",
-  "#E76F51",
-  "#F4E285",
-].filter((color) => color !== "#000000" && color !== "#FFFFFF");
+  "#E53935",
+  "#FB8C00",
+  "#FDD835",
+  "#C0CA33",
+  "#43A047",
+  "#00897B",
+  "#00ACC1",
+  "#1E88E5",
+  "#3949AB",
+  "#5E35B1",
+  "#8E24AA",
+  "#D81B60",
+  "#FF7043",
+  "#7CB342",
+  "#039BE5",
+  "#00695C",
+  "#283593",
+  "#6D4C41",
+  "#546E7A",
+  "#EF6C00",
+  "#558B2F",
+  "#0277BD",
+  "#4527A0",
+  "#AD1457",
+];
 
-export const CHORD_COLORS = ALL_COLORS.slice(0, 20);
-export const PATTERN_COLORS = ALL_COLORS.slice(20, 30);
+export const CHORD_COLORS = ALL_COLORS;
+export const PATTERN_COLORS = ALL_COLORS;
 
 export function generateSegmentId(
   startIndex: number,
@@ -462,25 +456,26 @@ export function prepareCommentsForBackend(
 
 export function isColorValidForType(
   color: string,
-  type: "chord" | "pattern",
+  _type?: "chord" | "pattern",
 ): boolean {
-  const validColors = type === "chord" ? CHORD_COLORS : PATTERN_COLORS;
-  return validColors.includes(color);
+  return ALL_COLORS.includes(color);
 }
 
-export function getNextAvailableColorForType(
-  usedColors: string[],
-  type: "chord" | "pattern",
-): string {
-  const availableColors = type === "chord" ? CHORD_COLORS : PATTERN_COLORS;
-
-  for (const color of availableColors) {
+export function getNextAvailableColor(usedColors: string[]): string {
+  for (const color of ALL_COLORS) {
     if (!usedColors.includes(color)) {
       return color;
     }
   }
 
-  return availableColors[0];
+  return ALL_COLORS[0];
+}
+
+export function getNextAvailableColorForType(
+  usedColors: string[],
+  _type?: "chord" | "pattern",
+): string {
+  return getNextAvailableColor(usedColors);
 }
 
 export function updateSegmentsForTextChange(

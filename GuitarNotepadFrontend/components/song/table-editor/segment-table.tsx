@@ -19,7 +19,7 @@ import {
 import { GripVertical, Copy, Trash2, Plus } from "lucide-react";
 import { SongChordDto, SongPatternDto, TableSegment } from "@/types/songs";
 import { AdvancedResourceSelect } from "./advanced-resource-select";
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback } from "react";
 
 interface SegmentTableProps {
   segments: TableSegment[];
@@ -57,9 +57,6 @@ const SegmentRow = memo(
     onDragEnd: (e: React.DragEvent) => void;
     onDrop: (e: React.DragEvent, index: number) => void;
   }) {
-    const [chordSearchQuery, setChordSearchQuery] = useState("");
-    const [patternSearchQuery, setPatternSearchQuery] = useState("");
-
     const handleTextChange = useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
         const updated = { ...segment, text: e.target.value };
@@ -70,28 +67,24 @@ const SegmentRow = memo(
 
     const handleChordChange = useCallback(
       (value: string | undefined) => {
-        const updated = {
+        onUpdateSegment(index, {
           ...segment,
           chordId: value,
-          color: chords.find((c) => c.id === value)?.color,
-        };
-        onUpdateSegment(index, updated);
-        setChordSearchQuery("");
+          color: value ? segment.color : undefined,
+        });
       },
-      [segment, index, chords, onUpdateSegment],
+      [segment, index, onUpdateSegment],
     );
 
     const handlePatternChange = useCallback(
       (value: string | undefined) => {
-        const updated = {
+        onUpdateSegment(index, {
           ...segment,
           patternId: value,
-          backgroundColor: patterns.find((p) => p.id === value)?.color,
-        };
-        onUpdateSegment(index, updated);
-        setPatternSearchQuery("");
+          backgroundColor: value ? segment.backgroundColor : undefined,
+        });
       },
-      [segment, index, patterns, onUpdateSegment],
+      [segment, index, onUpdateSegment],
     );
 
     const handleCommentChange = useCallback(
@@ -101,14 +94,6 @@ const SegmentRow = memo(
       },
       [segment, index, onUpdateSegment],
     );
-
-    const handleChordSearchChange = useCallback((query: string) => {
-      setChordSearchQuery(query);
-    }, []);
-
-    const handlePatternSearchChange = useCallback((query: string) => {
-      setPatternSearchQuery(query);
-    }, []);
 
     const handleDelete = useCallback(() => {
       onDeleteSegment(index);
@@ -164,8 +149,6 @@ const SegmentRow = memo(
             resources={chords}
             placeholder="Select chord"
             currentColor={segment.color}
-            searchQuery={chordSearchQuery}
-            onSearchChange={handleChordSearchChange}
           />
         </TableCell>
         <TableCell>
@@ -176,8 +159,6 @@ const SegmentRow = memo(
             resources={patterns}
             placeholder="Select pattern"
             currentColor={segment.backgroundColor}
-            searchQuery={patternSearchQuery}
-            onSearchChange={handlePatternSearchChange}
           />
         </TableCell>
         <TableCell>

@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Save } from "lucide-react";
 import { SegmentTable } from "@/components/song/table-editor/segment-table";
+import { SegmentLineBreakHint } from "@/components/song/segment-line-break-hint";
 import { convertTableToDTO, convertCommentsToDTO } from "@/lib/table-converter";
 import {
   TableEditorProvider,
@@ -113,18 +114,41 @@ function EditSongContent() {
     "Philosophical",
   ];
 
-  const fetchAudioBlob = async (songId: string): Promise<string | null> => {
-    const blob = await SongsService.tryFetchAudioFileBlob(songId);
-    if (!blob) return null;
-    return URL.createObjectURL(blob);
-  };
-
   useEffect(() => {
     const loadSongData = async () => {
       if (!user || !songId) return;
 
       setIsLoading(true);
       try {
+        const isReturning =
+          sessionStorage.getItem("returning_from_edit") === "true";
+        sessionStorage.removeItem("returning_from_edit");
+
+        if (!isReturning) {
+          const savedMetadata = loadMetadata();
+          if (!savedMetadata?.songId || savedMetadata.songId !== songId) {
+            clearState();
+          }
+        } else {
+          const savedMetadata = loadMetadata();
+          if (savedMetadata?.songId === songId && loadState()) {
+            setTitle(savedMetadata.title || "");
+            setArtist(savedMetadata.artist || "");
+            setGenre(savedMetadata.genre || "");
+            setTheme(savedMetadata.theme || "");
+            setDescription(savedMetadata.description || "");
+            setIsPublic(savedMetadata.isPublic || false);
+            if (savedMetadata.audioData) {
+              setAudioData(savedMetadata.audioData);
+            }
+
+            await validateResources();
+            setIsInitialized(true);
+            toast.info("Restored your previous edits");
+            return;
+          }
+        }
+
         const songData = await SongsService.getSongById(
           songId,
           true,
@@ -208,8 +232,12 @@ function EditSongContent() {
               });
             }
           }
+        } else {
+          setOriginalAudioData(null);
+          setAudioData({ type: AudioInputType.NONE });
         }
 
+        await validateResources();
         setIsInitialized(true);
       } catch (error: any) {
         console.error("Load song error:", error);
@@ -221,7 +249,17 @@ function EditSongContent() {
     };
 
     loadSongData();
-  }, [songId, user, dispatch, router, toast]);
+  }, [
+    songId,
+    user,
+    dispatch,
+    router,
+    toast,
+    loadState,
+    loadMetadata,
+    clearState,
+    validateResources,
+  ]);
 
   useEffect(() => {
     const handleFocus = () => {
@@ -265,6 +303,18 @@ function EditSongContent() {
     saveMetadata,
     songId,
   ]);
+
+  useEffect(() => {
+    const handleReturn = async () => {
+      if (document.visibilityState === "visible" && isInitialized) {
+        await refreshResources();
+        await validateResources();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleReturn);
+    return () => document.removeEventListener("visibilitychange", handleReturn);
+  }, [isInitialized, refreshResources, validateResources]);
 
   const handleBack = () => {
     if (returnTo === "song-create") {
@@ -398,6 +448,17 @@ function EditSongContent() {
     dispatch({
       type: "REPLACE_PATTERN",
       payload: { oldPatternId, newPatternId },
+    });
+  };
+
+  const handleChordColorChange = (chordId: string, color: string) => {
+    dispatch({ type: "UPDATE_CHORD_COLOR", payload: { chordId, color } });
+  };
+
+  const handlePatternColorChange = (patternId: string, color: string) => {
+    dispatch({
+      type: "UPDATE_PATTERN_COLOR",
+      payload: { patternId, color },
     });
   };
 
@@ -636,6 +697,8 @@ function EditSongContent() {
               onReplacePattern={handleReplacePattern}
               onCreateChord={handleCreateChord}
               onCreatePattern={handleCreatePattern}
+              onChordColorChange={handleChordColorChange}
+              onPatternColorChange={handlePatternColorChange}
               audioData={audioData}
               onAudioChange={setAudioData}
             />
@@ -720,6 +783,22 @@ function EditSongContent() {
                     </div>
                   </div>
                 </div>
+
+                {state.segments.length === 0 && (
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-xs">
+                    <p className="text-blue-800 dark:text-blue-300">
+                      💡 Click "Add New Segment" to start building your song
+                    </p>
+                  </div>
+                )}
+
+                {state.segments.length > 0 && completionPercentage < 100 && (
+                  <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-xs">
+                    <p className="text-amber-800 dark:text-amber-300">
+                      💡 Add patterns to text segments to create full sections
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -733,6 +812,7 @@ function EditSongContent() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                <SegmentLineBreakHint />
                 <SegmentTable
                   segments={state.segments}
                   chords={state.chords}

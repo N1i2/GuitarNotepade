@@ -122,3 +122,34 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes compact-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.compact-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: compact-marquee 12s linear infinite;
+  will-change: transform;
+}
+
+.compact-marquee-item {
+  padding-right: 1rem;
+  white-space: nowrap;
+}
+
+.song-view-text {
+  line-height: 1.8;
+}
+
+.song-view-text br {
+  display: block;
+  margin-bottom: 0.4em;
+  content: "";
+}
