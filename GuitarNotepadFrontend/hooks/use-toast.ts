@@ -1,5 +1,9 @@
-import { useMemo } from "react";
+"use client";
+
+import { useCallback, useMemo } from "react";
 import { toast as sonnerToast } from "sonner";
+import { useI18n } from "@/components/providers/i18n-provider";
+import { translateUserMessage } from "@/lib/i18n/translate-user-message";
 
 export interface ToastOptions {
   className?: string;
@@ -28,23 +32,44 @@ export interface ToastInterface {
 }
 
 export const useToast = (): ToastInterface => {
+  const { t, locale } = useI18n();
+
+  const localize = useCallback(
+    (message: string) => translateUserMessage(message, t, locale),
+    [t, locale],
+  );
+
+  const localizeOptions = useCallback(
+    (options?: ToastOptions): ToastOptions | undefined => {
+      if (!options?.description) {
+        return options;
+      }
+
+      return {
+        ...options,
+        description: localize(options.description),
+      };
+    },
+    [localize],
+  );
+
   return useMemo(
     () => ({
       success: (message: string, options?: ToastOptions) =>
-        sonnerToast.success(message, options),
+        sonnerToast.success(localize(message), localizeOptions(options)),
       error: (message: string, options?: ToastOptions) =>
-        sonnerToast.error(message, options),
+        sonnerToast.error(localize(message), localizeOptions(options)),
       warning: (message: string, options?: ToastOptions) =>
-        sonnerToast.warning(message, options),
+        sonnerToast.warning(localize(message), localizeOptions(options)),
       info: (message: string, options?: ToastOptions) =>
-        sonnerToast.info(message, options),
+        sonnerToast.info(localize(message), localizeOptions(options)),
       loading: (message: string, options?: ToastOptions) =>
-        sonnerToast.loading(message, options),
+        sonnerToast.loading(localize(message), localizeOptions(options)),
       message: (message: string, options?: ToastOptions) =>
-        sonnerToast.message(message, options),
+        sonnerToast.message(localize(message), localizeOptions(options)),
       promise: sonnerToast.promise,
       dismiss: (id?: string | number) => sonnerToast.dismiss(id),
     }),
-    [],
+    [localize, localizeOptions],
   );
 };

@@ -17,7 +17,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNotifications } from "@/hooks/use-notifications";
 import { formatDistanceToNow } from "date-fns";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 
 function getNotificationIcon(type: string) {
   switch (type) {
@@ -51,6 +51,7 @@ function getNotificationColor(type: string) {
 
 export function NotificationsDropdown() {
   const router = useRouter();
+  const toast = useToast();
   const [open, setOpen] = useState(false);
   const {
     notifications,

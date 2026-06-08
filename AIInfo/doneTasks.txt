@@ -96,3 +96,6 @@ Completed tasks log (common for Backend + Frontend + Docs)
 
 2026-05-23 (Frontend song edit parity)
 27) Страница edit приведена к правилам create: восстановление сессии после навигации к аккордам/паттернам, очистка чужого draft, validateResources при загрузке, visibility refresh, подсказки в Statistics; segment-table не подставляет цвет из DTO — назначает ColorPool.
+
+2026-05-23 (Frontend toast i18n)
+28) Локализация toast на выбранном языке при английском бэкенде: `translate-user-message.ts`, `toast-messages.ts`, секция `toast.*` в `en.ts`/`ru.ts`; `useToast` автопереводит message/description; `t(key, params)` с интерполяцией; прямые импорты sonner заменены на `useToast` в song-text-editor, tool-panel, notifications-dropdown.

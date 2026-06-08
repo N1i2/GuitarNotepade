@@ -7,6 +7,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
 import { SongsService } from "@/lib/api/song-service";
 import { ReviewsService } from "@/lib/api/review-service";
+import { ApiError } from "@/lib/api/client";
 import { ChordsService } from "@/lib/api/chords-service";
 import { PatternsService } from "@/lib/api/patterns-service";
 import {
@@ -502,7 +503,7 @@ function SongDetailPageContent() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, isAuthenticated, isGuest } = useAuth();
   const toast = useToast();
 
   const songId = params.songId as string;
@@ -548,7 +549,7 @@ function SongDetailPageContent() {
         true,
         true,
         true,
-        false,
+        true,
         true,
       );
 
@@ -562,8 +563,11 @@ function SongDetailPageContent() {
       setUiPatterns(patterns);
       setSongText(text);
       setAllComments(comments);
+      setReviews(data.reviews ?? []);
 
-      await loadReviews();
+      if (isAuthenticated && !isGuest) {
+        await loadReviews();
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to load song");
       router.push("/home/songs");
@@ -573,21 +577,26 @@ function SongDetailPageContent() {
   };
 
   const loadReviews = async () => {
-    if (!songId) return;
+    if (!songId || !isAuthenticated || isGuest) return;
 
     setIsLoadingReviews(true);
     try {
       const response = await ReviewsService.getSongReviews(songId);
       setReviews(response.items);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to load reviews");
+    } catch (error: unknown) {
+      if (error instanceof ApiError && error.status === 401) {
+        return;
+      }
+      toast.error(
+        error instanceof Error ? error.message : "Failed to load reviews",
+      );
     } finally {
       setIsLoadingReviews(false);
     }
   };
 
   const checkFavoriteStatus = async () => {
-    if (!user) {
+    if (!isAuthenticated || isGuest) {
       setIsFavorite(false);
       return;
     }
@@ -611,8 +620,10 @@ function SongDetailPageContent() {
   }, [songId, user, authLoading]);
 
   useEffect(() => {
-    checkFavoriteStatus();
-  }, [songId, user]);
+    if (!authLoading) {
+      checkFavoriteStatus();
+    }
+  }, [songId, isAuthenticated, isGuest, authLoading]);
 
   const handleBack = () => {
     if (returnTo === "song-create") {
@@ -682,7 +693,7 @@ function SongDetailPageContent() {
   };
 
   const handleToggleFavorite = async () => {
-    if (!user) {
+    if (!isAuthenticated || isGuest) {
       toast.error("Please log in to add to favorites");
       return;
     }
@@ -883,26 +894,28 @@ function SongDetailPageContent() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleToggleFavorite}
-                disabled={isCheckingFavorite || !user}
-                className={
-                  isFavorite
-                    ? "bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100 hover:text-yellow-800"
-                    : ""
-                }
-              >
-                {isCheckingFavorite ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
-                ) : (
-                  <Heart
-                    className={`h-4 w-4 mr-2 ${isFavorite ? "fill-current text-yellow-600" : ""}`}
-                  />
-                )}
-                {isFavorite ? "In Favorites" : "Add to Favorites"}
-              </Button>
+              {isAuthenticated && !isGuest && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleToggleFavorite}
+                  disabled={isCheckingFavorite}
+                  className={
+                    isFavorite
+                      ? "bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100 hover:text-yellow-800"
+                      : ""
+                  }
+                >
+                  {isCheckingFavorite ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+                  ) : (
+                    <Heart
+                      className={`h-4 w-4 mr-2 ${isFavorite ? "fill-current text-yellow-600" : ""}`}
+                    />
+                  )}
+                  {isFavorite ? "In Favorites" : "Add to Favorites"}
+                </Button>
+              )}
 
               {canEdit && (
                 <Button variant="outline" size="sm" onClick={handleEdit}>

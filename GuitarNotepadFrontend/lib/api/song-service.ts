@@ -48,6 +48,56 @@ export class SongsService {
     }
   }
 
+  private static normalizeSongDto(raw: Record<string, unknown>): SongDto {
+    const ownerName = (raw.ownerName ?? raw.OwnerName) as string | undefined;
+
+    return {
+      id: String(raw.id ?? raw.Id ?? ""),
+      title: String(raw.title ?? raw.Title ?? ""),
+      artist: (raw.artist ?? raw.Artist) as string | undefined,
+      genre: String(raw.genre ?? raw.Genre ?? ""),
+      theme: String(raw.theme ?? raw.Theme ?? ""),
+      description: (raw.description ?? raw.Description) as string | undefined,
+      ownerId: String(raw.ownerId ?? raw.OwnerId ?? ""),
+      ownerName: ownerName?.trim() || undefined,
+      isPublic: Boolean(raw.isPublic ?? raw.IsPublic),
+      parentSongId: (raw.parentSongId ?? raw.ParentSongId) as string | undefined,
+      parentSongTitle: (raw.parentSongTitle ?? raw.ParentSongTitle) as
+        | string
+        | undefined,
+      customAudioUrl: (raw.customAudioUrl ?? raw.CustomAudioUrl) as
+        | string
+        | undefined,
+      customAudioType: (raw.customAudioType ?? raw.CustomAudioType) as
+        | string
+        | undefined,
+      createdAt: String(raw.createdAt ?? raw.CreatedAt ?? ""),
+      updatedAt: (raw.updatedAt ?? raw.UpdatedAt) as string | undefined,
+      reviewCount: Number(raw.reviewCount ?? raw.ReviewCount ?? 0),
+      averageBeautifulRating: (raw.averageBeautifulRating ??
+        raw.AverageBeautifulRating) as number | undefined,
+      averageDifficultyRating: (raw.averageDifficultyRating ??
+        raw.AverageDifficultyRating) as number | undefined,
+      chords: (raw.chords ?? raw.Chords ?? []) as SongDto["chords"],
+      patterns: (raw.patterns ?? raw.Patterns ?? []) as SongDto["patterns"],
+      commentsCount: Number(raw.commentsCount ?? raw.CommentsCount ?? 0),
+      segmentsCount: Number(raw.segmentsCount ?? raw.SegmentsCount ?? 0),
+    };
+  }
+
+  private static normalizeFullSongDto(raw: Record<string, unknown>): FullSongDto {
+    const base = SongsService.normalizeSongDto(raw);
+
+    return {
+      ...base,
+      chords: (raw.chords ?? raw.Chords ?? []) as FullSongDto["chords"],
+      patterns: (raw.patterns ?? raw.Patterns ?? []) as FullSongDto["patterns"],
+      comments: (raw.comments ?? raw.Comments ?? []) as FullSongDto["comments"],
+      segments: (raw.segments ?? raw.Segments ?? []) as FullSongDto["segments"],
+      reviews: (raw.reviews ?? raw.Reviews ?? []) as FullSongDto["reviews"],
+    };
+  }
+
   private static mapFullSongToSongDto(fullSong: FullSongDto): SongDto {
     return {
       id: fullSong.id,
@@ -116,8 +166,12 @@ export class SongsService {
       TotalPages?: number;
     }>(url);
 
+    const rawSongs = (response.songs ??
+      response.Songs ??
+      []) as unknown as Record<string, unknown>[];
+
     return {
-      songs: response.songs ?? response.Songs ?? [],
+      songs: rawSongs.map((song) => SongsService.normalizeSongDto(song)),
       totalCount: response.totalCount ?? response.TotalCount ?? 0,
       page: response.page ?? response.Page ?? filters.page ?? 1,
       pageSize:
@@ -144,7 +198,8 @@ export class SongsService {
     const queryString = params.toString();
     const url = `${this.BASE_PATH}/${id}${queryString ? `?${queryString}` : ""}`;
 
-    return await apiClient.get<FullSongDto>(url);
+    const response = await apiClient.get<Record<string, unknown>>(url);
+    return SongsService.normalizeFullSongDto(response);
   }
 
   static async getUserSongs(

@@ -1,7 +1,7 @@
 "use client";
 
 import { SongResourcesPanel } from "@/components/song/table-editor/song-resources-panel";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
@@ -46,7 +46,7 @@ function EditSongContent() {
   const searchParams = useSearchParams();
   const songId = params.songId as string;
   const returnTo = searchParams.get("returnTo");
-  const { user } = useAuth();
+  const { isLoading: authLoading, isGuest } = useAuth();
   const toast = useToast();
   const { state, dispatch } = useTableEditor();
   const {
@@ -75,6 +75,13 @@ function EditSongContent() {
   const [audioData, setAudioData] = useState<AudioInputData>({
     type: AudioInputType.NONE,
   });
+
+  const loadedSongIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    loadedSongIdRef.current = null;
+    setIsInitialized(false);
+  }, [songId]);
 
   const genres = [
     "Rock",
@@ -115,13 +122,23 @@ function EditSongContent() {
   ];
 
   useEffect(() => {
-    const loadSongData = async () => {
-      if (!user || !songId) return;
+    if (authLoading || !songId || isGuest) {
+      if (!authLoading && isGuest) {
+        router.push("/login");
+      }
+      return;
+    }
 
+    const isReturning =
+      sessionStorage.getItem("returning_from_edit") === "true";
+
+    if (loadedSongIdRef.current === songId && !isReturning) {
+      return;
+    }
+
+    const loadSongData = async () => {
       setIsLoading(true);
       try {
-        const isReturning =
-          sessionStorage.getItem("returning_from_edit") === "true";
         sessionStorage.removeItem("returning_from_edit");
 
         if (!isReturning) {
@@ -144,6 +161,7 @@ function EditSongContent() {
 
             await validateResources();
             setIsInitialized(true);
+            loadedSongIdRef.current = songId;
             toast.info("Restored your previous edits");
             return;
           }
@@ -239,6 +257,7 @@ function EditSongContent() {
 
         await validateResources();
         setIsInitialized(true);
+        loadedSongIdRef.current = songId;
       } catch (error: any) {
         console.error("Load song error:", error);
         toast.error(error.message || "Failed to load song");
@@ -249,17 +268,7 @@ function EditSongContent() {
     };
 
     loadSongData();
-  }, [
-    songId,
-    user,
-    dispatch,
-    router,
-    toast,
-    loadState,
-    loadMetadata,
-    clearState,
-    validateResources,
-  ]);
+  }, [songId, authLoading, isGuest]);
 
   useEffect(() => {
     const handleFocus = () => {
@@ -325,7 +334,7 @@ function EditSongContent() {
   };
 
   const handleSubmit = async () => {
-    if (!user) {
+    if (isGuest) {
       toast.error("Please log in");
       return;
     }

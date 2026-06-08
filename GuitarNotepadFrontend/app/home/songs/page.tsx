@@ -398,9 +398,8 @@ export default function SongsPage() {
 
   const getSongItemsForGrid = (): SongGridItem[] => {
     return filteredSongs.items.map((song) => {
-      const canEdit = user
-        ? user.id === song.ownerId || user.role === "Admin"
-        : false;
+      const isOwner = !!user && user.id === song.ownerId;
+      const canEdit = isOwner || user?.role === "Admin";
 
       const chordCount = song.chords?.length || 0;
       const patternCount = song.patterns?.length || 0;
@@ -417,6 +416,7 @@ export default function SongsPage() {
         createdAt: song.createdAt,
         updatedAt: song.updatedAt,
         canEdit,
+        isOwner,
         isForked: !!song.parentSongId,
         averageBeautifulRating: song.averageBeautifulRating,
         averageDifficultyRating: song.averageDifficultyRating,
@@ -972,15 +972,26 @@ export default function SongsPage() {
                               Forked
                             </Badge>
                           )}
-                          {song.canEdit && (
+                          {song.isOwner && (
                             <Badge
                               variant="secondary"
                               className="flex items-center gap-1"
                             >
                               <User className="h-3 w-3" />
-                              Owner
+                              Yours
                             </Badge>
                           )}
+                          {user?.role === "Admin" &&
+                            !song.isOwner &&
+                            song.ownerNickname !== "Unknown" && (
+                              <Badge
+                                variant="outline"
+                                className="flex items-center gap-1"
+                              >
+                                <User className="h-3 w-3" />
+                                {song.ownerNickname}
+                              </Badge>
+                            )}
                           {song.genre && song.genre !== "Empty" && (
                             <Badge variant="outline">
                               <Tag className="h-3 w-3 mr-1" />

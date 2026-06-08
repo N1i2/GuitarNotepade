@@ -433,6 +433,7 @@ export interface SongGridItem {
   createdAt: string;
   updatedAt?: string;
   canEdit: boolean;
+  isOwner: boolean;
   isForked: boolean;
   averageBeautifulRating?: number;
   averageDifficultyRating?: number;

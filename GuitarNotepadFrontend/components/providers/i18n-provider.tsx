@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { interpolate } from "@/lib/i18n/interpolate";
 import { enMessages, ruMessages, type MessageKey } from "@/lib/i18n/messages";
 import {
   type Locale,
@@ -19,7 +20,10 @@ import {
 type I18nContextValue = {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  t: (key: MessageKey) => string;
+  t: (
+    key: MessageKey,
+    params?: Record<string, string | number>,
+  ) => string;
 };
 
 const I18nContext = createContext<I18nContextValue | null>(null);
@@ -42,9 +46,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const t = useCallback(
-    (key: MessageKey) => {
+    (key: MessageKey, params?: Record<string, string | number>) => {
       const table = locale === "ru" ? ruMessages : enMessages;
-      return table[key] ?? enMessages[key];
+      const template = table[key] ?? enMessages[key];
+      return interpolate(template, params);
     },
     [locale],
   );
@@ -60,7 +65,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         value={{
           locale: "en",
           setLocale,
-          t: (key) => enMessages[key],
+          t: (key, params) => interpolate(enMessages[key], params),
         }}
       >
         {children}

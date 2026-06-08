@@ -23,7 +23,7 @@ import {
   findWordAtPosition,
 } from "@/lib/song-segment-utils";
 import { AddCommentModal } from "./add-comment-modal";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 import { SegmentsList } from "./segments-list";
 import { UISegment } from "@/types/songs";
 
@@ -43,6 +43,7 @@ interface TextSegment {
 
 export function SongTextEditor() {
   const { state, dispatch } = useSongCreation();
+  const toast = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const [showAddComment, setShowAddComment] = useState(false);

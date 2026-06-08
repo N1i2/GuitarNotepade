@@ -48,7 +48,7 @@ import {
   getDefaultPatternColor,
 } from "@/lib/song-converter";
 import { useSongCreation } from "@/app/contexts/song-creation-context";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 
 function ChordModal({
   chordName,
@@ -461,6 +461,7 @@ function PatternModal({
 
 export function ToolPanel() {
   const { state, dispatch } = useSongCreation();
+  const toast = useToast();
   const [showAddChord, setShowAddChord] = useState(false);
   const [showAddPattern, setShowAddPattern] = useState(false);
   const [showReplaceChord, setShowReplaceChord] = useState<string | null>(null);
