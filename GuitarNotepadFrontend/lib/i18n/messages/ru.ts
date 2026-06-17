@@ -271,9 +271,13 @@ export const ruMessages: Record<MessageKey, string> = {
   "songsPage.loadError": "Не удалось загрузить песни. Повторите попытку.",
   "songsPage.loadPublicError": "Не удалось загрузить публичные песни.",
 
-  "profile.usageTitle": "Использование",
-  "profile.usageDesc":
-    "Сколько вы создали. У премиума и админов лимитов на создание нет.",
+  "common.role.guest": "Гость",
+  "common.role.user": "Пользователь",
+  "common.role.admin": "Админ",
+  "common.role.premium": "Премиум",
+
+  "profile.usageTitle": "Статистика",
+  "profile.usageDesc": "Сколько контента вы создали.",
   "profile.chordsCreated": "Аккорды",
   "profile.patternsCreated": "Паттерны",
   "profile.songsCreated": "Песни",

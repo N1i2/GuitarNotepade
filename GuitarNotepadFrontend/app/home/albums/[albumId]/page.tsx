@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
+import { SubscriptionsService } from "@/lib/api/subscriptions-service";
 import { useToast } from "@/hooks/use-toast";
 import { AlbumWithSongsDto, SongInAlbumDto } from "@/types/albom";
 import {
@@ -36,6 +37,8 @@ import {
   ExternalLink,
   EyeOff,
   Users,
+  Bell,
+  BellOff,
 } from "lucide-react";
 import {
   Dialog,
@@ -52,7 +55,7 @@ import { AlbumService } from "@/lib/api/albom-service";
 export default function AlbumDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isGuest, isLoading: authLoading } = useAuth();
   const toast = useToast();
 
   const albumId = params.albumId as string;
@@ -69,6 +72,8 @@ export default function AlbumDetailPage() {
   const [isLoadingSongs, setIsLoadingSongs] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSongs, setSelectedSongs] = useState<string[]>([]);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isSubscriptionLoading, setIsSubscriptionLoading] = useState(false);
 
   const loadAlbum = useCallback(async () => {
     setIsLoading(true);
@@ -135,6 +140,59 @@ export default function AlbumDetailPage() {
       loadAvailableSongs();
     }
   }, [addSongsDialogOpen, album, user, loadAvailableSongs]);
+
+  useEffect(() => {
+    if (!user || isGuest || !albumId) {
+      setIsSubscribed(false);
+      return;
+    }
+
+    SubscriptionsService.checkAlbumSubscription(albumId)
+      .then(setIsSubscribed)
+      .catch(() => setIsSubscribed(false));
+  }, [albumId, user, isGuest]);
+
+  const handleToggleSubscription = async () => {
+    if (!user || isGuest) {
+      toast.warning("Please log in to subscribe to albums");
+      return;
+    }
+
+    setIsSubscriptionLoading(true);
+    try {
+      if (isSubscribed) {
+        await SubscriptionsService.unsubscribe(albumId);
+        setIsSubscribed(false);
+        setAlbum((prev) =>
+          prev
+            ? {
+                ...prev,
+                subscribersCount: Math.max(0, (prev.subscribersCount || 0) - 1),
+              }
+            : prev,
+        );
+        toast.success("Unsubscribed from album");
+      } else {
+        await SubscriptionsService.subscribe(albumId);
+        setIsSubscribed(true);
+        setAlbum((prev) =>
+          prev
+            ? {
+                ...prev,
+                subscribersCount: (prev.subscribersCount || 0) + 1,
+              }
+            : prev,
+        );
+        toast.success("Subscribed to album");
+      }
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Subscription action failed";
+      toast.error(message);
+    } finally {
+      setIsSubscriptionLoading(false);
+    }
+  };
 
   const handleEdit = () => {
     router.push(`/home/albums/edit/${albumId}`);
@@ -206,6 +264,12 @@ export default function AlbumDetailPage() {
     (user?.id === album.ownerId || user?.role === "Admin") &&
     !isFavoriteAlbum;
   const canManage = album && user?.id === album.ownerId && !isFavoriteAlbum;
+  const canSubscribe =
+    album &&
+    user &&
+    !isGuest &&
+    !isFavoriteAlbum &&
+    user.id !== album.ownerId;
 
   const canViewSong = (song: SongInAlbumDto): boolean => {
     if (song.isPublic) return true;
@@ -386,6 +450,29 @@ export default function AlbumDetailPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {canSubscribe && (
+              <Button
+                variant={isSubscribed ? "outline" : "secondary"}
+                size="sm"
+                onClick={handleToggleSubscription}
+                disabled={isSubscriptionLoading}
+              >
+                {isSubscriptionLoading ? (
+                  "..."
+                ) : isSubscribed ? (
+                  <>
+                    <BellOff className="h-4 w-4 mr-2" />
+                    Unsubscribe
+                  </>
+                ) : (
+                  <>
+                    <Bell className="h-4 w-4 mr-2" />
+                    Subscribe
+                  </>
+                )}
+              </Button>
+            )}
+
             {canManage && (
               <>
                 <Button

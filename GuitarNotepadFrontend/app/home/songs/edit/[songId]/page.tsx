@@ -1,7 +1,7 @@
 "use client";
 
 import { SongResourcesPanel } from "@/components/song/table-editor/song-resources-panel";
-import { useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useToast } from "@/hooks/use-toast";
@@ -886,8 +886,16 @@ function EditSongContent() {
 
 export default function EditSongPage() {
   return (
-    <TableEditorProvider>
-      <EditSongContent />
-    </TableEditorProvider>
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 sm:px-6 lg:px-20 py-8">
+          Loading song editor...
+        </div>
+      }
+    >
+      <TableEditorProvider>
+        <EditSongContent />
+      </TableEditorProvider>
+    </Suspense>
   );
 }

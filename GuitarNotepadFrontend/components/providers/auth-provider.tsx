@@ -44,7 +44,7 @@ const normalizeUserData = (userData: any): UserProfileResponse => {
     email: userData.email || "",
     nikName: userData.nikName || userData.userName || "",
     role: userData.role || "User",
-    hasPremium: userData.hasPremium ?? false,
+    hasPremium: userData.hasPremium ?? userData.HasPremium ?? false,
     avatarUrl: userData.avatarUrl || null,
     bio: userData.bio || "",
     createAt: userData.createAt || new Date().toISOString(),

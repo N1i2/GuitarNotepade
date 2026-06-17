@@ -272,9 +272,13 @@ export const enMessages = {
   "songsPage.loadError": "Failed to load songs. Try again.",
   "songsPage.loadPublicError": "Failed to load public songs.",
 
-  "profile.usageTitle": "Usage",
-  "profile.usageDesc":
-    "How much you have created. Premium and admins have unlimited creation slots.",
+  "common.role.guest": "Guest",
+  "common.role.user": "User",
+  "common.role.admin": "Admin",
+  "common.role.premium": "Premium",
+
+  "profile.usageTitle": "Statistics",
+  "profile.usageDesc": "How much content you have created.",
   "profile.chordsCreated": "Chords",
   "profile.patternsCreated": "Patterns",
   "profile.songsCreated": "Songs",

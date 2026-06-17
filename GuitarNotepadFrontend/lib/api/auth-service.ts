@@ -26,9 +26,11 @@ export interface UserProfileResponse {
   email: string;
   nikName: string;
   role: string;
+  hasPremium: boolean;
   avatarUrl: string | null;
   bio: string;
   createAt: string;
+  isBlocked: boolean;
 }
 
 const TOKEN_KEY = "auth_token";

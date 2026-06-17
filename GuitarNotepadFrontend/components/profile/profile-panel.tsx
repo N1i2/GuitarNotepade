@@ -32,12 +32,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useUsageCounters } from "@/hooks/use-usage-counters";
-import {
-  useCreationQuotas,
-  isUnlimitedCreationQuota,
-} from "@/hooks/use-creation-quotas";
 import { useTranslation } from "@/hooks/use-translation";
-import { Badge } from "@/components/ui/badge";
 
 const profileSchema = z
   .object({
@@ -284,29 +279,25 @@ export function ProfilePanel() {
     subscriptionsCount,
   } = useUsageCounters();
 
-  const {
-    isLoading: quotasLoading,
-    chordsRemaining,
-    patternsRemaining,
-    songsRemaining,
-    albumsRemaining,
-  } = useCreationQuotas(!!user && user.role !== "Guest");
-
-  const isPremiumUi = !!(user?.hasPremium || user?.role === "Admin");
-
-  const formatCreationLine = (
-    used: number | null,
-    remaining: number | null,
-  ) => {
-    if (used === null) return "–";
-    if (isPremiumUi || isUnlimitedCreationQuota(remaining)) {
-      return `${t("profile.usageCount").replace("{used}", String(used))} · ${t("profile.usageUnlimited")}`;
+  const formatCount = (count: number | null) => {
+    if (usageLoading) {
+      return t("profile.usageLoading");
     }
-    if (remaining === null || quotasLoading) {
-      return `${t("profile.usageCount").replace("{used}", String(used))} · …`;
+
+    if (count === null) {
+      return "–";
     }
-    return `${t("profile.usageCount").replace("{used}", String(used))} · ${t("profile.usageRemaining").replace("{n}", String(remaining))}`;
+
+    return String(count);
   };
+
+  const creationStats = [
+    { label: t("profile.chordsCreated"), value: chordsCount },
+    { label: t("profile.patternsCreated"), value: patternsCount },
+    { label: t("profile.songsCreated"), value: songsCount },
+    { label: t("profile.albumsCreated"), value: albumsCount },
+    { label: t("profile.subscriptions"), value: subscriptionsCount },
+  ];
 
   return (
     <Card className="w-full max-w-4xl mx-auto">
@@ -334,95 +325,20 @@ export function ProfilePanel() {
               {t("profile.usageDesc")}
           </CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="text-xs font-medium text-muted-foreground mb-1">
-                {t("profile.chordsCreated")}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-semibold">
-                  {formatCreationLine(chordsCount, chordsRemaining)}
-                </span>
-                <Badge variant="secondary">
-                  {usageLoading || quotasLoading
-                    ? t("profile.usageLoading")
-                    : isPremiumUi
-                      ? t("profile.usageBadgePremium")
-                      : t("profile.usageBadgeFree")}
-                </Badge>
-              </div>
-            </div>
-            <div>
-              <div className="text-xs font-medium text-muted-foreground mb-1">
-                {t("profile.patternsCreated")}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-semibold">
-                  {formatCreationLine(patternsCount, patternsRemaining)}
-                </span>
-                <Badge variant="secondary">
-                  {usageLoading || quotasLoading
-                    ? t("profile.usageLoading")
-                    : isPremiumUi
-                      ? t("profile.usageBadgePremium")
-                      : t("profile.usageBadgeFree")}
-                </Badge>
-              </div>
-            </div>
-            <div>
-              <div className="text-xs font-medium text-muted-foreground mb-1">
-                {t("profile.songsCreated")}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-semibold">
-                  {formatCreationLine(songsCount, songsRemaining)}
-                </span>
-                <Badge variant="secondary">
-                  {usageLoading || quotasLoading
-                    ? t("profile.usageLoading")
-                    : isPremiumUi
-                      ? t("profile.usageBadgePremium")
-                      : t("profile.usageBadgeFree")}
-                </Badge>
-              </div>
-            </div>
-            <div>
-              <div className="text-xs font-medium text-muted-foreground mb-1">
-                {t("profile.albumsCreated")}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-semibold">
-                  {formatCreationLine(albumsCount, albumsRemaining)}
-                </span>
-                <Badge variant="secondary">
-                  {usageLoading || quotasLoading
-                    ? t("profile.usageLoading")
-                    : isPremiumUi
-                      ? t("profile.usageBadgePremium")
-                      : t("profile.usageBadgeFree")}
-                </Badge>
-              </div>
-            </div>
-            <div>
-              <div className="text-xs font-medium text-muted-foreground mb-1">
-                {t("profile.subscriptions")}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-semibold">
-                  {subscriptionsCount === null
-                    ? "–"
-                    : t("profile.usageCount").replace(
-                        "{used}",
-                        String(subscriptionsCount),
-                      )}
-                </span>
-                <Badge variant="secondary">
-                  {usageLoading
-                    ? t("profile.usageLoading")
-                    : t("profile.usageBadgeFree")}
-                </Badge>
-              </div>
-            </div>
+          <CardContent>
+            <dl className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {creationStats.map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-lg border bg-muted/30 p-4"
+                >
+                  <dt className="text-sm text-muted-foreground">{stat.label}</dt>
+                  <dd className="mt-1 text-2xl font-semibold tabular-nums">
+                    {formatCount(stat.value)}
+                  </dd>
+                </div>
+              ))}
+            </dl>
           </CardContent>
         </Card>
 

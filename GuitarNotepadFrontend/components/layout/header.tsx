@@ -32,11 +32,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { NotificationsDropdown } from "../notifications/notifications-dropdown";
+import { getAccountRoleKey } from "@/lib/user-role-label";
 
 export function Header() {
   const { user, isGuest, isAdmin, logout, isLoading } = useAuth();
   const pathname = usePathname();
   const { t } = useTranslation();
+  const accountRoleLabel = t(getAccountRoleKey(user));
 
   const getInitials = (name: string) => {
     return name
@@ -314,7 +316,7 @@ export function Header() {
                               : "bg-muted"
                           }`}
                         >
-                          {user?.role}
+                          {accountRoleLabel}
                         </span>
                       </div>
                     </div>
@@ -344,7 +346,7 @@ export function Header() {
                   {user?.nikName}
                 </span>
                 <span className="text-xs leading-none text-muted-foreground">
-                  {user?.role}
+                  {accountRoleLabel}
                 </span>
               </div>
             </>
